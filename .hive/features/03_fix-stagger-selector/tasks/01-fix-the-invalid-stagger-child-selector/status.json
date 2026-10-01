@@ -1,0 +1,10 @@
+{
+  "status": "done",
+  "origin": "plan",
+  "planTitle": "Fix the invalid stagger child selector",
+  "dependsOn": [],
+  "summary": "Changed animation-observer.js:25 STAGGER_CHILD_SELECTOR from '> *' to ':scope > *' (1 line). Verified: no SyntaxError/pageerror on index/about/contact/projects; #featured-projects is-visible with 0ms/100ms child delays; #project-list is-visible with 0ms/100ms .project-item delays; 4 [data-animate] sections reach opacity 1; hero title/desc animate (slide-up); grep no '> *', :scope > * once; code diff 1 file/1 line.",
+  "schemaVersion": 1,
+  "startedAt": "2026-10-01T08:37:00.960Z",
+  "completedAt": "2026-10-01T08:37:54.437Z"
+}

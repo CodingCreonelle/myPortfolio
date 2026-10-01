@@ -22,7 +22,7 @@
 
   // Default animation classes
   const DEFAULT_ANIMATION = 'animate-entrance';
-  const STAGGER_CHILD_SELECTOR = '> *';
+  const STAGGER_CHILD_SELECTOR = ':scope > *';
 
   /**
    * Check if user prefers reduced motion
