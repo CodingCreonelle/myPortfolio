@@ -109,6 +109,17 @@ section[id] {
     padding-top: 0;
 }
 
+.contact-preview {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);  /* 60% text / 40% buttons */
+    align-items: center;
+    gap: 48px;
+}
+
+.contact-preview .section-header {
+    margin-bottom: 0;
+}
+
 .section-header p,
 .section-header h2,
 .section-header .section-label {
@@ -180,7 +191,7 @@ section[id] {
 .contact-actions {
     display: grid;
     gap: 16px;
-    max-width: 420px;
+    align-content: center;
 }
 
 .contact-form {
@@ -220,6 +231,11 @@ section[id] {
     .hero-actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .contact-actions {
+        margin-inline-start: 0;
+        max-width: none;
     }
 }
 

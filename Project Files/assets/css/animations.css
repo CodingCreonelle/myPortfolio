@@ -384,3 +384,51 @@
 .animation-running {
   animation-play-state: running;
 }
+
+/* ==========================================================================
+   REPLAY / EXIT ANIMATIONS
+   Homepage sections opted in with [data-animate-replay] fade out in place when
+   scrolled away and replay their entrance animation on re-entry. Managed by
+   animation-observer.js.
+   ========================================================================== */
+
+/* Exit state - fade out in place (opacity only).
+   The 300ms duration must match REPLAY.exitDuration in animation-observer.js. */
+[data-animate-replay].is-exiting {
+  animation: fade-out 300ms ease-out forwards !important;
+  /* Beats the inline animation-delay that applyAnimation() writes for
+     data-animate-delay, so the exit starts immediately rather than waiting. */
+  animation-delay: 0ms !important;
+  pointer-events: none;
+}
+
+/* Animated descendants exit alongside their section (the parent already
+   disables pointer events, so they only need the fade). */
+[data-animate-replay] .is-exiting {
+  animation: fade-out 300ms ease-out forwards !important;
+  animation-delay: 0ms !important;
+}
+
+/* Reset state - every animation under the section is suppressed while it is
+   hidden off-screen. Removing this class after a forced reflow is what restarts
+   the filled CSS animations from the beginning on re-entry. */
+[data-animate-replay].animate-reset,
+[data-animate-replay] .animate-reset {
+  animation: none !important;
+}
+
+/* Reduced motion: the replay machinery is disabled in JS, but guard the states
+   here too so nothing inside a replay section can hide, fade or replay. */
+@media (prefers-reduced-motion: reduce) {
+  [data-animate-replay],
+  [data-animate-replay] *,
+  [data-animate-replay].is-exiting,
+  [data-animate-replay] .is-exiting,
+  [data-animate-replay].animate-reset,
+  [data-animate-replay] .animate-reset {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

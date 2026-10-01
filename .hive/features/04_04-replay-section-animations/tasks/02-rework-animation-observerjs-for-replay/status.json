@@ -1,0 +1,11 @@
+{
+  "status": "done",
+  "origin": "plan",
+  "planTitle": "Rework `animation-observer.js` for replay",
+  "dependsOn": [
+    "01-add-exit--replay-styles-to-animationscss"
+  ],
+  "summary": "Verified by reading the file and exercising it live. Adds REPLAY config, visibleRatio() using min(rect.height, viewportHeight) denominator, replayTargets(), enterReplaySection(), exitReplaySection() with animationend + setTimeout fallback, generation guard. Non-replay elements keep single-threshold observer and once:true. Public API unchanged; triggerStagger() now clears exit/reset state. Replay targets are never unobserved.",
+  "schemaVersion": 1,
+  "completedAt": "2026-10-01T11:16:53.409Z"
+}
