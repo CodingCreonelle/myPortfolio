@@ -143,13 +143,6 @@ section[id] {
     margin-bottom: 16px;
 }
 
-.project-description,
-.about-copy p,
-.skill-card p,
-.contact-card p {
-    color: var(--muted);
-}
-
 .project-tags {
     margin-top: 20px;
     color: var(--muted);

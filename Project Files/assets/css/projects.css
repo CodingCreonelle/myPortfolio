@@ -72,11 +72,6 @@
     font-size: 0.95rem;
 }
 
-.text-link {
-    color: var(--primary);
-    font-weight: 600;
-}
-
 @media (max-width: 840px) {
     .page-hero {
         flex-direction: column;

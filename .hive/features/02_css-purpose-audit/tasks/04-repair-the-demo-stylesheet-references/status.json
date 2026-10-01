@@ -1,0 +1,12 @@
+{
+  "status": "done",
+  "origin": "plan",
+  "planTitle": "Repair the demo stylesheet references",
+  "dependsOn": [
+    "01-establish-the-variablescss-token-layer"
+  ],
+  "summary": "Repointed 6 demo stylesheet hrefs to ../../assets/css/; all 3 demo pages now load global.css + variables.css with 0 404s and body bg = --bg. V5/V12 pass.",
+  "schemaVersion": 1,
+  "startedAt": "2026-10-01T08:28:19.530Z",
+  "completedAt": "2026-10-01T08:30:00.814Z"
+}
