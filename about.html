@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Charles Portfolio</title>
+    <link rel="stylesheet" href="assets/css/global.css">
+    <link rel="stylesheet" href="assets/css/navbar.css">
+    <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    <script src="assets/js/app-loader.js" defer></script>
+    <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/live-reload.js" defer></script>
+    <script src="assets/js/animation-observer.js" defer></script>
+</head>
+<body>
+    <div id="site-navbar"></div>
+
+    <main class="about-page">
+        <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
+            <div class="page-title">
+                <p class="eyebrow">About</p>
+                <h1>Meet Charles</h1>
+                <p>A motivated web developer focused on building polished portfolio websites and thoughtful user experiences.</p>
+            </div>
+        </section>
+
+        <section class="about-intro" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="about-copy">
+                <h2>Biography</h2>
+                <p>I'm an aspiring software engineer who enjoys turning ideas into clean, accessible websites. I build projects that are easy to navigate, easy to maintain, and easy to update.</p>
+                <p>My current focus is on front-end development, simple UI interactions, and organizing my portfolio using a structure that scales well as I add more work.</p>
+            </div>
+                <div class="about-details" id="education-content" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
+        </section>
+
+        <section class="skills-section" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Skills</p>
+                <h2>Core strengths</h2>
+            </div>
+            <div class="skills-grid animate-stagger" id="skills-grid" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
+        </section>
+
+        <section class="goals-section" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Career goals</p>
+                <h2>What I'm building toward</h2>
+            </div>
+                <ul class="goals-list list-animate">
+                <li>Launch more portfolio projects with clear case studies.</li>
+                <li>Master front-end tooling and performance best practices.</li>
+                <li>Collaborate on projects that combine design with strong engineering.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p>© 2026 Charles. Learn more about the work and reach out anytime.</p>
+            <div class="footer-links">
+                <a href="index.html">Home</a>
+                <a href="projects.html">Projects</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

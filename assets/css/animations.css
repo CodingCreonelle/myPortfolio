@@ -1,0 +1,386 @@
+/* ==========================================================================
+   ENTRY ANIMATIONS SYSTEM
+   ========================================================================== */
+
+/* Animation preferences - respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll,
+  .animate-on-load,
+  [data-animate] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+/* Fade animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Slide animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale animations */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-up {
+  from {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Rotate animations */
+@keyframes rotate-in {
+  from {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+
+/* Flip animations */
+@keyframes flip-in-x {
+  from {
+    opacity: 0;
+    transform: perspective(400px) rotateX(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(400px) rotateX(0);
+  }
+}
+
+@keyframes flip-in-y {
+  from {
+    opacity: 0;
+    transform: perspective(400px) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(400px) rotateY(0);
+  }
+}
+
+/* Blur animations */
+@keyframes blur-in {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Stagger container animation */
+@keyframes stagger-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   ANIMATION CLASSES - Apply these to elements
+   ========================================================================== */
+
+/* Base animation class - elements start hidden */
+.animate-on-scroll {
+  opacity: 0;
+}
+
+/* Animation types */
+.animate-fade-in { animation-name: fade-in; }
+.animate-slide-up { animation-name: slide-up; }
+.animate-slide-down { animation-name: slide-down; }
+.animate-slide-left { animation-name: slide-left; }
+.animate-slide-right { animation-name: slide-right; }
+.animate-scale-in { animation-name: scale-in; }
+.animate-scale-up { animation-name: scale-up; }
+.animate-rotate-in { animation-name: rotate-in; }
+.animate-flip-in-x { animation-name: flip-in-x; }
+.animate-flip-in-y { animation-name: flip-in-y; }
+.animate-blur-in { animation-name: blur-in; }
+
+/* Animation durations */
+.animate-duration-fast { animation-duration: 300ms; }
+.animate-duration-normal { animation-duration: 500ms; }
+.animate-duration-slow { animation-duration: 800ms; }
+.animate-duration-slower { animation-duration: 1200ms; }
+
+/* Animation delays */
+.animate-delay-0 { animation-delay: 0ms; }
+.animate-delay-1 { animation-delay: 100ms; }
+.animate-delay-2 { animation-delay: 200ms; }
+.animate-delay-3 { animation-delay: 300ms; }
+.animate-delay-4 { animation-delay: 400ms; }
+.animate-delay-5 { animation-delay: 500ms; }
+.animate-delay-6 { animation-delay: 600ms; }
+.animate-delay-7 { animation-delay: 700ms; }
+.animate-delay-8 { animation-delay: 800ms; }
+.animate-delay-9 { animation-delay: 900ms; }
+.animate-delay-10 { animation-delay: 1000ms; }
+
+/* Animation easing */
+.animate-ease-linear { animation-timing-function: linear; }
+.animate-ease-in { animation-timing-function: ease-in; }
+.animate-ease-out { animation-timing-function: ease-out; }
+.animate-ease-in-out { animation-timing-function: ease-in-out; }
+.animate-ease-spring { animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+.animate-ease-bounce { animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+/* Animation fill mode */
+.animate-fill-forwards { animation-fill-mode: forwards; }
+.animate-fill-backwards { animation-fill-mode: backwards; }
+.animate-fill-both { animation-fill-mode: both; }
+
+/* ==========================================================================
+   PRESET ANIMATION COMBINATIONS
+   ========================================================================== */
+
+/* Default entrance - slide up with fade */
+.animate-entrance {
+  animation: slide-up 500ms ease-out forwards;
+}
+
+/* Staggered children animations */
+.animate-stagger > * {
+  opacity: 0;
+  animation: slide-up 500ms ease-out forwards;
+}
+
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 100ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 200ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 300ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 400ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 500ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 600ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 700ms; }
+.animate-stagger > *:nth-child(9) { animation-delay: 800ms; }
+.animate-stagger > *:nth-child(10) { animation-delay: 900ms; }
+.animate-stagger > *:nth-child(11) { animation-delay: 1000ms; }
+.animate-stagger > *:nth-child(12) { animation-delay: 1100ms; }
+
+/* Reverse stagger */
+.animate-stagger-reverse > * {
+  opacity: 0;
+  animation: slide-up 500ms ease-out forwards;
+}
+
+.animate-stagger-reverse > *:nth-last-child(1) { animation-delay: 0ms; }
+.animate-stagger-reverse > *:nth-last-child(2) { animation-delay: 100ms; }
+.animate-stagger-reverse > *:nth-last-child(3) { animation-delay: 200ms; }
+.animate-stagger-reverse > *:nth-last-child(4) { animation-delay: 300ms; }
+.animate-stagger-reverse > *:nth-last-child(5) { animation-delay: 400ms; }
+.animate-stagger-reverse > *:nth-last-child(6) { animation-delay: 500ms; }
+
+/* Hero specific animations */
+.hero-animate-title { animation: slide-up 800ms ease-out forwards; }
+.hero-animate-subtitle { animation: slide-up 800ms ease-out 150ms forwards; opacity: 0; }
+.hero-animate-description { animation: slide-up 800ms ease-out 300ms forwards; opacity: 0; }
+.hero-animate-actions { animation: slide-up 800ms ease-out 450ms forwards; opacity: 0; }
+.hero-animate-visual { animation: scale-in 1000ms ease-out 600ms forwards; opacity: 0; }
+
+/* Card entrance animations */
+.card-entrance {
+  opacity: 0;
+  animation: slide-up 500ms ease-out forwards;
+}
+
+.card-entrance:nth-child(1) { animation-delay: 0ms; }
+.card-entrance:nth-child(2) { animation-delay: 100ms; }
+.card-entrance:nth-child(3) { animation-delay: 200ms; }
+.card-entrance:nth-child(4) { animation-delay: 300ms; }
+.card-entrance:nth-child(5) { animation-delay: 400ms; }
+.card-entrance:nth-child(6) { animation-delay: 500ms; }
+
+/* List item animations */
+.list-animate > li {
+  opacity: 0;
+  animation: slide-right 400ms ease-out forwards;
+}
+
+.list-animate > li:nth-child(1) { animation-delay: 0ms; }
+.list-animate > li:nth-child(2) { animation-delay: 80ms; }
+.list-animate > li:nth-child(3) { animation-delay: 160ms; }
+.list-animate > li:nth-child(4) { animation-delay: 240ms; }
+.list-animate > li:nth-child(5) { animation-delay: 320ms; }
+.list-animate > li:nth-child(6) { animation-delay: 400ms; }
+.list-animate > li:nth-child(7) { animation-delay: 480ms; }
+.list-animate > li:nth-child(8) { animation-delay: 560ms; }
+
+/* Section header animations */
+.section-header-animate .section-label {
+  animation: slide-right 400ms ease-out forwards;
+}
+
+.section-header-animate h2 {
+  animation: slide-up 500ms ease-out 100ms forwards;
+  opacity: 0;
+}
+
+.section-header-animate p:not(.section-label) {
+  animation: slide-up 500ms ease-out 200ms forwards;
+  opacity: 0;
+}
+
+/* Navbar animations */
+.navbar-animate .brand {
+  animation: slide-down 500ms ease-out forwards;
+}
+
+.navbar-animate .site-nav a {
+  opacity: 0;
+  animation: slide-down 400ms ease-out forwards;
+}
+
+.navbar-animate .site-nav a:nth-child(1) { animation-delay: 100ms; }
+.navbar-animate .site-nav a:nth-child(2) { animation-delay: 150ms; }
+.navbar-animate .site-nav a:nth-child(3) { animation-delay: 200ms; }
+.navbar-animate .site-nav a:nth-child(4) { animation-delay: 250ms; }
+.navbar-animate .site-nav a:nth-child(5) { animation-delay: 300ms; }
+
+.navbar-animate .search-bar {
+  opacity: 0;
+  animation: slide-down 400ms ease-out 350ms forwards;
+}
+
+/* Footer animations */
+.footer-animate .footer-inner > * {
+  opacity: 0;
+  animation: slide-up 500ms ease-out forwards;
+}
+
+.footer-animate .footer-inner > *:nth-child(1) { animation-delay: 0ms; }
+.footer-animate .footer-inner > *:nth-child(2) { animation-delay: 150ms; }
+
+/* ==========================================================================
+   SCROLL-TRIGGERED ANIMATION STATES
+   ========================================================================== */
+
+/* Elements waiting to be animated */
+[data-animate]:not(.is-visible) {
+  opacity: 0;
+}
+
+/* Elements that have been animated */
+[data-animate].is-visible {
+  animation-fill-mode: forwards;
+}
+
+/* Stagger container */
+[data-animate-stagger]:not(.is-visible) > * {
+  opacity: 0;
+}
+
+[data-animate-stagger].is-visible > * {
+  animation: slide-up 500ms ease-out forwards;
+}
+
+[data-animate-stagger].is-visible > *:nth-child(1) { animation-delay: 0ms; }
+[data-animate-stagger].is-visible > *:nth-child(2) { animation-delay: 100ms; }
+[data-animate-stagger].is-visible > *:nth-child(3) { animation-delay: 200ms; }
+[data-animate-stagger].is-visible > *:nth-child(4) { animation-delay: 300ms; }
+[data-animate-stagger].is-visible > *:nth-child(5) { animation-delay: 400ms; }
+[data-animate-stagger].is-visible > *:nth-child(6) { animation-delay: 500ms; }
+[data-animate-stagger].is-visible > *:nth-child(7) { animation-delay: 600ms; }
+[data-animate-stagger].is-visible > *:nth-child(8) { animation-delay: 700ms; }
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+/* Disable animations */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Force visible state */
+.force-visible {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Animation pause/resume */
+.animation-paused {
+  animation-play-state: paused;
+}
+
+.animation-running {
+  animation-play-state: running;
+}

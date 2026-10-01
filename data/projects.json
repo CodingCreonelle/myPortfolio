@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Portfolio Website",
+    "description": "A custom portfolio site built with a clean structure and responsive layout.",
+    "tags": ["HTML", "CSS", "JavaScript"],
+    "url": "projects/project1/index.html"
+  },
+  {
+    "title": "Interactive Demo",
+    "description": "A small app demo that demonstrates animation, interaction, and polished UI.",
+    "tags": ["JavaScript", "UX", "Animation"],
+    "url": "demos/project1/index.html"
+  }
+]

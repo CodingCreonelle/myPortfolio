@@ -1,0 +1,58 @@
+.markdown-body {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.markdown-body p,
+.markdown-body li {
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 1.5rem;
+}
+
+.markdown-body pre,
+.markdown-body code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.markdown-body pre {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    overflow-x: auto;
+}
+
+.markdown-body code {
+    background: rgba(15, 23, 42, 0.04);
+    padding: 0.2rem 0.35rem;
+    border-radius: 0.35rem;
+}
+
+.markdown-body blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border-left: 4px solid var(--primary);
+    background: rgba(37, 99, 235, 0.06);
+}
+
+.markdown-body img {
+    border-radius: var(--radius-sm);
+}

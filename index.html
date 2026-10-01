@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charles Portfolio</title>
+    <link rel="stylesheet" href="assets/css/global.css">
+    <link rel="stylesheet" href="assets/css/navbar.css">
+    <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    <script src="assets/js/app-loader.js" defer></script>
+    <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/live-reload.js" defer></script>
+    <script src="assets/js/animation-observer.js" defer></script>
+</head>
+<body>
+    <div id="site-navbar"></div>
+    
+    <main class="homepage-layout">
+        <section class="hero" id="hero">
+            <div class="hero-bg">
+                <video class="hero-bg__video" autoplay muted loop playsinline poster="assets/images/hero-poster.jpg">
+                    <source src="assets\images\backgrounds\watermarked_preview (1).mp4" type="video/mp4">
+                    <!-- Replace the source above with your video file. Example: assets/videos/your-video.mp4 -->
+                </video>
+                <div class="hero-bg__overlay"></div>
+            </div>
+            <div class="hero-copy">
+                    <p class="eyebrow hero-animate-title">Hello, I'm</p>
+                    <h1 class="hero-animate-title">Charles David Lopez</h1>
+                    <p class="hero-description hero-animate-description">I built this portfolio not to impress, but to, in a way, satisfy my need for expression and my drive for passion.</p>
+                <div class="hero-actions hero-animate-actions">
+                    <a href="projects.html" class="button button-primary">View projects</a>
+                    <a href="about.html" class="button button-secondary">Learn more about me</a>
+                </div>
+            </div>
+                <div class="hero-visual hero-animate-visual">
+                    <div class="hero-avatar">Your profile image</div>
+                </div>
+        </section>
+
+        <section class="featured-projects" id="projects" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Featured work</p>
+                <h2>Selected projects</h2>
+                <p>Highlighted projects that demonstrate my skills in design, development, and problem solving.</p>
+            </div>
+            <div class="project-grid animate-stagger" id="featured-projects" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
+        </section>
+
+        <section class="about-section" id="about" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">About me</p>
+                <h2>Focused on creating great web experiences</h2>
+                <p>I am an aspiring software engineer with a growing portfolio of websites, apps, and technical projects.</p>
+            </div>
+            <div class="about-grid animate-stagger">
+                <div class="about-card card-entrance">
+                    <h3>What I do</h3>
+                    <p>Build responsive websites, improve accessibility, and create polished UI components.</p>
+                </div>
+                <div class="about-card card-entrance">
+                    <h3>How I work</h3>
+                    <p>I focus on clarity, maintainable code, and reusable structure so projects stay easy to update.</p>
+                </div>
+                <div class="about-card card-entrance">
+                    <h3>What I’m learning</h3>
+                    <p>Modern front-end tooling, performance optimization, and building production-ready portfolio systems.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="experience-section" id="experience" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Experience</p>
+                <h2>Skills and learning journey</h2>
+            </div>
+                <ul class="experience-list list-animate">
+                <li>
+                    <h3>Frontend development</h3>
+                    <p>HTML5, CSS3, responsive layout, accessibility, and JavaScript interactivity.</p>
+                </li>
+                <li>
+                    <h3>Design systems</h3>
+                    <p>Reusable components, consistent spacing, and theme-driven styling.</p>
+                </li>
+                <li>
+                    <h3>Project workflow</h3>
+                    <p>Organized asset structure, versioned content, and clean documentation for each project.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="contact-preview" id="contact" data-animate="animate-entrance" data-animate-delay="200">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Contact</p>
+                <h2>Ready to connect</h2>
+                <p>If you'd like to collaborate or see more of my work, send a message or visit the contact page.</p>
+            </div>
+            <div class="contact-actions">
+                <a href="contact.html" class="button button-primary">Contact page</a>
+                <a href="mailto:hello@example.com" class="button button-secondary">Email me</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer footer-animate">
+        <div class="footer-inner">
+            <p>© 2026 Charles. Built with a clean portfolio structure.</p>
+            <div class="footer-links">
+                <a href="projects.html">Projects</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const heroVideo = document.querySelector('.hero-bg__video');
+            if (heroVideo) {
+                heroVideo.playbackRate = 0.5;
+            }
+        });
+    </script>
+</body>
+</html>

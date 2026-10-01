@@ -1,0 +1,17 @@
+{
+  "education": [
+    {
+      "title": "Self-taught Frontend Developer",
+      "institution": "Online Learning",
+      "dates": "2024 - Present",
+      "details": "Building portfolio websites, practicing JavaScript, and improving accessibility."
+    }
+  ],
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "Responsive design",
+    "Accessibility"
+  ]
+}

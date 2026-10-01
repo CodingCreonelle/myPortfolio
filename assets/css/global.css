@@ -1,0 +1,244 @@
+:root {
+    --bg: #001134;
+    --surface: #000088;
+    --surface-strong: #387cbf;
+    --text: #fbfcff;
+    --muted: #6b7280;
+    --border: #050e1f;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-soft: #e0efff;
+    --success: #16a34a;
+    --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+    --radius: 24px;
+    --radius-sm: 14px;
+    --max-width: 1200px;
+    --spacing: 24px;
+    --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color-scheme: light;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-sans);
+    font-weight: 800;
+}
+
+p,
+li,
+label,
+button,
+input,
+textarea {
+    color: var(--text);
+}
+
+p {
+    margin: 0 0 1.5rem;
+    max-width: 72ch;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+section {
+    padding: 80px 24px;
+    transition: padding 0.25s ease;
+}
+
+input,
+textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    padding: 0.95rem 1rem;
+    color: var(--text);
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.section-header {
+    max-width: 760px;
+    margin-bottom: 40px;
+}
+
+.section-label,
+.eyebrow {
+    display: inline-flex;
+    margin-bottom: 12px;
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin: 0 0 20px;
+    line-height: 1.1;
+}
+
+h1 {
+    font-size: clamp(2.75rem, 2.1rem + 2vw, 4.5rem);
+}
+
+h2 {
+    font-size: clamp(2rem, 1.8rem + 1vw, 3rem);
+}
+
+h3 {
+    font-size: 1.6rem;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.95rem 1.4rem;
+    font-weight: 700;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.button:hover,
+.button:focus-visible {
+    transform: translateY(-1px);
+}
+
+.button-primary {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.button-secondary {
+    background: var(--surface-strong);
+    color: var(--text);
+}
+
+.text-link {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Footer & Header shared layout */
+.site-footer,
+.site-header {
+    width: 100%;
+}
+
+.site-footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+}
+
+.footer-inner,
+.header-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.footer-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.footer-links a {
+    color: var(--muted);
+}
+
+/* Muted text helpers */
+.hero-description,
+.project-description,
+.about-copy p,
+.skill-card p,
+.contact-card p {
+    color: var(--muted);
+}
+
+@media (max-width: 720px) {
+    .footer-inner,
+    .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    section {
+        padding: 60px 16px;
+    }
+}

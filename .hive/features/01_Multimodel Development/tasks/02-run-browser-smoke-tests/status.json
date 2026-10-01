@@ -1,0 +1,12 @@
+{
+  "status": "done",
+  "origin": "plan",
+  "planTitle": "Run browser smoke tests",
+  "dependsOn": [
+    "01-run-repository-smoke-checks"
+  ],
+  "summary": "Browser smoke tests completed on index, about, contact, projects, demo project, project detail, and portfolio docs pages. Primary pages rendered key landmarks, but all four hit SyntaxError from querySelectorAll('> *') in animation-observer.js. Demo emitted two resource-load errors; project detail and docs each emitted one resource-load warning.",
+  "schemaVersion": 1,
+  "startedAt": "2026-09-20T12:00:37.262Z",
+  "completedAt": "2026-09-20T12:01:40.438Z"
+}
