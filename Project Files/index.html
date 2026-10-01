@@ -20,10 +20,13 @@
     <main class="homepage-layout">
         <section class="hero" id="hero">
             <div class="hero-bg">
-                <video class="hero-bg__video" autoplay muted loop playsinline poster="assets/images/hero-poster.jpg">
+                <video class="hero-bg__video is-active" autoplay muted playsinline>
                     <source src="assets\images\backgrounds\watermarked_preview (1).mp4" type="video/mp4">
-                    <!-- Replace the source above with your video file. Example: assets/videos/your-video.mp4 -->
                 </video>
+                <video class="hero-bg__video" muted playsinline>
+                    <source src="assets\images\backgrounds\watermarked_preview (1) - REVERSE - Videobolt.net.mp4" type="video/mp4">
+                </video>
+
                 <div class="hero-bg__overlay"></div>
             </div>
             <div class="hero-copy">
@@ -39,11 +42,6 @@
                     <a href="about.html" class="button button-secondary">Learn more about me</a>
                 </div>
             </div>
-                <div class="hero-visual hero-animate-visual">
-                    <div class="hero-avatar">
-                        <img src="Project Files\assets\images\profile\profile.jpg" alt="Charles David Lopez" class="hero-avatar__image">
-                    </div>
-                </div>
         </section>
 
         <section class="featured-projects" id="projects" data-animate="animate-entrance" data-animate-delay="200">
@@ -122,11 +120,30 @@
         </div>
     </footer>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const heroVideo = document.querySelector('.hero-bg__video');
-            if (heroVideo) {
-                heroVideo.playbackRate = 0.5;
+        document.addEventListener('DOMContentLoaded', () => {
+            const videos = Array.from(document.querySelectorAll('.hero-bg__video'));
+            if (!videos.length) return;
+
+            let index = 0;
+            videos.forEach(v => { v.playbackRate = 0.5; }); // keep your slow-mo effect
+
+            function playNext() {
+                const current = videos[index];
+                const next = videos[(index + 1) % videos.length];
+
+                next.currentTime = 0;
+                current.classList.remove('is-active');
+                next.classList.add('is-active');
+                next.play().catch(() => {});
+                index = (index + 1) % videos.length;
             }
+
+            // Only the currently-active video should advance the playlist
+            videos.forEach((v, i) => {
+                v.addEventListener('ended', () => { if (i === index) playNext(); });
+            });
+
+            videos[0].play().catch(() => {});
         });
     </script>
 </body>
