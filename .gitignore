@@ -1,6 +1,6 @@
-claude/
-github/
-hive/
-opencode/
-vscode/
+.claude/
+.github/
+.hive/
+.opencode/
+.vscode/
 plugin.json
