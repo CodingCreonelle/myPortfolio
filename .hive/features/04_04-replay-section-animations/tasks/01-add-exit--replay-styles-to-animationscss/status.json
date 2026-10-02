@@ -1,9 +1,0 @@
-{
-  "status": "done",
-  "origin": "plan",
-  "planTitle": "Add exit + replay styles to `animations.css`",
-  "dependsOn": [],
-  "summary": "Verified in animations.css: [data-animate-replay].is-exiting fades out with reuse of the existing fade-out keyframe, animation-delay: 0ms !important beats the inline delay, pointer-events none on the section only. Descendant rule [data-animate-replay] .is-exiting added. New .animate-reset class suppresses animation so declarative opacity 0 applies while hidden. Reduced-motion guard block added. No duplicate @keyframes fade-out. Minor nit: file now ends without a trailing newline.",
-  "schemaVersion": 1,
-  "completedAt": "2026-10-01T11:16:53.270Z"
-}
