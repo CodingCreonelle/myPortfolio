@@ -118,7 +118,7 @@
      * tint only separates it from the page and the blur is what fills it in: the
      * backdrop video still reads through it.
      */
-    background: rgba(0, 0, 136, 0.22);
+    background: rgba(1, 1, 119, 0.397);
     -webkit-backdrop-filter: blur(var(--tile-blur));
     backdrop-filter: blur(var(--tile-blur));
     border-radius: var(--radius-sm);

@@ -6,23 +6,24 @@
     <title>Installation | Project 1</title>
     <link rel="stylesheet" href="../../assets/css/variables.css">
     <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="../../assets/css/navbar.css">
     <link rel="stylesheet" href="../../assets/css/markdown.css">
+    <link rel="stylesheet" href="../../assets/css/animations.css">
+    <script src="../../assets/js/app-loader.js" defer></script>
 </head>
 <body>
-    <header class="site-header">
-        <div class="header-inner">
-            <a href="index.html" class="brand">Project 1 Docs</a>
-            <nav class="site-nav" aria-label="Documentation navigation">
-                <a href="index.html">Overview</a>
-                <a href="installation.html" aria-current="page">Installation</a>
-                <a href="api.html">API</a>
-                <a href="architecture.html">Architecture</a>
-                <a href="changelog.html">Changelog</a>
-            </nav>
-        </div>
-    </header>
+    <div id="site-background"></div>
+    <div id="site-navbar"></div>
 
     <main class="markdown-body">
+        <nav class="doc-nav" aria-label="Documentation navigation">
+            <a href="index.html">Overview</a>
+            <a href="installation.html" aria-current="page">Installation</a>
+            <a href="api.html">API</a>
+            <a href="architecture.html">Architecture</a>
+            <a href="changelog.html">Changelog</a>
+        </nav>
+
         <h1>Installation</h1>
         <p>Follow these steps to get Project 1 running locally.</p>
 
@@ -41,10 +42,6 @@
         </ol>
     </main>
 
-    <footer class="site-footer">
-        <div class="footer-inner">
-            <p>© 2026 Charles. Installation instructions for Project 1.</p>
-        </div>
-    </footer>
+    <div id="site-footer"></div>
 </body>
 </html>

@@ -1,6 +1,11 @@
 .markdown-body {
     max-width: 780px;
-    margin: 0 auto;
+    /*
+     * The site header is fixed, so the card starts below it rather than under it.
+     * The portfolio pages each clear the header in their own layout; this is the
+     * markdown card's share of the same clearance.
+     */
+    margin: 88px auto 0;
     padding: 48px 24px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -55,4 +60,30 @@
 
 .markdown-body img {
     border-radius: var(--radius-sm);
+}
+
+/*
+ * A project's documentation keeps its own navigation, now inside the card rather
+ * than in a header of its own: the site header is the same on every page, and a
+ * page only gets one of those.
+ */
+.doc-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.doc-nav a {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.doc-nav a:hover,
+.doc-nav a:focus-visible,
+.doc-nav a[aria-current='page'] {
+    color: var(--primary);
 }

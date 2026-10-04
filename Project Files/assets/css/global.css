@@ -28,6 +28,48 @@ body {
     transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/*
+ * The site backdrop. It is fixed rather than painted into a section, so it stays
+ * behind the whole page however far it is scrolled, and every page shares it -
+ * the loader fills it in from one component.
+ */
+.hero-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+
+/*
+ * Two takes of the same footage sit on top of each other and cross-fade: the one
+ * holding `is-active` is the one on screen. Both are softened and dimmed here
+ * rather than in the file, so the backdrop never competes with the text over it.
+ */
+.hero-bg__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(8px) brightness(0.5);
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    pointer-events: none;
+}
+
+.hero-bg__video.is-active {
+    opacity: 1;
+}
+
+.hero-bg__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(4px);
+}
+
 h1,
 h2,
 h3,

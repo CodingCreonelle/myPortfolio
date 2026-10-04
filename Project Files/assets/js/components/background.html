@@ -1,0 +1,14 @@
+<!--
+    The site backdrop: two takes of the same footage, cross-faded by the loader
+    once the active one finishes. Both are muted, which is what lets them autoplay
+    at all; only the first is started by the markup, so the pair cannot both begin
+    playing before the loader has taken over the hand-off.
+-->
+<div class="hero-bg" aria-hidden="true">
+    <video class="hero-bg__video is-active" autoplay muted playsinline>
+        <source src="assets/images/backgrounds/watermarked_preview (1).mp4" type="video/mp4">
+    </video>
+    <video class="hero-bg__video" muted playsinline>
+        <source src="assets/images/backgrounds/watermarked_preview (1) - REVERSE - Videobolt.net.mp4" type="video/mp4">
+    </video>
+</div>

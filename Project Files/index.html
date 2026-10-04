@@ -19,18 +19,11 @@
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
 <body>
+    <div id="site-background"></div>
     <div id="site-navbar"></div>
-    
+
     <main class="homepage-layout">
         <section class="hero" id="hero">
-            <div class="hero-bg">
-                <video class="hero-bg__video is-active" autoplay muted playsinline>
-                    <source src="assets\images\backgrounds\watermarked_preview (1).mp4" type="video/mp4">
-                </video>
-                <video class="hero-bg__video" muted playsinline>
-                    <source src="assets\images\backgrounds\watermarked_preview (1) - REVERSE - Videobolt.net.mp4" type="video/mp4">
-                </video>
-            </div>
             <div class="hero-copy">
                     <p class="eyebrow hero-animate-title">Hello, I'm</p>
                     <h1 class="hero-animate-title">Charles David Lopez</h1>
@@ -98,42 +91,6 @@
         </section>
     </main>
 
-    <footer class="site-footer footer-animate">
-        <div class="footer-inner">
-            <p>© 2026 Charles. Built with a clean portfolio structure.</p>
-            <div class="footer-links">
-                <a href="projects.html">Projects</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
-            </div>
-        </div>
-    </footer>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const videos = Array.from(document.querySelectorAll('.hero-bg__video'));
-            if (!videos.length) return;
-
-            let index = 0;
-            videos.forEach(v => { v.playbackRate = 0.5; }); // keep your slow-mo effect
-
-            function playNext() {
-                const current = videos[index];
-                const next = videos[(index + 1) % videos.length];
-
-                next.currentTime = 0;
-                current.classList.remove('is-active');
-                next.classList.add('is-active');
-                next.play().catch(() => {});
-                index = (index + 1) % videos.length;
-            }
-
-            // Only the currently-active video should advance the playlist
-            videos.forEach((v, i) => {
-                v.addEventListener('ended', () => { if (i === index) playNext(); });
-            });
-
-            videos[0].play().catch(() => {});
-        });
-    </script>
+    <div id="site-footer"></div>
 </body>
 </html>
