@@ -426,7 +426,7 @@
  * rather than a requirement.
  */
 .timeline-runway {
-    --timeline-pin-distance: 140vh;
+    --timeline-pin-distance: 35vh;
     --timeline-pin-offset: 88px;
 }
 
@@ -443,5 +443,16 @@
     .timeline-track {
         scroll-snap-type: none;
         scroll-behavior: auto;
+    }
+
+    /*
+     * Page scroll is the only thing that can advance the track here, so a click
+     * on these could not move the timeline without also scrolling the page out
+     * from under the reader. Hidden rather than left to do that; the live region
+     * still announces the active entry as the page scrolls. display: none also
+     * takes them out of the tab order.
+     */
+    .timeline-controls {
+        display: none;
     }
 }
