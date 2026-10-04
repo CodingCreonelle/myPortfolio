@@ -1,0 +1,99 @@
+/*
+ * The single project view and the single documentation view.
+ *
+ * Both templates are the markdown card with data poured into them, so this file
+ * only covers what the data can produce and the card has no rule for yet: the way
+ * back, the status/tags line, the summary, the demo embed, the links list, and the
+ * stacked documentation sections.
+ */
+
+.project-view__back {
+    margin-bottom: 1.5rem;
+}
+
+.project-view__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.project-view__status {
+    padding: 0.15rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.project-view__tags {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.project-view__summary {
+    color: var(--surface-strong);
+    font-size: 1.05rem;
+}
+
+/*
+ * The embed is sized from the column rather than from a fixed height, so a long
+ * caption or a narrow screen cannot squeeze the player out of shape.
+ */
+.project-view__demo {
+    margin: 1.75rem 0;
+}
+
+.project-view__demo-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.project-view__demo-caption {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.project-view__links {
+    padding-left: 1.5rem;
+}
+
+.project-view__action {
+    margin-top: 2rem;
+}
+
+/*
+ * Every documentation section sits on the one page, so an anchor has to stop short
+ * of the fixed header or the heading it points at lands underneath it.
+ */
+.doc-section {
+    scroll-margin-top: 110px;
+}
+
+.doc-section + .doc-section {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.doc-section > .doc-section__body > :first-child {
+    margin-top: 0;
+}
+
+.project-view__empty {
+    text-align: center;
+}
+
+.project-view__hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+}

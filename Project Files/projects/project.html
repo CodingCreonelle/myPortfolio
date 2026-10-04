@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project | Charles Portfolio</title>
+    <link rel="stylesheet" href="../assets/css/variables.css">
+    <link rel="stylesheet" href="../assets/css/global.css">
+    <link rel="stylesheet" href="../assets/css/navbar.css">
+    <link rel="stylesheet" href="../assets/css/markdown.css">
+    <link rel="stylesheet" href="../assets/css/project-page.css">
+    <link rel="stylesheet" href="../assets/css/animations.css">
+    <script src="../assets/js/app-loader.js" defer></script>
+    <script src="../assets/js/project-page.js" defer></script>
+</head>
+<body>
+    <div id="site-background"></div>
+    <div id="site-navbar"></div>
+
+    <main class="markdown-body">
+        <p class="project-view__back"><a href="../projects.html" class="text-link">&larr; All projects</a></p>
+        <!-- Filled from data/projects.json for the id in the query string. -->
+        <article id="project-detail" data-view="project"></article>
+    </main>
+
+    <div id="site-footer"></div>
+</body>
+</html>

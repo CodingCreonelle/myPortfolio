@@ -1,6 +1,27 @@
+/*
+ * The data addresses everything from the site root, and the project cards link to
+ * the one project page, so both are resolved from this script's own URL. That
+ * keeps them correct whether the page loading this sits at the root or in a
+ * folder of its own.
+ */
+function scriptUrl() {
+  if (document.currentScript && document.currentScript.src) {
+    return document.currentScript.src;
+  }
+  const script = document.querySelector('script[src*="data-loader.js"]');
+  return script ? script.src : '';
+}
+
+const script = scriptUrl();
+const SITE_ROOT = script ? new URL('../../', script).href : '';
+
+function projectHref(project) {
+  return `${SITE_ROOT}projects/project.html?id=${encodeURIComponent(project.id)}`;
+}
+
 async function fetchJSON(path) {
   try {
-    const response = await fetch(path);
+    const response = await fetch(SITE_ROOT + path);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${path}: ${response.status}`);
     }
@@ -26,9 +47,9 @@ function renderFeaturedProjects(projects) {
     const card = createCard(`
       <article class="project-card card-entrance" style="animation-delay: ${index * 100}ms;">
         <h3>${project.title}</h3>
-        <p>${project.description}</p>
+        <p>${project.summary}</p>
         <p class="project-tags">${project.tags?.join(' · ') || ''}</p>
-        <a href="${project.url}" class="text-link">View details</a>
+        <a href="${projectHref(project)}" class="text-link">View details</a>
       </article>
     `);
     container.appendChild(card);
@@ -52,10 +73,10 @@ function renderProjectList(projects) {
           <p class="project-category">Project</p>
           <h2>${project.title}</h2>
         </div>
-        <p class="project-description">${project.description}</p>
+        <p class="project-description">${project.summary}</p>
         <div class="project-footer">
           <span class="project-tags">${project.tags?.join(' · ') || ''}</span>
-          <a href="${project.url}" class="text-link">View project</a>
+          <a href="${projectHref(project)}" class="text-link">View project</a>
         </div>
       </article>
     `);

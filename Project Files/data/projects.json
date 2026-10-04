@@ -1,14 +1,63 @@
 [
-  {
-    "title": "Portfolio Website",
-    "description": "A custom portfolio site built with a clean structure and responsive layout.",
-    "tags": ["HTML", "CSS", "JavaScript"],
-    "url": "projects/project1/index.html"
-  },
-  {
-    "title": "Interactive Demo",
-    "description": "A small app demo that demonstrates animation, interaction, and polished UI.",
-    "tags": ["JavaScript", "UX", "Animation"],
-    "url": "demos/project1/index.html"
-  }
+    {
+        "id": "project1",
+        "title": "Portfolio Website",
+        "summary": "A custom portfolio site built with a clean structure and responsive layout.",
+        "status": "Published",
+        "tags": ["HTML", "CSS", "JavaScript"],
+        "technologies": ["HTML", "CSS", "JavaScript"],
+        "demo": { "label": "Project walkthrough", "videoId": "" },
+        "detail": "<p>This project page is a template for a portfolio item with a title, description, features, and links to additional resources.</p><h2>Project details</h2><p>Use this page to describe the project goals, tools, and impact. Replace placeholder text with project-specific details.</p>",
+        "links": [
+            {
+                "label": "Source code",
+                "url": "https://github.com/CodingCreonelle/myPortfolio"
+            }
+        ],
+        "docs": [
+            {
+                "slug": "overview",
+                "title": "Overview",
+                "body": "<p>A reference guide for the portfolio project, including installation, API, architecture, and changelog.</p><p>This project demonstrates the folder and content structure used for individual project documentation, making it easy to add or update project-specific information.</p>"
+            },
+            {
+                "slug": "installation",
+                "title": "Installation",
+                "body": "<p>Follow these steps to get the project running locally.</p><h3>Requirements</h3><ul><li>Modern browser</li><li>Text editor</li><li>Optional local web server for faster development</li></ul><h3>Steps</h3><ol><li>Clone or download the project folder.</li><li>Open the folder in your preferred editor.</li><li>Open <code>index.html</code> in a browser or serve the folder using a local server.</li></ol>"
+            },
+            {
+                "slug": "api",
+                "title": "API",
+                "body": "<p>This section describes how the project is structured and which files or components are available for extension.</p><h3>Files</h3><ul><li><code>index.html</code> &mdash; main entry point for the demo or project.</li><li><code>assets/css/</code> &mdash; styling files for layout and presentation.</li><li><code>assets/js/</code> &mdash; interactive scripts and behavior logic.</li></ul><h3>Usage</h3><p>This project is designed to be easy to copy and customize. Update the HTML, swap assets, and extend JavaScript behavior as needed.</p>"
+            },
+            {
+                "slug": "architecture",
+                "title": "Architecture",
+                "body": "<p>This section covers how the project is organized and how the main parts are connected.</p><h3>Project layout</h3><ul><li><code>index.html</code> &mdash; entry point for the project.</li><li><code>assets/css/</code> &mdash; primary styling files for pages, navigation, and components.</li><li><code>assets/js/</code> &mdash; interactive scripts and behavior logic.</li></ul><h3>Design approach</h3><p>Keep content separate from styling and behavior so the project remains easy to maintain. Reuse shared assets, keep sections modular, and rely on simple HTML structure for flexibility.</p>"
+            },
+            {
+                "slug": "changelog",
+                "title": "Changelog",
+                "body": "<p>Track updates and improvements made to the project.</p><h3>Version 1.0.0</h3><ul><li>Initial project structure created.</li><li>Homepage, documentation, and project page templates added.</li><li>Global styling and responsive layout implemented.</li></ul>"
+            }
+        ]
+    },
+    {
+        "id": "project2",
+        "title": "Interactive Demo",
+        "summary": "A small app demo that demonstrates animation, interaction, and polished UI.",
+        "status": "Draft",
+        "tags": ["JavaScript", "UX", "Animation"],
+        "technologies": ["HTML", "CSS", "JavaScript"],
+        "demo": { "label": "Demo walkthrough", "videoId": "" },
+        "detail": "<p>This portfolio item is a placeholder for a second project. Use this page to describe the project concept, the challenge solved, and the outcome.</p><h2>What this project includes</h2><ul><li>Project summary and goals</li><li>Technology stack overview</li><li>Links to live demos, documentation, or source code</li></ul>",
+        "links": [],
+        "docs": [
+            {
+                "slug": "overview",
+                "title": "Overview",
+                "body": "<p>This placeholder documentation page can be expanded with project-specific details, installation steps, architecture notes, and release updates.</p>"
+            }
+        ]
+    }
 ]
