@@ -426,7 +426,7 @@
  * rather than a requirement.
  */
 .timeline-runway {
-    --timeline-pin-distance: 140vh;
+    --timeline-pin-distance: 100vh;
     --timeline-pin-offset: 88px;
 }
 
