@@ -4,6 +4,17 @@
 
 html {
     scroll-behavior: smooth;
+    /*
+     * The page scrollbar is hidden rather than removed: wheel, drag, trackpad,
+     * keyboard and touch all still scroll exactly as before, so the bar itself is
+     * the only thing lost. Scoped to the root so scrollable content such as the
+     * code blocks in the docs keeps its own scrollbar.
+     */
+    scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+    display: none;
 }
 
 body {

@@ -205,6 +205,15 @@ section[id] {
         gap: 32px;
     }
 
+    /*
+     * One column from here down, which would drop the portrait below the copy
+     * where it reads as an afterthought. Hidden rather than stacked, so the
+     * breakpoint that changes the layout is also the one that removes it.
+     */
+    .hero-avatar {
+        display: none;
+    }
+
     .project-grid,
     .about-grid,
     .skills-grid,
@@ -240,10 +249,6 @@ section[id] {
 
     .hero {
         gap: 24px;
-    }
-
-    .hero-avatar {
-        width: 100%;
     }
 
     .project-card,

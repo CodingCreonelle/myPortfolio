@@ -161,6 +161,27 @@
   }
 
   /**
+   * How far the page has to scroll for the track to cross its whole width.
+   *
+   * Measured from the track rather than fixed in CSS: the travel the track needs
+   * barely changes with the window, so scaling the scroll distance to it is what
+   * holds the timeline to a steady pace per pixel of scroll. Returns 0 when there
+   * is nothing to travel or the ratio is unusable, which leaves the runway at its
+   * natural height and hands the track back its own scrolling.
+   */
+  function pinDistance(runway) {
+    const track = document.querySelector(TRACK_SELECTOR);
+    if (!track) return 0;
+
+    const ratio = parseFloat(
+      getComputedStyle(runway).getPropertyValue('--timeline-pin-travel')
+    );
+    if (!Number.isFinite(ratio) || ratio <= 0) return 0;
+
+    return (track.scrollWidth - track.clientWidth) * ratio;
+  }
+
+  /**
    * Gives the runway exactly the height pinned scrolling needs: the pinned
    * element's own height plus the distance the timeline should travel through.
    * Outside pinned mode it collapses, so the page is only as tall as the section.
@@ -175,15 +196,14 @@
       return;
     }
 
-    const sizes = resolveLengths(runway, {
-      distance: '--timeline-pin-distance',
-      offset: '--timeline-pin-offset',
-    });
-    if (!Number.isFinite(sizes.distance)) return;
+    const distance = pinDistance(runway);
+    if (!(distance > 0)) return;
+
+    const sizes = resolveLengths(runway, { offset: '--timeline-pin-offset' });
 
     // Cached for the scroll handler, which must not touch the DOM layout itself.
     pinOffset = Number.isFinite(sizes.offset) ? sizes.offset : 0;
-    runway.style.height = `${pin.offsetHeight + sizes.distance}px`;
+    runway.style.height = `${pin.offsetHeight + distance}px`;
   }
 
   /**

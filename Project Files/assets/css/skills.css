@@ -9,9 +9,27 @@
  */
 
 .skill-matrix {
+    /*
+     * The gap is a variable because an opened card is sized as two cells plus the
+     * gap between them, so the two must not drift apart.
+     */
+    --tile-gap: 16px;
+    /*
+     * The 2x2 block an opened card covers - the footprint it used to claim from
+     * the grid. The renderer narrows this to a single cell when the grid is only
+     * one column wide, where two would put the card off the page.
+     */
+    --tile-open-size: calc(200% + var(--tile-gap));
+    /*
+     * How long a card takes to open or to close again. Long enough that the pane
+     * reads as growing rather than as jumping to its new size.
+     */
+    --tile-motion: 420ms;
+    --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 16px;
+    gap: var(--tile-gap);
     /*
      * Caps the track count at six so the tiles stay compact on wide screens
      * instead of stretching to fill the container. Raising this past roughly
@@ -23,20 +41,108 @@
     list-style: none;
 }
 
+/*
+ * Backdrop roots.
+ *
+ * A backdrop-filter only reaches as far as the nearest ancestor that starts a
+ * backdrop root, and an element left with a transform is one. The entrance the
+ * section and its cells borrow from the shared animation system slides them in
+ * and then holds that final frame, `transform: translateY(0)`, for as long as the
+ * page is open. That put a backdrop root around every pane: it could no longer
+ * sample the tiles it opens across or the backdrop video, so the blur had nothing
+ * to work with and the cards read as flat translucent fills with sharp
+ * neighbours showing through them.
+ *
+ * The entrance is faded here rather than slid, because a fade leaves no transform
+ * behind for a backdrop root to form on. Everything else about it is kept: the
+ * duration, easing and stagger delays still come from the shared rules, the filled
+ * animation still holds the element at full opacity once it has played, and the
+ * replay machinery - whose reset and exit rules outweigh this one - is untouched.
+ */
+@keyframes skills-pane-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.skills-section,
+.skill-matrix > .skill-cell {
+    animation-name: skills-pane-in !important;
+}
+
+/*
+ * The cell is the grid item, so it is the only thing that decides the grid's
+ * layout. It is square and never moves, which is what makes it a stable target
+ * for the pointer.
+ */
+.skill-cell {
+    position: relative;
+    aspect-ratio: 1;
+
+    /* Card geometry while closed. The open state flips all of these. */
+    --tile-size: 100%;
+    --tile-ring: inset 0 0 0 1px var(--border);
+    --tile-detail: 0fr;
+    /*
+     * How much of the backdrop a pane smears. Closed it is light, so the pane is
+     * glass over the fixed backdrop video rather than a solid tile. Open it is
+     * heavy, so the tiles the card grows across stop reading as objects and
+     * dissolve into colour behind it instead of showing through it.
+     */
+    --tile-blur: 18px;
+    --tile-blur-open: 44px;
+}
+
+/*
+ * The card is an overlay inside its cell rather than a grid item of its own, so
+ * growing it is a paint-only change that cannot disturb anything else.
+ */
 .skill-tile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--tile-size);
+    height: var(--tile-size);
     display: grid;
     align-content: center;
     justify-items: center;
     gap: 12px;
-    aspect-ratio: 1;
     padding: 18px;
     overflow: hidden;
-    background: var(--surface);
+    /*
+     * --surface at low alpha. The pane is glass rather than a solid tile, so the
+     * tint only separates it from the page and the blur is what fills it in: the
+     * backdrop video still reads through it.
+     */
+    background: rgba(0, 0, 136, 0.22);
+    -webkit-backdrop-filter: blur(var(--tile-blur));
+    backdrop-filter: blur(var(--tile-blur));
     border-radius: var(--radius-sm);
-    box-shadow: inset 0 0 0 1px var(--border);
-    transition: background-color 250ms ease, box-shadow 250ms ease;
-    /* Grid tracks the tile covers when expanded. Narrowed to 1 further down. */
-    --tile-span: 2;
+    box-shadow: var(--tile-ring);
+    /*
+     * The size is what opens the card, so it carries the motion. Left and right
+     * are never animated: the anchored edge is fixed by the edge rule above, so
+     * only the far edge travels.
+     *
+     * The blur is finished well before the card stops growing - it re-blurs the
+     * whole backdrop every frame it runs, and letting it trail the resize would
+     * spend that on every frame of it.
+     */
+    transition: width var(--tile-motion) var(--ease-soft),
+                height var(--tile-motion) var(--ease-soft),
+                -webkit-backdrop-filter 420ms var(--ease-soft),
+                backdrop-filter 420ms var(--ease-soft),
+                background-color 250ms ease,
+                box-shadow 250ms ease,
+                /*
+                 * Fading a covered pane out (and back in) is tied to the card's
+                 * own motion, so retiming the card retimes this with it.
+                 */
+                opacity calc(var(--tile-motion) * 0.6) var(--ease-soft);
 }
 
 .skill-tile__icon {
@@ -57,9 +163,10 @@
  */
 .skill-tile__detail {
     display: grid;
-    grid-template-rows: 0fr;
+    grid-template-rows: var(--tile-detail, 0fr);
     overflow: hidden;
-    transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    /* A touch quicker than the card, so the text settles as the panel does. */
+    transition: grid-template-rows 700ms var(--ease-soft);
 }
 
 /* No padding or border here: those would survive a 0fr row and leave a sliver. */
@@ -113,29 +220,33 @@
     background: var(--primary);
 }
 
-/* Focus ring, matching the timeline controls. */
-.skill-tile:focus-visible {
+/* Focus ring, matching the timeline controls. Drawn on the card so it traces the
+   opened size rather than the cell underneath it. */
+.skill-cell:focus-visible .skill-tile {
     outline: 2px solid var(--primary);
     outline-offset: 3px;
 }
 
 /*
- * Expansion. The tile claims a block of the grid rather than growing to an
- * arbitrary height, so its geometry stays exact and the surrounding rows keep
- * the height they already had. A 2x2 block of square cells is itself square, so
- * the tile's aspect-ratio still holds and nothing needs to be measured.
+ * Expansion.
+ *
+ * The card used to claim a 2x2 block of the grid, which forced the grid to
+ * reflow. A cell in the last column has no such block, so the browser moved it to
+ * the start of the next row - out from under the pointer that had just opened it.
+ * The hover stopped matching, the card collapsed, the cell moved back under the
+ * pointer, and the two states alternated several times a second.
+ *
+ * Opening an overlay cannot move anything, because an absolutely positioned card
+ * takes no part in the grid at all. There is nothing left to oscillate between.
  */
-.skill-tile:focus-visible,
-.skill-tile[data-expanded='true'] {
-    grid-column: span var(--tile-span);
-    grid-row: span var(--tile-span);
-    aspect-ratio: 1;
-    box-shadow: inset 0 0 0 1px var(--surface-strong);
-}
-
-.skill-tile:focus-visible .skill-tile__detail,
-.skill-tile[data-expanded='true'] .skill-tile__detail {
-    grid-template-rows: 1fr;
+.skill-cell:is(:focus-visible, [data-expanded='true']) {
+    --tile-size: var(--tile-open-size);
+    --tile-ring: inset 0 0 0 1px var(--surface-strong);
+    --tile-detail: 1fr;
+    --tile-blur: var(--tile-blur-open);
+    /* The cells are stacking contexts of their own, so the opening one has to be
+       lifted for its card to paint over the tiles it covers. */
+    z-index: 2;
 }
 
 /*
@@ -143,27 +254,44 @@
  * stuck on, which would then fight the data-expanded toggle.
  */
 @media (hover: hover) {
-    .skill-tile:hover {
-        grid-column: span var(--tile-span);
-        grid-row: span var(--tile-span);
-        aspect-ratio: 1;
-        box-shadow: inset 0 0 0 1px var(--surface-strong);
-    }
-
-    .skill-tile:hover .skill-tile__detail {
-        grid-template-rows: 1fr;
+    .skill-cell:hover {
+        --tile-size: var(--tile-open-size);
+        --tile-ring: inset 0 0 0 1px var(--surface-strong);
+        --tile-detail: 1fr;
+        --tile-blur: var(--tile-blur-open);
+        z-index: 2;
     }
 }
 
 /*
- * Below this width the grid is a single column, where spanning two would create
- * an implicit track and overflow the page. The tile stays square and reveals
- * its detail inside the square rather than changing size.
+ * The panes a card opens across are taken out of the picture rather than left to
+ * show through it.
+ *
+ * A pane is glass, so the tiles underneath it would otherwise read as smudges of
+ * their own icons and labels behind the card that is covering them. The renderer
+ * marks the cells the open card's block covers; this is what happens to them.
  */
-@media (max-width: 379px) {
-    .skill-tile {
-        --tile-span: 1;
-    }
+.skill-cell[data-covered] .skill-tile {
+    opacity: 0;
+}
+
+/*
+ * A cell against the grid's right or bottom edge has no room to open outwards, so
+ * its card is anchored to the far edge and opens back across the grid instead of
+ * hanging off the page. Harmless while closed, where the card is exactly one cell
+ * either way.
+ *
+ * The renderer leaves the top row unmarked whatever edge it sits on, so these
+ * rules only ever apply to a cell that has a row above it to open into.
+ */
+.skill-cell[data-edge~='right'] .skill-tile {
+    left: auto;
+    right: 0;
+}
+
+.skill-cell[data-edge~='bottom'] .skill-tile {
+    top: auto;
+    bottom: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

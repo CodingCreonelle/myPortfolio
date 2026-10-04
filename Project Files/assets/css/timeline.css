@@ -426,7 +426,15 @@
  * rather than a requirement.
  */
 .timeline-runway {
-    --timeline-pin-distance: 35vh;
+    /*
+     * How much page scroll the journey costs, as a multiple of the distance the
+     * track has to travel sideways. The track's own travel is fixed by the
+     * layout, so tying the scroll to it is what keeps the timeline moving at a
+     * steady pace per pixel of scroll - a fixed length in vh would make the same
+     * journey crawl on a tall window and race on a short one. 0.56 is a screen
+     * and a half of scrolling on a typical laptop.
+     */
+    --timeline-pin-travel: 0.56;
     --timeline-pin-offset: 88px;
 }
 
