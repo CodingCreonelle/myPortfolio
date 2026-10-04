@@ -8,8 +8,12 @@
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/timeline.css">
+    <link rel="stylesheet" href="assets/css/skills.css">
     <link rel="stylesheet" href="assets/css/animations.css">
     <script src="assets/js/app-loader.js" defer></script>
+    <script src="assets/js/timeline.js" defer></script>
+    <script src="assets/js/skills.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
@@ -80,26 +84,25 @@
             </div>
         </section>
 
-        <!-- The following experience section is still incomplete -->
         <section class="experience-section" id="experience" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
             <div class="section-header section-header-animate">
                 <p class="section-label">Experience</p>
                 <h2>Skills and learning journey</h2>
             </div>
-                <ul class="experience-list list-animate">
-                <li>
-                    <h3>Frontend development</h3>
-                    <p>HTML5, CSS3, responsive layout, accessibility, and JavaScript interactivity.</p>
-                </li>
-                <li>
-                    <h3>Design systems</h3>
-                    <p>Reusable components, consistent spacing, and theme-driven styling.</p>
-                </li>
-                <li>
-                    <h3>Project workflow</h3>
-                    <p>Organized asset structure, versioned content, and clean documentation for each project.</p>
-                </li>
-            </ul>
+            <div class="timeline-runway">
+                <div class="timeline-pin">
+                    <div id="experience-timeline"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="skills-section" id="skills" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Skills</p>
+                <h2>Tools I work with</h2>
+                <p>The technologies behind the work above, and how comfortable I am with each of them.</p>
+            </div>
+            <ul class="skill-matrix animate-stagger" id="skills-matrix" data-animate-stagger="true" data-animate-stagger-delay="100"></ul>
         </section>
 
         <section class="contact-preview" id="contact" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">

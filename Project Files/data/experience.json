@@ -13,5 +13,117 @@
     "JavaScript",
     "Responsive design",
     "Accessibility"
+  ],
+  "timeline": [
+    {
+      "id": "2024-html-css",
+      "year": "2024",
+      "date": "2024-02",
+      "title": "First lines of code",
+      "subtitle": "HTML & CSS foundations",
+      "description": "Started self-teaching frontend development. Learned semantic markup, the box model, and how to build a page from scratch without a framework.",
+      "tags": ["HTML", "CSS"],
+      "parentId": null
+    },
+    {
+      "id": "2024-responsive",
+      "year": "2024",
+      "date": "2024-09",
+      "title": "Layouts that adapt",
+      "subtitle": "Responsive design",
+      "description": "Moved past fixed-width pages. Practised fluid layouts, media queries, and CSS Grid and Flexbox so the same markup holds up from phone to desktop.",
+      "tags": ["CSS", "Responsive design"],
+      "parentId": null
+    },
+    {
+      "id": "2025-javascript",
+      "year": "2025",
+      "date": "2025-01",
+      "title": "Making pages respond",
+      "subtitle": "JavaScript interactivity",
+      "description": "Added behaviour on top of static markup: DOM manipulation, event handling, and fetching JSON so content is rendered from data instead of being hardcoded.",
+      "tags": ["JavaScript", "DOM"],
+      "parentId": null
+    },
+    {
+      "id": "2025-accessibility",
+      "year": "2025",
+      "date": "2025-08",
+      "title": "Building for everyone",
+      "subtitle": "Accessibility",
+      "description": "Learned to treat accessibility as a requirement rather than a cleanup task: semantic structure, keyboard navigation, focus management, and honouring prefers-reduced-motion.",
+      "tags": ["Accessibility", "Semantics"],
+      "parentId": null
+    },
+    {
+      "id": "2025-design-systems",
+      "year": "2025",
+      "date": "2025-11",
+      "title": "Structure over repetition",
+      "subtitle": "Design systems",
+      "description": "Replaced one-off styling with design tokens and reusable component styles so the site stays consistent and stays easy to change.",
+      "tags": ["Design systems", "CSS"],
+      "parentId": null
+    },
+    {
+      "id": "2026-portfolio",
+      "year": "2026",
+      "date": "2026-06",
+      "title": "This portfolio",
+      "subtitle": "First passion project",
+      "description": "The project you are looking at. Built to track my own work and to present it honestly rather than to perform for an audience.",
+      "tags": ["HTML", "CSS", "JavaScript"],
+      "parentId": null
+    }
+  ],
+  "skillMatrix": [
+    {
+      "name": "HTML",
+      "icon": "html",
+      "level": 4,
+      "levelLabel": "Confident",
+      "summary": "Semantic page structure",
+      "description": "Building pages from semantic elements so the content carries its own meaning, instead of relying on styling to explain it."
+    },
+    {
+      "name": "CSS",
+      "icon": "css",
+      "level": 3,
+      "levelLabel": "Intermediate",
+      "summary": "Layout and design tokens",
+      "description": "Fluid layouts with Grid and Flexbox, driven by shared custom properties so styling stays consistent and easy to change."
+    },
+    {
+      "name": "JavaScript",
+      "icon": "javascript",
+      "level": 3,
+      "levelLabel": "Intermediate",
+      "summary": "DOM and data-driven UI",
+      "description": "Rendering content from JSON, handling events, and using IntersectionObserver and requestAnimationFrame to keep interaction smooth."
+    },
+    {
+      "name": "Git",
+      "icon": "git",
+      "level": 3,
+      "levelLabel": "Intermediate",
+      "summary": "Version control",
+      "description": "Version control for everything here: branching, and writing commits that explain why a change was made rather than just what changed."
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "level": 3,
+      "levelLabel": "Intermediate",
+      "summary": "Remote hosting and review",
+      "description": "Where this portfolio is hosted remotely and versioned, and where changes are kept track of before they land."
+    },
+    {
+      "name": "VS Code",
+      "icon": "vscode",
+      "level": 4,
+      "levelLabel": "Confident",
+      "summary": "Everyday editor",
+      "description": "Where all of this gets written: workspace settings, debugging, and the integrated terminal and source control."
+    }
   ]
 }

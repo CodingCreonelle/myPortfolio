@@ -1,0 +1,447 @@
+/**
+ * Horizontal orb timeline for the experience section.
+ *
+ * The orbs climb: each one sits higher than the last in proportion to how many
+ * months separate them, and straight diagonals join them into a trail. The
+ * active orb grows and drops a stem, with the details reading to the right.
+ *
+ * The renderer supplies two things per entry:
+ *   --rise          how far up the climb that entry sits, as 0-1
+ *   --slope-angle   the diagonal to the following orb
+ *   --slope-length  its length, so the segment reaches the next orb exactly
+ *
+ * Every entry is real text in the DOM, so the section still communicates even if
+ * the interaction layer never runs.
+ */
+
+/* The timeline is one band of the page rather than a full-screen feature, so it
+   does not need the full default section padding beneath it. */
+.experience-section {
+    padding-bottom: 24px;
+}
+
+.timeline-track {
+    --entry-width: 440px;
+    --track-gap: 32px;
+    --entry-row-gap: 6px;
+
+    /* 70% smaller than the original 44px / 96px pair. The orb's layout box stays
+       at --orb-size-active whatever its scale, which keeps the trail maths and
+       the page layout stable while an orb is growing. */
+    --orb-size-active: 30px;
+    --orb-scale: 0.4667;
+
+    /*
+     * Fixed band the climb is spread across. This is the timeline's vertical
+     * footprint, so how steep the climb gets never changes the section height.
+     * Tied to the viewport so the section keeps a similar share of the screen on
+     * both short and tall windows.
+     */
+    --timeline-lane: clamp(100px, 14vh, 170px);
+
+    --trail-color: rgba(37, 99, 235, 0.45);
+    --stem-gap: 16px;
+
+    --motion-orb: 700ms;
+    --motion-reveal: 900ms;
+    --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+    display: flex;
+    align-items: start;
+    gap: var(--track-gap);
+    margin: 0;
+    /* Room for the enlarged orb's glow plus the scrollbar. */
+    padding: 8px 4px 16px;
+    list-style: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 4px;
+    scroll-behavior: smooth;
+    /*
+     * The scrollbar is hidden rather than removed: the track still scrolls by
+     * wheel, drag, trackpad and keyboard. The half-visible orb at the edge is the
+     * affordance instead, and explicit controls come with the timeline controls.
+     */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.timeline-track::-webkit-scrollbar {
+    display: none;
+}
+
+/*
+ * Half-viewport spacers so the first and last orb can actually reach the middle
+ * of the track. Without them the ends of the scroll range fall short of centre,
+ * and the first and last entries could never become active.
+ */
+.timeline-track::before,
+.timeline-track::after {
+    content: '';
+    flex: 0 0 max(0px, calc(50% - var(--entry-width) / 2));
+}
+
+/*
+ * Entries rise in as the timeline is rendered. Only a `from` state is declared,
+ * and `backwards` covers just the pre-delay stretch, so an entry settles back to
+ * its normal styling once played instead of needing a forwards fill.
+ */
+@keyframes timeline-entry-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+}
+
+.timeline-entry {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--entry-width);
+
+    /*
+     * An ascent is a decrease in y, because screen y grows downward. --rise is 0
+     * for the earliest entry and 1 for the latest, so inverting it puts the start
+     * of the journey at the bottom of the lane and the most recent work at the
+     * top.
+     */
+    --ascent: calc(1 - var(--rise, 0));
+
+    /*
+     * The orb's centre, measured down from the top of the lane. The climb spans
+     * exactly --timeline-lane minus one orb, so every orb stays inside the lane
+     * however steep the climb becomes.
+     */
+    --orb-centre: calc(var(--orb-size-active) / 2
+                       + (var(--timeline-lane) - var(--orb-size-active)) * var(--ascent));
+
+    /*
+     * Every entry reserves the same block regardless of where its own orb sits,
+     * so neither the climb nor the active entry can change the section height.
+     */
+    min-height: calc(var(--timeline-lane) + var(--orb-size-active) / 2
+                     + var(--entry-row-gap) + var(--timeline-detail-height, 0px));
+    display: grid;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    align-content: start;
+    gap: var(--entry-row-gap);
+    scroll-snap-align: center;
+    animation: timeline-entry-in 600ms var(--ease-soft) backwards;
+}
+
+/* Extra delay per entry, so the row builds up rather than appearing all at once. */
+.timeline-entry:nth-child(2) { animation-delay: 60ms; }
+.timeline-entry:nth-child(3) { animation-delay: 120ms; }
+.timeline-entry:nth-child(4) { animation-delay: 180ms; }
+.timeline-entry:nth-child(5) { animation-delay: 240ms; }
+.timeline-entry:nth-child(6) { animation-delay: 300ms; }
+
+/*
+ * The trail. Each entry draws the diagonal leading to the next orb, starting at
+ * its own orb centre. The run is fixed by the layout and the rise comes from
+ * --rise, so the segment is a straight line whose steepness is the real gap
+ * between the two entries.
+ */
+.timeline-entry::before {
+    content: '';
+    position: absolute;
+    top: var(--orb-centre);
+    left: 50%;
+    width: var(--slope-length, 0px);
+    height: 1px;
+    background: var(--trail-color);
+    transform-origin: 0 0;
+    transform: rotate(var(--slope-angle, 0deg));
+}
+
+/* Nothing follows the final orb, so it draws no segment. */
+.timeline-entry:last-child::before {
+    display: none;
+}
+
+.timeline-entry__orb {
+    position: relative;
+    /* Above the trail, so the orb reads as a node sitting on the line. */
+    z-index: 1;
+    align-self: start;
+    width: var(--orb-size-active);
+    height: var(--orb-size-active);
+    /*
+     * Anchored by its centre rather than its top edge, so growing the orb never
+     * moves the point where the trail meets it.
+     */
+    margin-top: var(--orb-centre);
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.7;
+    transform: translateY(-50%) scale(var(--orb-scale));
+    transition: transform var(--motion-orb) var(--ease-soft),
+                opacity var(--motion-orb) ease,
+                box-shadow var(--motion-orb) ease;
+}
+
+.timeline-entry.is-active .timeline-entry__orb {
+    --orb-scale: 1;
+    opacity: 1;
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.14), 0 0 28px rgba(37, 99, 235, 0.4);
+}
+
+/*
+ * Collapses with a 0fr grid row. This hides the details visually while leaving
+ * them in the DOM, so assistive tech still reads every entry - unlike
+ * display:none, which would remove them.
+ */
+.timeline-entry__body {
+    width: 100%;
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows var(--motion-reveal) var(--ease-soft);
+}
+
+.timeline-entry.is-active .timeline-entry__body {
+    grid-template-rows: 1fr;
+}
+
+/*
+ * Three columns: an empty half, the stem, then the details. Both 1fr columns are
+ * equal, so the stem lands exactly on the entry centre - directly beneath the
+ * orb - with the text starting to its right.
+ *
+ * This element must stay free of padding and border. A grid item's padding and
+ * border still count toward its minimum size even inside a 0fr row, which would
+ * leave a visible sliver behind when collapsed.
+ */
+.timeline-entry__detail {
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1px minmax(0, 1fr);
+    column-gap: var(--stem-gap);
+    align-items: stretch;
+}
+
+/* Stretches with the collapsing row, which is what makes the line slide down. */
+.timeline-entry__stem {
+    /* Column 2, so the line sits on the entry centre, directly under the orb. */
+    grid-column: 2;
+    width: 1px;
+    background: var(--trail-color);
+}
+
+.timeline-entry__text {
+    /* Column 3: to the right of the line, with column 1 left empty. */
+    grid-column: 3;
+    display: grid;
+    gap: 3px;
+    align-content: start;
+    /* Tighter than the page's default 1.6, to keep this block compact. */
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 500ms ease, transform 500ms var(--ease-soft);
+}
+
+/* The details arrive just after the line has travelled down. */
+.timeline-entry.is-active .timeline-entry__text {
+    opacity: 1;
+    transform: none;
+    transition-delay: 300ms;
+}
+
+/* The text block owns its own spacing, so opt out of the global rhythm. */
+.timeline-entry__text > * {
+    margin: 0;
+    max-width: none;
+}
+
+.timeline-entry__year {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.timeline-entry__title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+}
+
+.timeline-entry__subtitle {
+    color: var(--surface-strong);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.timeline-entry__description {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.timeline-entry__tags {
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Controls */
+.timeline-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.timeline-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.15rem;
+    line-height: 1;
+    transition: border-color 200ms ease, opacity 200ms ease;
+}
+
+.timeline-control:hover:not(:disabled),
+.timeline-control:focus-visible {
+    border-color: var(--primary);
+}
+
+.timeline-control:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.timeline-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/*
+ * Each dot is a 24px target with a smaller dot drawn inside it, rather than an
+ * 8px dot that would be awkward to hit or focus.
+ */
+.timeline-dot {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.timeline-dot::after {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--trail-color);
+    transition: background-color 200ms ease, inset 200ms ease;
+}
+
+.timeline-dot:hover::after,
+.timeline-dot:focus-visible::after {
+    background: var(--surface-strong);
+}
+
+.timeline-dot.is-active::after {
+    inset: 5px;
+    background: var(--primary);
+}
+
+.timeline-track:focus-visible,
+.timeline-control:focus-visible,
+.timeline-dot:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}
+
+/* Announcements only: out of the visual layout, still read by screen readers. */
+.timeline-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/*
+ * Measuring pass: opens every details block at once so the renderer can find the
+ * tallest one. Added and removed inside a single frame, so it never paints.
+ *
+ * The transition must be suppressed here. Otherwise this pass reads a
+ * mid-animation value, measures the row as near-zero, and reserves nothing.
+ */
+.timeline-track.is-measuring .timeline-entry__body {
+    grid-template-rows: 1fr;
+    transition: none;
+}
+
+@media (max-width: 640px) {
+    .timeline-track {
+        --entry-width: 320px;
+        --track-gap: 20px;
+        --timeline-lane: 100px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .timeline-track {
+        scroll-behavior: auto;
+    }
+
+    /* Keep the state change, drop the motion. */
+    .timeline-entry__orb,
+    .timeline-entry__body,
+    .timeline-entry__text {
+        transition-duration: 1ms;
+        transition-delay: 0ms;
+    }
+
+    /* Nothing should rise in where motion is unwelcome. */
+    .timeline-entry {
+        animation: none;
+    }
+}
+
+/*
+ * Pinned scroll-driven mode.
+ *
+ * The runway is the scroll distance the timeline travels through while its
+ * section stays put; the renderer sizes it. This is confined to precise pointers
+ * on wide screens and excluded when motion is reduced, so everywhere else the
+ * track keeps its own native scrolling - which is what makes this an enhancement
+ * rather than a requirement.
+ */
+.timeline-runway {
+    --timeline-pin-distance: 140vh;
+    --timeline-pin-offset: 88px;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 960px) and (prefers-reduced-motion: no-preference) {
+    .timeline-pin {
+        position: sticky;
+        top: var(--timeline-pin-offset);
+    }
+
+    /*
+     * Page scroll drives the track here, so snapping and smooth scrolling would
+     * fight every frame of it.
+     */
+    .timeline-track {
+        scroll-snap-type: none;
+        scroll-behavior: auto;
+    }
+}

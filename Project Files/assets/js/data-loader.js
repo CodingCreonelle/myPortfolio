@@ -162,6 +162,14 @@ async function loadDynamicData() {
   if (experience) {
     renderSkills(experience.skills);
     renderEducation(experience.education);
+
+    if (window.PortfolioTimeline && window.PortfolioTimeline.render) {
+      window.PortfolioTimeline.render(experience.timeline);
+    }
+
+    if (window.PortfolioSkills && window.PortfolioSkills.render) {
+      window.PortfolioSkills.render(experience.skillMatrix);
+    }
   }
 
   if (socials) {
