@@ -85,12 +85,18 @@
         </section>
 
         <section class="experience-section" id="experience" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Experience</p>
-                <h2>Skills and learning journey</h2>
-            </div>
             <div class="timeline-runway">
                 <div class="timeline-pin">
+                    <!--
+                        Inside the pin, not above the runway. In pinned mode the
+                        page scrolls the runway past a sticky pin, so anything
+                        left outside it would slide off screen while the reader is
+                        still navigating the timeline.
+                    -->
+                    <div class="section-header section-header-animate">
+                        <p class="section-label">Experience</p>
+                        <h2>Skills and learning journey</h2>
+                    </div>
                     <div id="experience-timeline"></div>
                 </div>
             </div>
