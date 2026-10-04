@@ -176,18 +176,6 @@ section[id] {
     display: inline-flex;
 }
 
-.experience-list {
-    display: grid;
-    gap: 24px;
-}
-
-.experience-list li {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 28px;
-}
-
 .goals-list {
     display: grid;
     gap: 12px;
@@ -259,8 +247,7 @@ section[id] {
     }
 
     .project-card,
-    .about-card,
-    .experience-list li {
+    .about-card {
         padding: 22px;
     }
 }

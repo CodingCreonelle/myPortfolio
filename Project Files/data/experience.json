@@ -13,5 +13,67 @@
     "JavaScript",
     "Responsive design",
     "Accessibility"
+  ],
+  "timeline": [
+    {
+      "id": "2024-html-css",
+      "year": "2024",
+      "date": "2024-02",
+      "title": "First lines of code",
+      "subtitle": "HTML & CSS foundations",
+      "description": "Started self-teaching frontend development. Learned semantic markup, the box model, and how to build a page from scratch without a framework.",
+      "tags": ["HTML", "CSS"],
+      "parentId": null
+    },
+    {
+      "id": "2024-responsive",
+      "year": "2024",
+      "date": "2024-09",
+      "title": "Layouts that adapt",
+      "subtitle": "Responsive design",
+      "description": "Moved past fixed-width pages. Practised fluid layouts, media queries, and CSS Grid and Flexbox so the same markup holds up from phone to desktop.",
+      "tags": ["CSS", "Responsive design"],
+      "parentId": null
+    },
+    {
+      "id": "2025-javascript",
+      "year": "2025",
+      "date": "2025-01",
+      "title": "Making pages respond",
+      "subtitle": "JavaScript interactivity",
+      "description": "Added behaviour on top of static markup: DOM manipulation, event handling, and fetching JSON so content is rendered from data instead of being hardcoded.",
+      "tags": ["JavaScript", "DOM"],
+      "parentId": null
+    },
+    {
+      "id": "2025-accessibility",
+      "year": "2025",
+      "date": "2025-08",
+      "title": "Building for everyone",
+      "subtitle": "Accessibility",
+      "description": "Learned to treat accessibility as a requirement rather than a cleanup task: semantic structure, keyboard navigation, focus management, and honouring prefers-reduced-motion.",
+      "tags": ["Accessibility", "Semantics"],
+      "parentId": null
+    },
+    {
+      "id": "2025-design-systems",
+      "year": "2025",
+      "date": "2025-11",
+      "title": "Structure over repetition",
+      "subtitle": "Design systems",
+      "description": "Replaced one-off styling with design tokens and reusable component styles so the site stays consistent and stays easy to change.",
+      "tags": ["Design systems", "CSS"],
+      "parentId": null
+    },
+    {
+      "id": "2026-portfolio",
+      "year": "2026",
+      "date": "2026-06",
+      "title": "This portfolio",
+      "subtitle": "First passion project",
+      "description": "The project you are looking at. Built to track my own work and to present it honestly rather than to perform for an audience.",
+      "tags": ["HTML", "CSS", "JavaScript"],
+      "parentId": null
+    }
   ]
 }
