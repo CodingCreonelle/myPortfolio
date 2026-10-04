@@ -1,0 +1,174 @@
+/**
+ * Skills matrix.
+ *
+ * Layer 1: a compact grid of square tiles, one per skill, showing its icon.
+ * Layer 2: a tile expands in place on hover or focus to reveal its details.
+ *
+ * The tiles stay readable as plain text if neither layer applies, because the
+ * details are collapsed rather than removed from the DOM.
+ */
+
+.skill-matrix {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+    /*
+     * Caps the track count at six so the tiles stay compact on wide screens
+     * instead of stretching to fill the container. Raising this past roughly
+     * 1076px would allow a seventh track.
+     */
+    max-width: 960px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.skill-tile {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 12px;
+    aspect-ratio: 1;
+    padding: 18px;
+    overflow: hidden;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px var(--border);
+    transition: background-color 250ms ease, box-shadow 250ms ease;
+    /* Grid tracks the tile covers when expanded. Narrowed to 1 further down. */
+    --tile-span: 2;
+}
+
+.skill-tile__icon {
+    width: 56px;
+    height: 56px;
+}
+
+.skill-tile__name {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    text-align: center;
+}
+
+/*
+ * Collapses with a 0fr grid row, so the details stay in the DOM and stay
+ * readable to assistive tech instead of being removed with display:none.
+ */
+.skill-tile__detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* No padding or border here: those would survive a 0fr row and leave a sliver. */
+.skill-tile__detail-inner {
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    gap: 6px;
+}
+
+.skill-tile__detail-inner > * {
+    margin: 0;
+    max-width: none;
+}
+
+.skill-tile__summary {
+    color: var(--surface-strong);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.skill-tile__description {
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.skill-tile__level {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.skill-tile__meter {
+    flex: 1;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.25);
+}
+
+.skill-tile__meter::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: calc(var(--level, 1) / 5 * 100%);
+    border-radius: inherit;
+    background: var(--primary);
+}
+
+/* Focus ring, matching the timeline controls. */
+.skill-tile:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}
+
+/*
+ * Expansion. The tile claims a block of the grid rather than growing to an
+ * arbitrary height, so its geometry stays exact and the surrounding rows keep
+ * the height they already had. A 2x2 block of square cells is itself square, so
+ * the tile's aspect-ratio still holds and nothing needs to be measured.
+ */
+.skill-tile:focus-visible,
+.skill-tile[data-expanded='true'] {
+    grid-column: span var(--tile-span);
+    grid-row: span var(--tile-span);
+    aspect-ratio: 1;
+    box-shadow: inset 0 0 0 1px var(--surface-strong);
+}
+
+.skill-tile:focus-visible .skill-tile__detail,
+.skill-tile[data-expanded='true'] .skill-tile__detail {
+    grid-template-rows: 1fr;
+}
+
+/*
+ * Hover is scoped to devices that actually hover. On touch, a tap leaves :hover
+ * stuck on, which would then fight the data-expanded toggle.
+ */
+@media (hover: hover) {
+    .skill-tile:hover {
+        grid-column: span var(--tile-span);
+        grid-row: span var(--tile-span);
+        aspect-ratio: 1;
+        box-shadow: inset 0 0 0 1px var(--surface-strong);
+    }
+
+    .skill-tile:hover .skill-tile__detail {
+        grid-template-rows: 1fr;
+    }
+}
+
+/*
+ * Below this width the grid is a single column, where spanning two would create
+ * an implicit track and overflow the page. The tile stays square and reveals
+ * its detail inside the square rather than changing size.
+ */
+@media (max-width: 379px) {
+    .skill-tile {
+        --tile-span: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skill-tile,
+    .skill-tile__detail {
+        transition-duration: 1ms;
+    }
+}
