@@ -38,27 +38,91 @@ function createCard(html) {
   return template.content.firstChild;
 }
 
+/*
+ * A project's screenshot is optional: the gallery renders the frame either way
+ * and falls back to a styled placeholder so the composition survives until an
+ * image is supplied. Relative paths are resolved from the site root, matching
+ * the data files' own convention.
+ */
+function projectImageSrc(project) {
+  const image = typeof project.image === 'string' ? project.image.trim() : '';
+  if (!image) return '';
+  if (/^[a-z]+:/i.test(image) || image.startsWith('/')) return image;
+  return SITE_ROOT + image.replace(/^\.\//, '');
+}
+
 function renderFeaturedProjects(projects) {
   const container = document.querySelector('#featured-projects');
   if (!container || !Array.isArray(projects)) return;
   container.innerHTML = '';
 
   projects.forEach((project, index) => {
+    const src = projectImageSrc(project);
+    const visual = src
+      ? `<img class="work-card__image" src="${src}" alt="" loading="lazy" decoding="async">`
+      : `<div class="work-card__placeholder" data-index="${String(index + 1).padStart(2, '0')}" aria-hidden="true"></div>`;
+
     const card = createCard(`
-      <article class="project-card card-entrance" style="animation-delay: ${index * 100}ms;">
-        <h3>${project.title}</h3>
-        <p>${project.summary}</p>
-        <p class="project-tags">${project.tags?.join(' · ') || ''}</p>
-        <a href="${projectHref(project)}" class="text-link">View details</a>
+      <article class="work-card">
+        <div class="work-card__visual">${visual}</div>
+        <div class="work-card__copy">
+          <h3 class="work-card__title">${project.title}</h3>
+          <p class="work-card__summary">${project.summary}</p>
+          <a href="${projectHref(project)}" class="work-card__link">
+            View project
+            <span class="work-card__arrow" aria-hidden="true">&#8594;</span>
+          </a>
+        </div>
       </article>
     `);
     container.appendChild(card);
   });
-  
-  // Trigger stagger animation for dynamically added cards
-  if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
-    window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
+
+  if (window.PortfolioWorkGallery && window.PortfolioWorkGallery.init) {
+    window.PortfolioWorkGallery.init();
   }
+}
+
+/*
+ * Technologies are shown as their skill logo where the site already ships one.
+ * Anything without an icon still appears in the stack line, so the row never
+ * misrepresents what a project used.
+ */
+const SKILL_ICONS = {
+  html: 'html',
+  css: 'css',
+  javascript: 'javascript',
+  js: 'javascript',
+  git: 'git',
+  github: 'github',
+  vscode: 'vscode',
+};
+
+const EXTERNAL_ICON = `
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+    <path d="M13 4h7v7"></path>
+    <path d="M20 4 11 13"></path>
+    <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>
+  </svg>
+`;
+
+function projectStackIcons(project) {
+  const technologies = Array.isArray(project.technologies) ? project.technologies : [];
+  const used = new Set();
+
+  return technologies
+    .map((technology) => SKILL_ICONS[String(technology).trim().toLowerCase()])
+    .filter((icon) => {
+      if (!icon || used.has(icon)) return false;
+      used.add(icon);
+      return true;
+    })
+    .map((icon) => `
+        <li>
+          <img src="${SITE_ROOT}assets/icons/skills/${icon}.svg" alt="" width="22" height="22" loading="lazy" decoding="async">
+        </li>`)
+    .join('');
 }
 
 function renderProjectList(projects) {
@@ -67,22 +131,24 @@ function renderProjectList(projects) {
   container.innerHTML = '';
 
   projects.forEach((project, index) => {
+    const stack = Array.isArray(project.technologies) ? project.technologies.join(' ') : '';
+    const icons = projectStackIcons(project);
+
     const card = createCard(`
-      <article class="project-item card-entrance" style="animation-delay: ${index * 100}ms;">
-        <div class="project-meta">
-          <p class="project-category">Project</p>
-          <h2>${project.title}</h2>
+      <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
+        <p class="archive-entry__index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>
+        <div class="archive-entry__body">
+          <h2 class="archive-entry__title"><a href="${projectHref(project)}">${project.title}</a></h2>
+          <p class="archive-entry__summary">${project.summary}</p>
+          ${stack ? `<p class="archive-entry__stack">${stack}</p>` : ''}
+          ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
         </div>
-        <p class="project-description">${project.summary}</p>
-        <div class="project-footer">
-          <span class="project-tags">${project.tags?.join(' · ') || ''}</span>
-          <a href="${projectHref(project)}" class="text-link">View project</a>
-        </div>
+        <span class="archive-entry__open" aria-hidden="true">${EXTERNAL_ICON}</span>
       </article>
     `);
     container.appendChild(card);
   });
-  
+
   // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);

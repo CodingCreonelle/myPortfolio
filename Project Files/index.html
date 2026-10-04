@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/work-gallery.css">
     <link rel="stylesheet" href="assets/css/timeline.css">
     <link rel="stylesheet" href="assets/css/skills.css">
     <link rel="stylesheet" href="assets/css/animations.css">
@@ -15,6 +16,7 @@
     <script src="assets/js/timeline.js" defer></script>
     <script src="assets/js/skills.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/work-gallery.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
@@ -42,24 +44,36 @@
             </div>
         </section>
 
-        <section class="featured-projects" id="projects" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Featured work</p>
-                <h2>Higlighted projects</h2>
-                <p>Projects that showcase my best work yet to this day.</p>
+        <section class="work-gallery" id="projects" aria-labelledby="work-gallery-heading" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
+            <div class="work-gallery__stage animate-stagger" data-animate-stagger="true">
+                <header class="work-gallery__header section-header-animate">
+                    <p class="work-gallery__eyebrow">Featured work</p>
+                    <h2 class="work-gallery__heading" id="work-gallery-heading">
+                        <span class="work-gallery__sr">Highlighted projects</span>
+                        <span data-work-typewriter aria-hidden="true">Highlighted projects</span>
+                    </h2>
+                    <p class="work-gallery__lede">Projects that showcase my best work yet to this day.</p>
+                    <a href="projects.html" class="work-gallery__action">
+                        All projects
+                        <span class="work-gallery__action-arrow" aria-hidden="true">&#8594;</span>
+                    </a>
+                </header>
+                <div class="work-gallery__deck" id="featured-projects"></div>
+                <p class="work-gallery__sr" aria-live="polite" data-work-live></p>
+                <div class="work-gallery__controls" role="group" aria-label="Project navigation">
+                    <button type="button" class="work-gallery__control" data-work-prev aria-label="Previous project">
+                        <span aria-hidden="true">&#8592;</span>
+                    </button>
+                    <p class="work-gallery__count">
+                        <span data-work-counter>01</span> / <span data-work-total>01</span>
+                    </p>
+                    <button type="button" class="work-gallery__control" data-work-next aria-label="Next project">
+                        <span aria-hidden="true">&#8594;</span>
+                    </button>
+                </div>
             </div>
-            <div class="project-grid animate-stagger" id="featured-projects" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
         </section>
 
-        <section class="skills-section" id="skills" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Skills</p>
-                <h2>Tools I work with</h2>
-                <p>The technologies behind the work above, and how comfortable I am with each of them.</p>
-            </div>
-            <ul class="skill-matrix animate-stagger" id="skills-matrix" data-animate-stagger="true" data-animate-stagger-delay="100"></ul>
-        </section>
-        
         <section class="experience-section" id="experience" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
             <div class="timeline-runway">
                 <div class="timeline-pin">
@@ -78,6 +92,15 @@
             </div>
         </section>
 
+        <section class="skills-section" id="skills" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
+            <div class="section-header section-header-animate">
+                <p class="section-label">Skills</p>
+                <h2>Tools I work with</h2>
+                <p>The technologies behind the work above, and how comfortable I am with each of them.</p>
+            </div>
+            <ul class="skill-matrix animate-stagger" id="skills-matrix" data-animate-stagger="true" data-animate-stagger-delay="100"></ul>
+        </section>
+
         <section class="contact-preview" id="contact" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
             <div class="section-header section-header-animate">
                 <p class="section-label">Contact</p>
@@ -88,7 +111,7 @@
                 <a href="contact.html" class="button button-primary">Contact page</a>
                 <a href="mailto:lopezcode741@gmail.com" class="button button-secondary">Email me</a>
             </div>
-        </section>
+            </section>
     </main>
 
     <div id="site-footer"></div>

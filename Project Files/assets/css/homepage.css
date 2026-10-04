@@ -70,12 +70,11 @@ section[id] {
 
 .hero-avatar img {
     width: 100%;
-    height: 100%;
+    height: 100%;   
     object-fit: cover;
     border-radius: var(--radius);
 }
 
-.featured-projects,
 .about-section,
 .experience-section,
 .contact-preview,
@@ -100,7 +99,6 @@ section[id] {
     margin-bottom: 0.8rem;
 }
 
-.project-grid,
 .about-grid,
 .skills-grid,
 .contact-cards {
@@ -109,7 +107,6 @@ section[id] {
     transition: all 0.3s ease;
 }
 
-.project-grid,
 .about-grid,
 .skills-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -119,7 +116,6 @@ section[id] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.project-card,
 .about-card,
 .skill-card,
 .contact-card {
@@ -131,17 +127,10 @@ section[id] {
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.project-card h3,
 .about-card h3,
 .skill-card h3,
 .contact-card h2 {
     margin-bottom: 16px;
-}
-
-.project-tags {
-    margin-top: 20px;
-    color: var(--muted);
-    display: inline-flex;
 }
 
 .goals-list {
@@ -182,7 +171,6 @@ section[id] {
         display: none;
     }
 
-    .project-grid,
     .about-grid,
     .skills-grid,
     .contact-cards {
@@ -219,7 +207,6 @@ section[id] {
         gap: 24px;
     }
 
-    .project-card,
     .about-card {
         padding: 22px;
     }

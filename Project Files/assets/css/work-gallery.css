@@ -1,0 +1,395 @@
+/*
+ * Featured work - a single-project gallery stepped through by its own controls.
+ *
+ * The reference composition is rebuilt from proportions rather than fixed
+ * pixels: the visual is a share of the content column and the type rides the
+ * project's own scale, so the layout holds together at any window size.
+ *
+ * The deck only becomes a one-project-at-a-time viewer once the script has
+ * taken over (`is-enhanced`). Without it the markup degrades to a plain list of
+ * every project, which still reads correctly.
+ */
+
+.work-gallery {
+    --work-bg: #0f1015;
+    --work-surface: #17191f;
+    --work-line: #24262c;
+    --work-heading: #ffffff;
+    --work-title: #ffffff;
+    --work-body: #002aff;
+    --work-action-bg: #0848c8;
+    --work-action-text: #0f1015;
+    --work-visual-ratio: 4 / 1;
+    --work-visual-width: 77%;
+    --work-copy-width: 62%;
+
+    position: relative;
+    padding: 0;
+}
+
+/*
+ * The reference page is a flat near-black, so the section paints its own band.
+ * It is pulled out to the viewport edges by offsetting both insets from the
+ * centre line; widening the section itself would knock the content out of line
+ * with the navigation above it.
+ */
+.work-gallery::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline: calc(50% - 50vw);
+}
+
+/*
+ * The band is absolutely positioned, so it paints in the positioned layer above
+ * in-flow content. The stage claims that layer back for itself, which also
+ * gives the visually hidden live region a containing block.
+ */
+.work-gallery__stage {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    align-content: center;
+    gap: clamp(28px, 4vh, 52px);
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: clamp(72px, 12vh, 132px) 0;
+}
+
+/*
+ * Three rows rather than a simple two-column split, so the button can sit level
+ * with the heading alone instead of being dragged up beside the eyebrow.
+ */
+.work-gallery__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: start;
+    column-gap: clamp(24px, 4vw, 64px);
+}
+
+.work-gallery__eyebrow {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0 0 1rem;
+    color: var(--work-body);
+    font-size: 0.75rem;
+    font-weight: 1000;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.work-gallery__heading {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0 0 1.25rem;
+    color: var(--work-heading);
+    font-size: clamp(2.4rem, 1.65rem + 2.2vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+
+.work-gallery__lede {
+    grid-column: 1;
+    grid-row: 3;
+    max-width: 46ch;
+    margin: 0;
+    color: var(--work-heading);
+    font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.0625rem);
+    line-height: 1.5;
+}
+
+/*
+ * The typed heading is split into one span per character, which makes assistive
+ * technology read it letter-group by letter-group. The plain copy underneath
+ * carries the accessible name instead, and the animated copy is hidden from it.
+ */
+.work-gallery__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/*
+ * The caret is moved through the heading as the text types, so it has to be an
+ * ordinary inline box rather than an absolutely placed decoration.
+ */
+.work-gallery__caret {
+    display: inline-block;
+    width: 0.055em;
+    height: 0.78em;
+    margin-left: 0.06em;
+    background: currentColor;
+    vertical-align: -0.06em;
+    animation: work-caret 1.05s steps(1, end) infinite;
+}
+
+.work-gallery__char {
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.work-gallery__char.is-typed {
+    opacity: 1;
+}
+
+@keyframes work-caret {
+    0%,
+    49% {
+        opacity: 1;
+    }
+
+    50%,
+    100% {
+        opacity: 0;
+    }
+}
+
+.work-gallery__action {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.35rem;
+    border-radius: 10px;
+    background: var(--work-action-bg);
+    color: var(--work-action-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.work-gallery__action:hover,
+.work-gallery__action:focus-visible {
+    transform: translateY(-2px);
+    background: #ffffff;
+}
+
+.work-gallery__action-arrow {
+    transition: transform 0.25s ease;
+}
+
+.work-gallery__action:hover .work-gallery__action-arrow {
+    transform: translateX(3px);
+}
+
+/* Unenhanced: every project listed in order. */
+.work-gallery__deck {
+    display: grid;
+    gap: clamp(56px, 9vh, 96px);
+}
+
+.work-card {
+    display: grid;
+    align-content: start;
+    gap: clamp(24px, 5vh, 48px);
+}
+
+/*
+ * Enhanced: every card shares one grid cell, so they cross-fade in place and
+ * the deck still measures itself against the tallest project instead of
+ * whichever one happens to be showing.
+ */
+.work-gallery.is-enhanced .work-gallery__deck {
+    gap: 0;
+}
+
+.work-gallery.is-enhanced .work-card {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(18px) scale(0.995);
+    transition:
+        opacity 0.5s ease,
+        transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
+        visibility 0s linear 0.5s;
+}
+
+.work-gallery.is-enhanced .work-card.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+        opacity 0.5s ease,
+        transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
+        visibility 0s;
+}
+
+.work-card__visual {
+    position: relative;
+    width: min(100%, var(--work-visual-width));
+    margin-inline: auto;
+    aspect-ratio: var(--work-visual-ratio);
+    overflow: hidden;
+    border: 1px solid var(--work-line);
+    border-radius: 16px;
+    background: var(--work-surface);
+}
+
+.work-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/*
+ * Projects without a screenshot still need to hold the composition, so the
+ * empty frame falls back to a soft wash plus the project's own numbering.
+ */
+.work-card__placeholder {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(120% 160% at 12% 0%, rgba(86, 118, 178, 0.22), transparent 60%),
+        radial-gradient(90% 140% at 88% 100%, rgba(120, 96, 178, 0.18), transparent 62%),
+        linear-gradient(180deg, #1b1e26, #12141a);
+}
+
+.work-card__placeholder::after {
+    content: attr(data-index);
+    position: absolute;
+    right: clamp(16px, 2.4vw, 34px);
+    bottom: clamp(10px, 1.6vw, 22px);
+    color: rgba(233, 235, 239, 0.14);
+    font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.work-card__copy {
+    display: grid;
+    justify-items: center;
+    width: min(100%, var(--work-copy-width));
+    margin-inline: auto;
+    text-align: center;
+}
+
+.work-card__title {
+    max-width: 30ch;
+    margin: 0 0 1rem;
+    color: var(--work-title);
+    font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.work-card__summary {
+    max-width: 74ch;
+    margin: 0 0 1.5rem;
+    color: var(--work-heading);
+    font-size: clamp(0.875rem, 0.83rem + 0.25vw, 1rem);
+    line-height: 1.7;
+}
+
+.work-card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--work-heading);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.work-card__arrow {
+    transition: transform 0.25s ease;
+}
+
+.work-card__link:hover .work-card__arrow,
+.work-card__link:focus-visible .work-card__arrow {
+    transform: translateX(4px);
+}
+
+/* Controls only mean anything once the deck shows one project at a time. */
+.work-gallery__controls {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+}
+
+.work-gallery.is-enhanced .work-gallery__controls {
+    display: flex;
+}
+
+.work-gallery__control {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--work-line);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--work-heading);
+    font-size: 1rem;
+    line-height: 1;
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s ease;
+}
+
+.work-gallery__control:hover,
+.work-gallery__control:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--work-action-bg);
+    background: var(--work-action-bg);
+    color: var(--work-action-text);
+}
+
+.work-gallery__count {
+    min-width: 6ch;
+    margin: 0;
+    color: var(--work-body);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .work-gallery__header {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .work-gallery__action {
+        grid-column: 1;
+        grid-row: 4;
+        justify-self: start;
+        margin-top: 1.25rem;
+    }
+
+    .work-card__visual,
+    .work-card__copy {
+        width: 100%;
+    }
+}
+
+/*
+ * Stepping between projects is the point of the controls, so they stay put;
+ * only the movement itself is dropped when the reader has asked for less of it.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .work-gallery__caret {
+        animation: none;
+    }
+
+    .work-gallery__char {
+        transition: none;
+    }
+
+    .work-gallery.is-enhanced .work-card,
+    .work-gallery.is-enhanced .work-card.is-active {
+        transform: none;
+        transition: none;
+    }
+}
