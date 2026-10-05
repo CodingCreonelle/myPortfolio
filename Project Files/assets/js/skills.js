@@ -11,8 +11,17 @@
 
   const MOUNT_SELECTOR = '#skills-matrix';
   const CELL_SELECTOR = '.skill-cell';
-  // The states that open a card. CSS owns them; this only reads them back.
-  const OPEN_SELECTOR = ':is(:hover, :focus-visible, [data-expanded="true"])';
+  /*
+   * The states that open a card. CSS owns them; this only reads them back, so
+   * the hover part is read the way the stylesheet reads it, behind
+   * `@media (hover: hover)`. A touch device leaves the cell it was tapped on
+   * matching `:hover` for good, so counting it there kept marking a collapsed
+   * card's neighbours as covered with nothing open to cover them, and they never
+   * came back.
+   */
+  const HOVER_MEDIA = '(hover: hover)';
+  const OPEN_SELECTOR = ':is(:focus-visible, [data-expanded="true"])';
+  const OPEN_SELECTOR_HOVER = ':is(:hover, :focus-visible, [data-expanded="true"])';
   const LEVEL_MAX = 5;
   // Half the grid gap. A cell within this of the grid's edge has no room to open
   // outwards, so its card opens back across the grid instead.
@@ -24,6 +33,10 @@
     const template = document.createElement('template');
     template.innerHTML = html.trim();
     return template.content.firstChild;
+  }
+
+  function openSelector() {
+    return window.matchMedia(HOVER_MEDIA).matches ? OPEN_SELECTOR_HOVER : OPEN_SELECTOR;
   }
 
   function skillTileMarkup(skill, index) {
@@ -149,7 +162,7 @@
     const covered = new Set();
 
     if (columns > 1) {
-      mount.querySelectorAll(CELL_SELECTOR + OPEN_SELECTOR).forEach((cell) => {
+      mount.querySelectorAll(CELL_SELECTOR + openSelector()).forEach((cell) => {
         const index = cells.indexOf(cell);
         if (index < 0) return;
 
