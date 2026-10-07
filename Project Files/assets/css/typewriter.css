@@ -1,0 +1,28 @@
+/* =========================================================================
+   Typewriter headings.
+
+   Any element with [data-typewriter] types its text out when it scrolls into
+   view, then keeps a blinking caret. The typing itself lives in typewriter.js;
+   this file only owns the caret so it can be shared by any page.
+   ========================================================================= */
+
+[data-typewriter]::after {
+    content: "";
+    display: inline-block;
+    width: 0.11em;
+    min-width: 4px;
+    height: 1.2em;
+    margin-left: 0.1em;
+    vertical-align: -0.2em;
+    background: currentColor;
+    animation: typewriter-caret 1.2s steps(1, end) infinite;
+}
+
+@keyframes typewriter-caret {
+    0%, 44%   { opacity: 1; }
+    45%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-typewriter]::after { animation: none; }
+}

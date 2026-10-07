@@ -1,0 +1,835 @@
+/* =========================================================================
+   About-page component set.
+
+   These components (hero marquee, capability cards, profile, training rows,
+   archive rows, contact CTA, outro) are shared: about.html uses all of them,
+   index.html uses the capability cards. All colours come from the shared
+   palette in variables.css, so they follow --bg / --surface / --text and the
+   light-dark theme exactly like the rest of the site.
+   ========================================================================= */
+
+/* ------------------------------------------------------------ utilities */
+.ab-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------------------------------------------------------------- layout */
+.about-page {
+    width: min(100% - (var(--ab-gutter) * 2), var(--ab-content));
+    margin: 0 auto;
+    position: relative;
+}
+
+.ab-section {
+    padding: 130px 0;
+    scroll-margin-top: 120px;
+}
+
+/* --------------------------------------------------------- section heads */
+.ab-head { max-width: 660px; }
+
+.ab-eyebrow {
+    font-family: var(--ab-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+    margin: 0 0 20px;
+}
+
+.ab-title {
+    font-size: clamp(2.1rem, 3.7vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--ab-heading);
+    margin: 0 0 20px;
+}
+
+.ab-lede {
+    font-size: 0.97rem;
+    line-height: 1.55;
+    color: var(--ab-muted);
+    margin: 0;
+    max-width: 46ch;
+}
+
+/* -------------------------------------------------------------- buttons */
+.ab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.25s ease, color 0.25s ease,
+                border-color 0.25s ease, transform 0.2s ease;
+}
+
+.ab-btn--light { background-color: var(--ab-btn-fill); color: var(--ab-btn-text); }
+.ab-btn--light:hover,
+.ab-btn--light:focus-visible { transform: translateY(-2px); }
+
+.ab-btn--ghost {
+    background-color: transparent;
+    color: var(--ab-text);
+    border-color: var(--ab-ghost-line);
+}
+.ab-btn--ghost:hover,
+.ab-btn--ghost:focus-visible {
+    background-color: var(--ab-btn-fill);
+    color: var(--ab-btn-text);
+    border-color: transparent;
+}
+
+.ab-btn--lg { padding: 18px 30px; font-size: 0.82rem; }
+.ab-btn--block { width: 100%; }
+
+.ab-btn svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ================================================================= HERO */
+.ab-hero {
+    position: relative;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 150px 0 90px;
+    overflow: hidden;
+}
+
+.ab-hero__marquee {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.ab-hero__track {
+    display: flex;
+    white-space: nowrap;
+    animation: ab-marquee 42s linear infinite;
+    will-change: transform;
+}
+
+.ab-hero__word {
+    padding-right: 0.18em;
+    font-size: clamp(5rem, 25vw, 21rem);
+    font-weight: 800;
+    line-height: 0.82;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ab-outline);
+}
+
+@keyframes ab-marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(-33.3333%, 0, 0); }
+}
+
+.ab-hero__visual {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+}
+
+.ab-hero__orb {
+    width: clamp(210px, 29vw, 420px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--ab-hairline), var(--ab-shadow);
+}
+
+.ab-hero__orb-img { width: 100%; height: 100%; object-fit: cover; }
+
+.ab-hero__scroll {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+}
+
+.ab-hero__scroll-line { width: 1px; height: 52px; background: var(--ab-line); }
+
+.ab-hero__scroll-text {
+    writing-mode: vertical-rl;
+    font-family: var(--ab-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+}
+
+/* ====================================================== WHAT I CAN DO */
+.ab-skills__grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 60px;
+    align-items: start;
+}
+
+/* Separates the language icons from the tool cards. */
+.ab-skills__group-label {
+    font-family: var(--ab-mono);
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--ab-hairline);
+}
+
+.ab-skills__aside .ab-skills__group-label { margin-top: 36px; }
+.ab-skills__main .ab-skills__group-label { margin-bottom: 20px; }
+
+/* The language row wraps, so it absorbs any number of entries. */
+.ab-skills__icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.ab-skill-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 10px;
+    background-color: var(--ab-elevated);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.ab-skill-icon:hover { transform: translateY(-4px); border-color: var(--primary); }
+.ab-skill-icon img { width: 24px; height: 24px; object-fit: contain; }
+
+/* Shown in place of an icon that has not been added to the icon set yet, so a
+   new language or tool can be added as data alone. */
+.ab-skill-mono {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    font-family: var(--ab-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.ab-skill-icon .ab-skill-mono { color: var(--ab-text); }
+.ab-skill-card__icon .ab-skill-mono { color: var(--ab-icon-glyph); }
+
+/* auto-fit keeps the tool cards flowing for any number of entries. */
+.ab-skills__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+/* Capability card — number + corner label, icon tile, copy, and pills that
+   anchor to the bottom so cards in a row line up. */
+.ab-skill-card {
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    min-height: 340px;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 12px;
+    background-color: var(--ab-surface-2);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.ab-skill-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+
+.ab-skill-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ab-skill-card__num {
+    font-size: 2rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--ab-text);
+}
+
+.ab-skill-card__label {
+    font-family: var(--ab-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 1.35;
+    text-transform: uppercase;
+    text-align: right;
+    color: var(--ab-muted);
+    max-width: 13ch;
+}
+
+.ab-skill-card__icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin: 24px auto 0;
+    border-radius: 10px;
+    background-color: var(--ab-icon-tile);
+    box-shadow: inset 0 0 0 1px var(--ab-tile-ring);
+}
+
+.ab-skill-card__icon img { width: 24px; height: 24px; object-fit: contain; }
+
+.ab-skill-card__name {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ab-heading);
+    margin: 16px 0 8px;
+}
+
+.ab-skill-card__desc {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--ab-muted);
+    margin: 0 0 22px;
+}
+
+.ab-skill-card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.ab-pill {
+    padding: 5px 8px;
+    border-radius: 5px;
+    background-color: var(--ab-pill-bg);
+    color: var(--ab-pill-text);
+    font-family: var(--ab-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+}
+
+/* ============================================================ PROFILE */
+.ab-profile__grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 220px;
+    gap: 64px;
+    margin-top: 64px;
+    align-items: start;
+}
+
+.ab-profile__avatar {
+    display: block;
+    width: 188px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid var(--ab-hairline);
+    margin-bottom: 26px;
+}
+
+.ab-profile__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.ab-profile__name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ab-heading);
+    margin: 0 0 8px;
+}
+
+.ab-profile__role {
+    font-family: var(--ab-mono);
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+    margin: 0;
+}
+
+.ab-profile__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin-top: 28px;
+}
+
+.ab-stat { display: flex; flex-direction: column; gap: 5px; }
+
+.ab-stat__label {
+    font-family: var(--ab-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+}
+
+.ab-stat__value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ab-text);
+}
+
+.ab-profile__body p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ab-muted);
+    max-width: 62ch;
+}
+
+.ab-profile__goals {
+    display: grid;
+    gap: 14px;
+    margin-top: 30px;
+}
+
+.ab-profile__goals li {
+    position: relative;
+    padding-left: 28px;
+    font-size: 0.95rem;
+    color: var(--ab-text);
+}
+
+.ab-profile__goals li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 14px;
+    height: 1px;
+    background-color: var(--ab-muted);
+}
+
+/* floating trait deck */
+.ab-trait { min-height: 176px; }
+
+.ab-trait__deck {
+    position: relative;
+    width: 100%;
+    max-width: 218px;
+    height: 172px;
+    margin-left: auto;
+}
+
+.ab-trait__ghost {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 14px;
+    background-color: var(--ab-surface-2);
+}
+
+.ab-trait__ghost--1 { transform: rotate(-8deg) translate(-9px, 9px); opacity: 0.55; }
+.ab-trait__ghost--2 { transform: rotate(-15deg) translate(-18px, 18px); opacity: 0.3; }
+
+.ab-trait__card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 14px;
+    background-color: var(--ab-surface-2);
+    box-shadow: var(--ab-shadow);
+    transition: transform 0.26s ease, opacity 0.26s ease;
+}
+
+.ab-trait__card.is-swapping { transform: translateY(-12px) rotate(2deg); opacity: 0; }
+
+.ab-trait__label {
+    font-family: var(--ab-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+}
+
+.ab-trait__value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--ab-heading);
+}
+
+/* =========================================================== TRAININGS */
+.ab-trainings__list {
+    display: grid;
+    gap: 40px;
+    margin-top: 64px;
+    padding-left: 0;
+    list-style: none;
+}
+
+.ab-train {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 60px;
+    row-gap: 26px;
+    align-items: start;
+}
+
+.ab-train:nth-child(even) .ab-train__visual { order: 2; }
+
+.ab-train__visual {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 5 / 3;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--ab-surface), var(--bg) 65%);
+}
+
+.ab-train__year {
+    font-size: 3.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ab-ghost-num);
+}
+
+.ab-train__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.ab-train__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ab-heading);
+    margin: 0;
+}
+
+.ab-train__date {
+    flex: 0 0 auto;
+    font-family: var(--ab-mono);
+    font-size: 0.76rem;
+    color: var(--ab-muted);
+    white-space: nowrap;
+}
+
+.ab-train__meta {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--ab-text);
+    margin: 0 0 14px;
+}
+
+.ab-train__desc {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--ab-muted);
+    margin: 0 0 20px;
+    max-width: 46ch;
+}
+
+.ab-train__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.ab-tag {
+    padding: 6px 13px;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 999px;
+    font-family: var(--ab-mono);
+    font-size: 0.63rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+}
+
+/* ================================================= TECHNICAL PROJECTS */
+.ab-archive__list {
+    margin-top: 64px;
+    padding-left: 0;
+    list-style: none;
+}
+
+.ab-arch {
+    display: grid;
+    grid-template-columns: 62px 1fr auto;
+    gap: 24px;
+    align-items: start;
+    padding: 34px 0;
+    border-top: 1px solid var(--ab-hairline);
+    transition: padding-left 0.3s ease;
+}
+
+.ab-arch:last-child { border-bottom: 1px solid var(--ab-hairline); }
+.ab-arch:hover { padding-left: 12px; }
+
+.ab-arch__num {
+    font-family: var(--ab-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--ab-muted);
+}
+
+.ab-arch__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ab-heading);
+    margin: 0 0 8px;
+}
+
+.ab-arch__desc {
+    font-size: 0.93rem;
+    line-height: 1.55;
+    color: var(--ab-muted);
+    margin: 0 0 12px;
+    max-width: 68ch;
+}
+
+.ab-arch__stack {
+    font-family: var(--ab-mono);
+    font-size: 0.63rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+}
+
+.ab-arch__year {
+    font-family: var(--ab-mono);
+    font-size: 0.75rem;
+    color: var(--ab-muted);
+    white-space: nowrap;
+}
+
+/* ============================================================= CONTACT */
+.ab-cta__grid {
+    display: grid;
+    grid-template-columns: 1fr 378px;
+    gap: 84px;
+    align-items: start;
+}
+
+.ab-cta__display {
+    font-size: clamp(3rem, 8.3vw, 7.8rem);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: var(--ab-heading);
+    margin: 16px 0 42px;
+}
+
+.ab-cta__sub {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ab-text);
+    max-width: 22ch;
+    margin: 0 0 20px;
+}
+
+.ab-cta__body {
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: var(--ab-muted);
+    max-width: 36ch;
+    margin: 0 0 34px;
+}
+
+.ab-contact { display: grid; gap: 13px; margin-bottom: 26px; }
+
+.ab-contact__item { display: block; }
+.ab-contact__text { display: block; min-width: 0; }
+
+.ab-contact__card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 20px 22px;
+    border: 1px solid var(--ab-hairline);
+    border-radius: 14px;
+    background-color: var(--ab-surface);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.ab-contact__card:hover { transform: translateY(-2px); border-color: var(--primary); }
+
+.ab-contact__icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: var(--ab-elevated);
+}
+
+.ab-contact__icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: var(--ab-icon-glyph);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ab-contact__label {
+    display: block;
+    font-family: var(--ab-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ab-muted);
+    margin: 0 0 5px;
+}
+
+.ab-contact__value {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ab-text);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.ab-contact__index {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-family: var(--ab-mono);
+    font-size: 0.66rem;
+    color: var(--ab-muted);
+}
+
+.ab-contact__ext {
+    position: absolute;
+    right: 18px;
+    bottom: 15px;
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: var(--ab-muted);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* =============================================================== OUTRO */
+.ab-outro__inner { position: relative; padding-right: 220px; }
+
+.ab-outro__display {
+    font-size: clamp(2.4rem, 6.6vw, 6.2rem);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--ab-heading);
+    margin: 16px 0 0;
+}
+
+.ab-outro__btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+/* ========================================================= RESPONSIVE */
+@media (max-width: 1100px) {
+    .ab-cta__grid { grid-template-columns: 1fr 320px; gap: 52px; }
+    .ab-skills__grid { grid-template-columns: 260px 1fr; gap: 44px; }
+    .ab-profile__grid { grid-template-columns: 260px 1fr; gap: 52px; }
+    .ab-trait { grid-column: 1 / -1; }
+    .ab-trait__deck { margin-left: 0; }
+    .ab-outro__inner { padding-right: 180px; }
+}
+
+@media (max-width: 960px) {
+    .ab-section { padding: 96px 0; }
+
+    .ab-skills__grid,
+    .ab-profile__grid { grid-template-columns: 1fr; gap: 44px; }
+
+    .ab-cta__grid { grid-template-columns: 1fr; gap: 60px; }
+    .ab-cta__sub,
+    .ab-cta__body { max-width: 46ch; }
+
+    .ab-train { grid-template-columns: 1fr; gap: 30px; }
+    .ab-train:nth-child(even) .ab-train__visual { order: 0; }
+
+    .ab-outro__inner { padding-right: 0; }
+    .ab-outro__btn { position: static; margin-top: 34px; }
+}
+
+@media (max-width: 720px) {
+    .ab-section { padding: 76px 0; }
+    .ab-hero { padding: 130px 0 70px; }
+
+    .ab-hero__word { font-size: 27vw; -webkit-text-stroke-width: 1.5px; }
+    .ab-hero__scroll { display: none; }
+
+    .ab-skills__cards { grid-template-columns: 1fr; }
+    .ab-skill-card { min-height: 0; }
+
+    .ab-arch { grid-template-columns: 40px 1fr; }
+    .ab-arch__year { grid-column: 2; }
+    .ab-contact__card { padding: 18px; }
+}
+
+/* ===================================================== REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+    .ab-hero__track { animation: none; }
+    .ab-trait__card { transition: none; }
+}
+
+/* Display headings come from JSON with newlines between the lines. */
+.ab-cta__display,
+.ab-outro__display { white-space: pre-line; }

@@ -42,6 +42,8 @@ section[id] {
     max-width: 64ch;
     margin-bottom: 32px;
     text-align: justify;
+    /* the copy comes from JSON and uses blank lines between paragraphs */
+    white-space: pre-line;
 }
 
 .hero-actions {

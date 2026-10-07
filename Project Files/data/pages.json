@@ -1,0 +1,126 @@
+{
+  "home": {
+    "title": "Charles Portfolio",
+    "hero": {
+      "eyebrow": "Hello, I'm",
+      "title": "Charles David Lopez",
+      "description": "I built this portfolio not to impress, but to, in a way, satisfy my need for expression and my drive for passion. I refuse to participate in the performativistic acts that most software developers are trapped in.\n\nThis is my very first passion project, built at the earliest stage of my career, made to simplify my life when tracking my work and to showcase my skills in a way that is authentic to me.",
+      "avatar": { "src": "assets/images/profile/profile.jpg", "alt": "Charles David Lopez" },
+      "actions": [
+        { "label": "View projects", "href": "projects.html", "className": "button button-primary" },
+        { "label": "Learn more about me", "href": "about.html", "className": "button button-secondary" }
+      ]
+    },
+    "work": {
+      "eyebrow": "Featured work",
+      "title": "Highlighted projects",
+      "lede": "Projects that showcase my best work yet to this day.",
+      "actionLabel": "All projects"
+    },
+    "experience": {
+      "label": "Experience",
+      "title": "Learning journey"
+    },
+    "skills": {
+      "eyebrow": "Capabilities",
+      "title": "What I Can Do",
+      "lede": "I combine technical, problem-solving, and digital skills to build reliable systems and keep day-to-day work efficient.",
+      "languagesLabel": "Languages",
+      "toolsLabel": "Tools"
+    },
+    "contact": {
+      "label": "Contact",
+      "title": "Want to connect?",
+      "body": "If you'd like to collaborate or see more of my work, send an email directly or visit the contact page for other options.",
+      "actions": [
+        { "label": "Contact page", "href": "contact.html", "className": "button button-primary" },
+        { "label": "Email me", "href": "mailto:lopezcode741@gmail.com", "className": "button button-secondary" }
+      ]
+    }
+  },
+
+  "about": {
+    "title": "About | Charles Portfolio",
+    "hero": {
+      "name": "Charles David",
+      "image": "assets/images/profile/profile.jpg",
+      "scroll": "Scroll Down"
+    },
+    "profile": {
+      "eyebrow": "Who I Am",
+      "title": "Problem Solver. Digital Generalist.",
+      "avatar": "assets/images/profile/profile.jpg",
+      "name": "Charles David",
+      "role": "Aspiring Software Engineer",
+      "bio": [
+        "I'm an aspiring software engineer who enjoys turning ideas into clean, accessible websites. I build projects that are easy to navigate, easy to maintain, and easy to update.",
+        "My current focus is on front-end development, simple UI interactions, and organizing my portfolio using a structure that scales well as I add more work."
+      ],
+      "goals": [
+        "Launch more portfolio projects with clear case studies.",
+        "Master front-end tooling and performance best practices.",
+        "Collaborate on projects that combine design with strong engineering."
+      ],
+      "traitLabel": "Trait",
+      "traits": ["Problem Solver", "Digital Generalist", "Detail-Oriented", "Curious", "Reliable"]
+    },
+    "trainings": {
+      "eyebrow": "Learning Path",
+      "title": "Trainings",
+      "lede": "The milestones that shaped how I build."
+    },
+    "archive": {
+      "eyebrow": "Archive",
+      "title": "Projects",
+      "lede": "A running log of everything I've shipped and studied."
+    },
+    "cta": {
+      "eyebrow": "Get In Touch",
+      "display": "Let's\nWork\nTogether",
+      "sub": "Looking for the next problem worth solving.",
+      "body": "I'm open to opportunities where I can contribute to front-end development, accessibility, and thoughtful digital workflows.",
+      "primaryLabel": "Download Resume",
+      "primaryHref": "contact.html",
+      "secondaryLabel": "Send Me a Message",
+      "secondaryHref": "contact.html"
+    },
+    "outro": {
+      "eyebrow": "Have a project in mind?",
+      "display": "Let's build\nsomething useful.",
+      "buttonLabel": "Hire Me",
+      "buttonHref": "contact.html"
+    }
+  },
+
+  "contact": {
+    "title": "Contact | Charles Portfolio",
+    "hero": {
+      "eyebrow": "Contact",
+      "title": "Let's connect",
+      "body": "Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon."
+    },
+    "form": {
+      "label": "Send a message",
+      "title": "Contact form",
+      "submitLabel": "Send message",
+      "fields": [
+        { "name": "name", "label": "Name", "type": "text", "placeholder": "Your name", "required": true },
+        { "name": "email", "label": "Email", "type": "email", "placeholder": "you@example.com", "required": true },
+        { "name": "message", "label": "Message", "type": "textarea", "placeholder": "Tell me about your project or question", "rows": 6, "required": false }
+      ]
+    }
+  },
+
+  "projects": {
+    "title": "Projects | Charles Portfolio",
+    "hero": {
+      "eyebrow": "Projects",
+      "title": "Complete project showcase",
+      "body": "Explore a curated list of portfolio projects, demos, and live experiences.",
+      "actions": [
+        { "label": "Back to home", "href": "index.html", "className": "button button-secondary" },
+        { "label": "Browse projects", "href": "#project-list", "className": "button button-primary" }
+      ]
+    }
+  }
+}

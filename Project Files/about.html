@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About | Charles Portfolio</title>
+    <title data-bind="title">About | Charles Portfolio</title>
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
-    <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/about-page.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/typewriter.css">
+    <script src="assets/js/theme.js" defer></script>
+    <script src="assets/js/content.js" defer></script>
     <script src="assets/js/app-loader.js" defer></script>
-    <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/typewriter.js" defer></script>
+    <script src="assets/js/about-page.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
@@ -19,41 +23,114 @@
     <div id="site-navbar"></div>
 
     <main class="about-page">
-        <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
-            <div class="page-title">
-                <p class="eyebrow">About</p>
-                <h1>Meet Charles</h1>
-                <p>A motivated web developer focused on building polished portfolio websites and thoughtful user experiences.</p>
+        <!-- ============================ HERO ============================ -->
+        <section class="ab-hero" id="hero">
+            <h1 class="ab-sr-only">About Charles David</h1>
+
+            <div class="ab-hero__marquee" aria-hidden="true">
+                <div class="ab-hero__track">
+                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
+                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
+                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
+                </div>
+            </div>
+
+            <div class="ab-hero__visual">
+                <div class="ab-hero__orb">
+                    <img class="ab-hero__orb-img"
+                         src="assets/images/profile/profile.jpg"
+                         alt=""
+                         width="4096" height="3112"
+                         data-bind-src="hero.image">
+                </div>
+            </div>
+
+            <p class="ab-hero__scroll" aria-hidden="true">
+                <span class="ab-hero__scroll-line"></span>
+                <span class="ab-hero__scroll-text" data-bind="hero.scroll">Scroll Down</span>
+            </p>
+        </section>
+
+        <!-- ========================== PROFILE ========================== -->
+        <section class="ab-section ab-profile" id="about">
+            <div class="ab-head" data-animate="animate-entrance" data-animate-delay="0">
+                <p class="ab-eyebrow" data-bind="profile.eyebrow">Who I Am</p>
+                <h2 class="ab-title" data-typewriter data-bind="profile.title">Problem Solver. Digital Generalist.</h2>
+            </div>
+
+            <div class="ab-profile__grid">
+                <div class="ab-profile__aside" data-animate="animate-entrance" data-animate-delay="80">
+                    <span class="ab-profile__avatar">
+                        <img src="assets/images/profile/profile.jpg" alt="" width="4096" height="3112"
+                             data-bind-src="profile.avatar">
+                    </span>
+                    <p class="ab-profile__name" data-bind="profile.name">Charles David</p>
+                    <p class="ab-profile__role" data-bind="profile.role">Aspiring Software Engineer</p>
+                    <ul class="ab-profile__stats" id="ab-profile-stats"></ul>
+                </div>
+
+                <div class="ab-profile__body" data-animate="animate-entrance" data-animate-delay="160">
+                    <div data-list="profile.bio" data-list-tag="p">
+                        <p>I'm an aspiring software engineer who enjoys turning ideas into clean, accessible websites.
+                           I build projects that are easy to navigate, easy to maintain, and easy to update.</p>
+                        <p>My current focus is on front-end development, simple UI interactions, and organizing my
+                           portfolio using a structure that scales well as I add more work.</p>
+                    </div>
+
+                    <ul class="ab-profile__goals list-animate" data-list="profile.goals">
+                        <li>Launch more portfolio projects with clear case studies.</li>
+                        <li>Master front-end tooling and performance best practices.</li>
+                        <li>Collaborate on projects that combine design with strong engineering.</li>
+                    </ul>
+                </div>
+
+                <div class="ab-trait" aria-hidden="true">
+                    <div class="ab-trait__deck" id="ab-trait-deck">
+                        <span class="ab-trait__ghost ab-trait__ghost--2"></span>
+                        <span class="ab-trait__ghost ab-trait__ghost--1"></span>
+                        <div class="ab-trait__card">
+                            <span class="ab-trait__label" data-bind="profile.traitLabel">Trait</span>
+                            <span class="ab-trait__value" id="ab-trait-value" data-bind="profile.traits.0">Problem Solver</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section class="about-intro" data-animate="animate-entrance" data-animate-delay="200">
-            <div class="about-copy">
-                <h2>Biography</h2>
-                <p>I'm an aspiring software engineer who enjoys turning ideas into clean, accessible websites. I build projects that are easy to navigate, easy to maintain, and easy to update.</p>
-                <p>My current focus is on front-end development, simple UI interactions, and organizing my portfolio using a structure that scales well as I add more work.</p>
+        <!-- ======================== TRAININGS ========================== -->
+        <section class="ab-section ab-trainings" id="trainings">
+            <div class="ab-head" data-animate="animate-entrance" data-animate-delay="0">
+                <p class="ab-eyebrow" data-bind="trainings.eyebrow">Learning Path</p>
+                <h2 class="ab-title" data-typewriter data-bind="trainings.title">Trainings</h2>
+                <p class="ab-lede" data-bind="trainings.lede">The milestones that shaped how I build.</p>
             </div>
-                <div class="about-details" id="education-content" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
+
+            <ol class="ab-trainings__list" id="ab-trainings-list"></ol>
         </section>
 
-        <section class="skills-section" data-animate="animate-entrance" data-animate-delay="200">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Skills</p>
-                <h2>Core strengths</h2>
-            </div>
-            <div class="skills-grid animate-stagger" id="skills-grid" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
-        </section>
+        <!-- ==================== LET'S WORK TOGETHER =================== -->
+        <section class="ab-section ab-cta" id="contact">
+            <div class="ab-cta__grid">
+                <div class="ab-cta__lead" data-animate="animate-entrance" data-animate-delay="0">
+                    <p class="ab-eyebrow" data-bind="cta.eyebrow">Get In Touch</p>
+                    <h2 class="ab-cta__display" data-bind="cta.display">Let's<br>Work<br>Together</h2>
+                    <p class="ab-cta__sub" data-bind="cta.sub">Looking for the next problem worth solving.</p>
+                    <p class="ab-cta__body" data-bind="cta.body">I'm open to opportunities where I can contribute to front-end
+                       development, accessibility, and thoughtful digital workflows.</p>
+                    <a class="ab-btn ab-btn--light ab-btn--lg"
+                       href="contact.html"
+                       data-bind-href="cta.primaryHref"
+                       data-bind="cta.primaryLabel">Download Resume</a>
+                </div>
 
-        <section class="goals-section" data-animate="animate-entrance" data-animate-delay="200">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Career goals</p>
-                <h2>What I'm building toward</h2>
+                <div class="ab-cta__aside">
+                    <ul class="ab-contact" id="ab-contact-cards"></ul>
+                    <a class="ab-btn ab-btn--ghost ab-btn--block"
+                       href="contact.html"
+                       data-bind-href="cta.secondaryHref"
+                       data-bind="cta.secondaryLabel">Send Me a Message</a>
+                </div>
             </div>
-                <ul class="goals-list list-animate">
-                <li>Launch more portfolio projects with clear case studies.</li>
-                <li>Master front-end tooling and performance best practices.</li>
-                <li>Collaborate on projects that combine design with strong engineering.</li>
-            </ul>
         </section>
     </main>
 

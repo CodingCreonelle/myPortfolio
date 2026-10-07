@@ -1,4 +1,20 @@
+/* =========================================================================
+   Design tokens.
+
+   Two palettes, switched by [data-theme] on <html>. Dark is the default and
+   reproduces the site's original navy scheme; light is its counterpart. Every
+   page reads these same tokens, so the theme applies consistently site-wide.
+
+   The --ab-* tokens are semantic aliases used by the about-page component set
+   (capability cards, contact cards, CTA, etc.). They point at the shared
+   palette rather than owning colours of their own, so those components match
+   whichever page and theme they are rendered in.
+   ========================================================================= */
+
 :root {
+    color-scheme: dark;
+
+    /* ---- dark palette: the site's original navy scheme ---- */
     --bg: #001134;
     --surface: #000088;
     --surface-strong: #387cbf;
@@ -10,10 +26,73 @@
     --primary-soft: #e0efff;
     --success: #16a34a;
     --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+
+    /* ---- shared chrome + backdrop ---- */
+    --on-surface: #fbfcff;
+    --glass: rgba(255, 255, 255, 0.12);
+    --glass-line: rgba(255, 255, 255, 0.1);
+    --bg-video-filter: blur(8px) brightness(0.5);
+    --bg-scrim: rgba(0, 17, 52, 0.3);
+
+    /* ---- metrics + type ---- */
     --radius: 24px;
     --radius-sm: 14px;
     --max-width: 1200px;
     --spacing: 24px;
     --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    /* ---- about-page component aliases ---- */
+    --ab-content: 1090px;
+    --ab-gutter: 24px;
+    --ab-mono: var(--font-mono);
+    --ab-heading: var(--text);
+    --ab-text: var(--text);
+    --ab-muted: var(--muted);
+    --ab-micro: var(--muted);
+    --ab-surface: var(--surface);
+    --ab-surface-2: var(--surface);
+    --ab-elevated: var(--surface-strong);
+    --ab-hairline: var(--border);
+    --ab-line: var(--border);
+    --ab-btn-fill: var(--text);
+    --ab-btn-text: var(--bg);
+    --ab-pill-bg: var(--bg);
+    --ab-pill-text: var(--text);
+    --ab-tile-ring: var(--border);
+    --ab-icon-tile: var(--text);
+    --ab-icon-glyph: var(--bg);
+    --ab-shadow: var(--shadow);
+    --ab-outline: rgba(255, 255, 255, 0.22);
+    --ab-ghost-num: rgba(255, 255, 255, 0.1);
+    --ab-ghost-line: rgba(255, 255, 255, 0.45);
+}
+
+/* ---- light palette ---- */
+:root[data-theme="light"] {
     color-scheme: light;
+
+    --bg: #eef2f9;
+    --surface: #ffffff;
+    --surface-strong: #dbe6f7;
+    --text: #0a1730;
+    --muted: #5b6b86;
+    --border: #d3dcea;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-soft: #dbeafe;
+    --success: #15803d;
+    --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+
+    --on-surface: #0a1730;
+    --glass: rgba(10, 23, 48, 0.06);
+    --glass-line: rgba(10, 23, 48, 0.08);
+    /* the backdrop video is dark footage — lift and scrim it so light pages
+       stay readable while the video itself is still visible */
+    --bg-video-filter: blur(14px) brightness(1.45) saturate(0.45);
+    --bg-scrim: rgba(238, 242, 249, 0.86);
+
+    --ab-outline: rgba(10, 23, 48, 0.22);
+    --ab-ghost-num: rgba(10, 23, 48, 0.1);
+    --ab-ghost-line: rgba(10, 23, 48, 0.45);
 }

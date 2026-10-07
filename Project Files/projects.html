@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projects | Charles Portfolio</title>
+    <title data-bind="title">Projects | Charles Portfolio</title>
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/projects.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <script src="assets/js/theme.js" defer></script>
+    <script src="assets/js/content.js" defer></script>
     <script src="assets/js/app-loader.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
@@ -21,18 +23,20 @@
     <main class="projects-page">
         <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
             <div class="page-title">
-                <p class="eyebrow">Projects</p>
-                <h1>Complete project showcase</h1>
-                <p>Explore a curated list of portfolio projects, demos, and live experiences.</p>
+                <p class="eyebrow" data-bind="hero.eyebrow">Projects</p>
+                <h1 data-bind="hero.title">Complete project showcase</h1>
+                <p data-bind="hero.body">Explore a curated list of portfolio projects, demos, and live experiences.</p>
             </div>
-            <div class="page-actions">
-                <a href="index.html" class="button button-secondary">Back to home</a>
-                <a href="#project-list" class="button button-primary">Browse projects</a>
-            </div>
+            <div class="page-actions" data-list="hero.actions" data-list-template="tpl-action"></div>
         </section>
 
         <section class="project-list" id="project-list" data-animate-stagger="true" data-animate-stagger-delay="100" data-animate-delay="200"></section>
     </main>
+
+    <!-- Repeated-action template: used by the page hero button row. -->
+    <template id="tpl-action">
+        <a data-bind-class="className" data-bind-href="href" data-bind="label"></a>
+    </template>
 
     <div id="site-footer"></div>
 </body>

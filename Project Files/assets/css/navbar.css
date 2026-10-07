@@ -192,10 +192,10 @@
 
 .site-nav a.active {
     color: var(--primary);
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--glass);
     backdrop-filter: blur(8px);
     transform: scale(1.08);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px var(--glass-line);
 }
 
 .site-nav a:hover,
@@ -335,4 +335,50 @@
     .brand {
         display: none;
     }
+}
+
+/* -------------------------------------------------------------------------
+   Theme toggle — shared navbar chrome, so it appears on every page and the
+   light-dark switch works site-wide. Behaviour lives in theme.js.
+   ------------------------------------------------------------------------- */
+.theme-toggle {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--glass-line);
+    border-radius: 11px;
+    background: var(--glass);
+    color: var(--on-surface);
+    cursor: pointer;
+    transition: background-color 0.25s ease, color 0.25s ease,
+                border-color 0.25s ease;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.theme-toggle svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The icon is chosen in pure CSS from the palette, so the button is always
+   correct even before theme.js runs. */
+.theme-toggle__icon--sun { display: none; }
+:root[data-theme="light"] .theme-toggle__icon--moon { display: none; }
+:root[data-theme="light"] .theme-toggle__icon--sun { display: block; }
+
+@media (max-width: 720px) {
+    .theme-toggle { align-self: center; }
 }

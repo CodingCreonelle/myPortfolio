@@ -125,8 +125,25 @@
     const navLinks = document.querySelectorAll('.site-nav a');
     if (!navLinks.length) return;
 
-    const sectionIds = ['hero', 'about', 'experience', 'contact'];
-    const sections = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+    /*
+     * Only in-page anchors that resolve to THIS page may drive the section
+     * highlight. On about.html the nav's "#hero" link points at index.html, so
+     * without this guard the observer would light up "Home" on a page whose own
+     * link is already the active one.
+     */
+    const currentPath = window.location.pathname;
+    const pageHashLinks = Array.from(navLinks).filter((link) => {
+      try {
+        const url = new URL(link.href);
+        return url.pathname === currentPath && url.hash.length > 1;
+      } catch (error) {
+        return false;
+      }
+    });
+
+    const sections = pageHashLinks
+      .map(link => document.getElementById(link.hash.slice(1)))
+      .filter(Boolean);
 
     const setActiveLink = (link) => {
       navLinks.forEach(navLink => {
@@ -135,7 +152,7 @@
     };
 
     const findLinkForSectionId = (id) => {
-      return Array.from(navLinks).find(link => link.getAttribute('href')?.endsWith(`#${id}`));
+      return pageHashLinks.find(link => link.hash === `#${id}`);
     };
 
     /*

@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Charles Portfolio</title>
+    <title data-bind="title">Charles Portfolio</title>
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
     <link rel="stylesheet" href="assets/css/work-gallery.css">
     <link rel="stylesheet" href="assets/css/timeline.css">
-    <link rel="stylesheet" href="assets/css/skills.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/typewriter.css">
+    <link rel="stylesheet" href="assets/css/about-page.css">
+    <script src="assets/js/theme.js" defer></script>
+    <script src="assets/js/content.js" defer></script>
     <script src="assets/js/app-loader.js" defer></script>
     <script src="assets/js/timeline.js" defer></script>
-    <script src="assets/js/skills.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
     <script src="assets/js/work-gallery.js" defer></script>
+    <script src="assets/js/typewriter.js" defer></script>
+    <script src="assets/js/about-page.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
@@ -27,34 +31,30 @@
     <main class="homepage-layout">
         <section class="hero" id="hero">
             <div class="hero-copy">
-                    <p class="eyebrow hero-animate-title">Hello, I'm</p>
-                    <h1 class="hero-animate-title">Charles David Lopez</h1>
-                    <p class="hero-description hero-animate-description">
-                        I built this portfolio not to impress, but to, in a way, satisfy my need for expression and my drive for passion. I refuse to participate in the performativistic acts that most software developers are trapped in.
+                <p class="eyebrow hero-animate-title" data-bind="hero.eyebrow">Hello, I'm</p>
+                <h1 class="hero-animate-title" data-bind="hero.title">Charles David Lopez</h1>
+                <p class="hero-description hero-animate-description" data-bind="hero.description">I built this portfolio not to impress, but to, in a way, satisfy my need for expression and my drive for passion. I refuse to participate in the performativistic acts that most software developers are trapped in.
 
-                        This is my very first passion project, built at the earliest stage of my career, made to simplify my life when tracking my work and to showcase my skills in a way that is authentic to me.
-                    </p>
-                <div class="hero-actions hero-animate-actions">
-                    <a href="projects.html" class="button button-primary">View projects</a>
-                    <a href="about.html" class="button button-secondary">Learn more about me</a>
-                </div>
+This is my very first passion project, built at the earliest stage of my career, made to simplify my life when tracking my work and to showcase my skills in a way that is authentic to me.</p>
+                <div class="hero-actions hero-animate-actions" data-list="hero.actions" data-list-template="tpl-action"></div>
             </div>
             <div class="hero-avatar hero-animate-avatar">
-                <img src="assets\images\profile\profile.jpg" alt="Charles David Lopez" width="200" height="200">
+                <img src="assets/images/profile/profile.jpg" alt="Charles David Lopez" width="200" height="200"
+                     data-bind-src="hero.avatar.src" data-bind-alt="hero.avatar.alt">
             </div>
         </section>
 
         <section class="work-gallery" id="projects" aria-labelledby="work-gallery-heading" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
             <div class="work-gallery__stage animate-stagger" data-animate-stagger="true">
                 <header class="work-gallery__header section-header-animate">
-                    <p class="work-gallery__eyebrow">Featured work</p>
+                    <p class="work-gallery__eyebrow" data-bind="work.eyebrow">Featured work</p>
                     <h2 class="work-gallery__heading" id="work-gallery-heading">
-                        <span class="work-gallery__sr">Highlighted projects</span>
-                        <span data-work-typewriter aria-hidden="true">Highlighted projects</span>
+                        <span class="work-gallery__sr" data-bind="work.title">Highlighted projects</span>
+                        <span data-work-typewriter aria-hidden="true" data-bind="work.title">Highlighted projects</span>
                     </h2>
-                    <p class="work-gallery__lede">Projects that showcase my best work yet to this day.</p>
+                    <p class="work-gallery__lede" data-bind="work.lede">Projects that showcase my best work yet to this day.</p>
                     <a href="projects.html" class="work-gallery__action">
-                        All projects
+                        <span data-bind="work.actionLabel">All projects</span>
                         <span class="work-gallery__action-arrow" aria-hidden="true">&#8594;</span>
                     </a>
                 </header>
@@ -84,35 +84,63 @@
                         still navigating the timeline.
                     -->
                     <div class="section-header section-header-animate">
-                        <p class="section-label">Experience</p>
-                        <h2>Learning journey</h2>
+                        <p class="section-label" data-bind="experience.label">Experience</p>
+                        <h2 data-bind="experience.title">Learning journey</h2>
                     </div>
                     <div id="experience-timeline"></div>
                 </div>
             </div>
         </section>
 
-        <section class="skills-section" id="skills" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Skills</p>
-                <h2>Tools I work with</h2>
-                <p>The technologies behind the work above, and how comfortable I am with each of them.</p>
+        <!-- ====================== WHAT I CAN DO ======================== -->
+        <section class="ab-section ab-skills" id="skills">
+            <div class="ab-skills__grid">
+                <div class="ab-skills__aside" data-animate="animate-entrance" data-animate-delay="0">
+                    <p class="ab-eyebrow" data-bind="skills.eyebrow">Capabilities</p>
+                    <h2 class="ab-title" data-typewriter data-bind="skills.title">What I Can Do</h2>
+                    <p class="ab-lede" data-bind="skills.lede">I combine technical, problem-solving, and digital skills to build reliable systems and keep day-to-day work efficient.</p>
+
+                    <p class="ab-skills__group-label" data-bind="skills.languagesLabel">Languages</p>
+                    <ul class="ab-skills__icons" id="ab-skill-icons"></ul>
+                </div>
+
+                <div class="ab-skills__main">
+                    <p class="ab-skills__group-label" data-bind="skills.toolsLabel">Tools</p>
+                    <div class="ab-skills__cards" id="ab-skill-cards"></div>
+                </div>
             </div>
-            <ul class="skill-matrix animate-stagger" id="skills-matrix" data-animate-stagger="true" data-animate-stagger-delay="100"></ul>
         </section>
 
-        <section class="contact-preview" id="contact" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
-            <div class="section-header section-header-animate">
-                <p class="section-label">Contact</p>
-                <h2>Want to connect?</h2>
-                <p>If you'd like to collaborate or see more of my work, send an email directly or visit the contact page for other options.</p>
+        <!-- ==================== LET'S WORK TOGETHER =================== -->
+        <section class="ab-section ab-cta" id="contact">
+            <div class="ab-cta__grid">
+                <div class="ab-cta__lead" data-animate="animate-entrance" data-animate-delay="0">
+                    <p class="ab-eyebrow" data-bind="cta.eyebrow">Get In Touch</p>
+                    <h2 class="ab-cta__display" data-bind="cta.display">Let's<br>Work<br>Together</h2>
+                    <p class="ab-cta__sub" data-bind="cta.sub">Looking for the next problem worth solving.</p>
+                    <p class="ab-cta__body" data-bind="cta.body">I'm open to opportunities where I can contribute to front-end
+                       development, accessibility, and thoughtful digital workflows.</p>
+                    <a class="ab-btn ab-btn--light ab-btn--lg"
+                       href="contact.html"
+                       data-bind-href="cta.primaryHref"
+                       data-bind="cta.primaryLabel">Download Resume</a>
+                </div>
+
+                <div class="ab-cta__aside">
+                    <ul class="ab-contact" id="ab-contact-cards"></ul>
+                    <a class="ab-btn ab-btn--ghost ab-btn--block"
+                       href="contact.html"
+                       data-bind-href="cta.secondaryHref"
+                       data-bind="cta.secondaryLabel">Send Me a Message</a>
+                </div>
             </div>
-            <div class="contact-actions">
-                <a href="contact.html" class="button button-primary">Contact page</a>
-                <a href="mailto:lopezcode741@gmail.com" class="button button-secondary">Email me</a>
-            </div>
-            </section>
+        </section>
     </main>
+
+    <!-- Repeated-action template: used by the hero and contact-preview button rows. -->
+    <template id="tpl-action">
+        <a data-bind-class="className" data-bind-href="href" data-bind="label"></a>
+    </template>
 
     <div id="site-footer"></div>
 </body>

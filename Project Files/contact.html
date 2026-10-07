@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact | Charles Portfolio</title>
+    <title data-bind="title">Contact | Charles Portfolio</title>
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <script src="assets/js/theme.js" defer></script>
+    <script src="assets/js/content.js" defer></script>
     <script src="assets/js/app-loader.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
     <script src="assets/js/live-reload.js" defer></script>
@@ -21,9 +23,9 @@
     <main class="contact-page">
         <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
             <div class="page-title">
-                <p class="eyebrow">Contact</p>
-                <h1>Let’s connect</h1>
-                <p>Questions, project requests, or collaboration ideas? Reach out and I’ll get back to you soon.</p>
+                <p class="eyebrow" data-bind="hero.eyebrow">Contact</p>
+                <h1 data-bind="hero.title">Let's connect</h1>
+                <p data-bind="hero.body">Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon.</p>
             </div>
         </section>
 
@@ -33,23 +35,26 @@
 
         <section class="contact-form-section" data-animate="animate-entrance" data-animate-delay="200">
             <div class="section-header section-header-animate">
-                <p class="section-label">Send a message</p>
-                <h2>Contact form</h2>
+                <p class="section-label" data-bind="form.label">Send a message</p>
+                <h2 data-bind="form.title">Contact form</h2>
             </div>
             <form class="contact-form" action="#" method="post">
                 <label>
-                    Name
-                    <input type="text" name="name" placeholder="Your name" required>
+                    <span data-bind="form.fields.0.label">Name</span>
+                    <input type="text" name="name" placeholder="Your name" required
+                           data-bind-placeholder="form.fields.0.placeholder">
                 </label>
                 <label>
-                    Email
-                    <input type="email" name="email" placeholder="you@example.com" required>
+                    <span data-bind="form.fields.1.label">Email</span>
+                    <input type="email" name="email" placeholder="you@example.com" required
+                           data-bind-placeholder="form.fields.1.placeholder">
                 </label>
                 <label>
-                    Message
-                    <textarea name="message" rows="6" placeholder="Tell me about your project or question"></textarea>
+                    <span data-bind="form.fields.2.label">Message</span>
+                    <textarea name="message" rows="6" placeholder="Tell me about your project or question"
+                              data-bind-placeholder="form.fields.2.placeholder"></textarea>
                 </label>
-                <button type="submit" class="button button-primary">Send message</button>
+                <button type="submit" class="button button-primary" data-bind="form.submitLabel">Send message</button>
             </form>
         </section>
     </main>
