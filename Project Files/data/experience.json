@@ -7,8 +7,7 @@
       "title": "First lines of code",
       "subtitle": "HTML & CSS foundations",
       "description": "Started self-teaching frontend development. Learned semantic markup, the box model, and how to build a page from scratch without a framework.",
-      "tags": ["HTML", "CSS"],
-      "parentId": null
+      "tags": ["HTML", "CSS"]
     },
     {
       "id": "2024-responsive",
@@ -17,8 +16,7 @@
       "title": "Layouts that adapt",
       "subtitle": "Responsive design",
       "description": "Moved past fixed-width pages. Practised fluid layouts, media queries, and CSS Grid and Flexbox so the same markup holds up from phone to desktop.",
-      "tags": ["CSS", "Responsive design"],
-      "parentId": null
+      "tags": ["CSS", "Responsive design"]
     },
     {
       "id": "2025-javascript",
@@ -27,8 +25,7 @@
       "title": "Making pages respond",
       "subtitle": "JavaScript interactivity",
       "description": "Added behaviour on top of static markup: DOM manipulation, event handling, and fetching JSON so content is rendered from data instead of being hardcoded.",
-      "tags": ["JavaScript", "DOM"],
-      "parentId": null
+      "tags": ["JavaScript", "DOM"]
     },
     {
       "id": "2025-accessibility",
@@ -37,8 +34,7 @@
       "title": "Building for everyone",
       "subtitle": "Accessibility",
       "description": "Learned to treat accessibility as a requirement rather than a cleanup task: semantic structure, keyboard navigation, focus management, and honouring prefers-reduced-motion.",
-      "tags": ["Accessibility", "Semantics"],
-      "parentId": null
+      "tags": ["Accessibility", "Semantics"]
     },
     {
       "id": "2025-design-systems",
@@ -47,8 +43,7 @@
       "title": "Structure over repetition",
       "subtitle": "Design systems",
       "description": "Replaced one-off styling with design tokens and reusable component styles so the site stays consistent and stays easy to change.",
-      "tags": ["Design systems", "CSS"],
-      "parentId": null
+      "tags": ["Design systems", "CSS"]
     },
     {
       "id": "2026-portfolio",
@@ -57,8 +52,7 @@
       "title": "This portfolio",
       "subtitle": "First passion project",
       "description": "The project you are looking at. Built to track my own work and to present it honestly rather than to perform for an audience.",
-      "tags": ["HTML", "CSS", "JavaScript"],
-      "parentId": null
+      "tags": ["HTML", "CSS", "JavaScript"]
     }
   ],
 

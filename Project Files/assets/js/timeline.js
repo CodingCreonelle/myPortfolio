@@ -22,10 +22,30 @@
   const MEASURING_CLASS = 'is-measuring';
   const TIMELINE_DATE_PATTERN = /^(\d{4})-(\d{2})$/;
 
+  /*
+   * Every value that comes from the timeline JSON goes through here before it is
+   * interpolated into markup or into an attribute. escapeHtml from utils.js is
+   * the shared implementation; the local copy keeps this file safe on a page
+   * that has not loaded utils.js (or loaded it after this script).
+   */
+  function esc(value) {
+    const utils = window.PortfolioUtils;
+    if (utils && typeof utils.escapeHtml === 'function') {
+      return utils.escapeHtml(value);
+    }
+    const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => escapes[character]);
+  }
+
   let activeFrame = 0;
   let resizeFrame = 0;
   let pinnedFrame = 0;
   let pinOffset = 0;
+
+  // The track currently in the document. A re-render replaces it, so the
+  // delegated controls read this instead of closing over the first one.
+  let activeTrack = null;
+  let windowBound = false;
 
   function createNode(html) {
     const template = document.createElement('template');
@@ -41,11 +61,11 @@
           <div class="timeline-entry__detail">
             <div class="timeline-entry__stem" aria-hidden="true"></div>
             <div class="timeline-entry__text">
-              <p class="timeline-entry__year">${entryYear(entry)}</p>
-              <h3 class="timeline-entry__title">${entry.title}</h3>
-              <p class="timeline-entry__subtitle">${entry.subtitle}</p>
-              <p class="timeline-entry__description">${entry.description}</p>
-              <p class="timeline-entry__tags">${entry.tags?.join(' · ') || ''}</p>
+              <p class="timeline-entry__year">${esc(entryYear(entry))}</p>
+              <h3 class="timeline-entry__title">${esc(entry.title)}</h3>
+              <p class="timeline-entry__subtitle">${esc(entry.subtitle)}</p>
+              <p class="timeline-entry__description">${esc(entry.description)}</p>
+              <p class="timeline-entry__tags">${esc(entry.tags?.join(' · ') || '')}</p>
             </div>
           </div>
         </div>
@@ -249,7 +269,7 @@
   function controlsMarkup(timeline) {
     const dots = timeline.map((entry, index) => `
           <button type="button" class="timeline-dot" data-timeline-goto="${index}"
-                  aria-label="${entryYear(entry)}: ${entry.title}"></button>`).join('');
+                  aria-label="${esc(entryYear(entry))}: ${esc(entry.title)}"></button>`).join('');
 
     return `
       <div class="timeline-controls">
@@ -330,7 +350,7 @@
     }
   }
 
-  function bindControls(track) {
+  function bindControls() {
     const mount = document.querySelector(MOUNT_SELECTOR);
     // Idempotent, so a re-render cannot stack duplicate listeners.
     if (!mount || mount.dataset.controlsBound === 'true') return;
@@ -339,7 +359,9 @@
     mount.addEventListener('click', (event) => {
       const step = event.target.closest('[data-timeline-step]');
       if (step) {
-        goToEntry(activeIndexOf(track) + Number(step.dataset.timelineStep));
+        // Read the live track: the one this handler closed over may be detached.
+        if (!activeTrack) return;
+        goToEntry(activeIndexOf(activeTrack) + Number(step.dataset.timelineStep));
         return;
       }
 
@@ -433,8 +455,15 @@
     track.dataset.activeBound = 'true';
 
     track.addEventListener('scroll', scheduleActiveUpdate, { passive: true });
-    window.addEventListener('scroll', schedulePinnedUpdate, { passive: true });
-    window.addEventListener('resize', scheduleResizeUpdate);
+
+    // Page-level listeners belong to the document rather than to one track, so
+    // they are registered once; the handlers re-query the live track themselves.
+    if (!windowBound) {
+      windowBound = true;
+      window.addEventListener('scroll', schedulePinnedUpdate, { passive: true });
+      window.addEventListener('resize', scheduleResizeUpdate);
+    }
+
     scheduleActiveUpdate();
   }
 
@@ -454,6 +483,7 @@
     });
 
     mount.appendChild(list);
+    activeTrack = list;
 
     // The climb and the trail depend only on the data and the layout, so they are
     // settled before the details are measured.
@@ -470,7 +500,7 @@
     list.setAttribute('aria-label', 'Experience timeline');
 
     mount.insertAdjacentHTML('beforeend', controlsMarkup(timeline));
-    bindControls(list);
+    bindControls();
 
     bindActiveTracking(list);
 

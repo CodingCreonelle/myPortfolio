@@ -1,2 +1,5 @@
 .github/
 .vscode/
+.maestro/
+.verify/
+.tmp-html-check.js

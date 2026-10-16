@@ -32,9 +32,31 @@
         })();
     }
 
+    var observer = null;
+
+    /* One observer for every heading: the callback keys off entry.target, so a
+       single instance can watch them all. */
+    function sharedObserver() {
+        if (observer) { return observer; }
+
+        observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) { return; }
+                observer.unobserve(entry.target);
+                type(entry.target);
+            });
+        }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+
+        return observer;
+    }
+
     function init() {
         var targets = document.querySelectorAll(SELECTOR);
         if (!targets.length || reduceMotion()) { return; }
+
+        // Without IntersectionObserver the constructor would throw, so the text is
+        // left in place rather than erased and never typed back.
+        var canObserve = 'IntersectionObserver' in window;
 
         Array.prototype.forEach.call(targets, function (el) {
             if (el.getAttribute(ACTIVE_ATTR) === 'true') { return; }
@@ -44,17 +66,11 @@
 
             el.setAttribute(ACTIVE_ATTR, 'true');
             el.setAttribute(TEXT_ATTR, full);
+
+            if (!canObserve) { return; }
+
             el.textContent = '';
-
-            var observer = new IntersectionObserver(function (entries, obs) {
-                entries.forEach(function (entry) {
-                    if (!entry.isIntersecting) { return; }
-                    obs.unobserve(el);
-                    type(el);
-                });
-            }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
-
-            observer.observe(el);
+            sharedObserver().observe(el);
         });
     }
 

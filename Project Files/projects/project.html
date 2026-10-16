@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project | Charles Portfolio</title>
+    <script>
+      (function () {
+        try {
+          var stored = window.localStorage.getItem('portfolio-theme');
+          var theme = (stored === 'light' || stored === 'dark')
+            ? stored
+            : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark');
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/png" href="../assets/icons/rm373batch2-27-removebg-preview.png">
     <link rel="stylesheet" href="../assets/css/variables.css">
     <link rel="stylesheet" href="../assets/css/global.css">
     <link rel="stylesheet" href="../assets/css/navbar.css">
@@ -12,6 +24,7 @@
     <link rel="stylesheet" href="../assets/css/animations.css">
     <script src="../assets/js/theme.js" defer></script>
     <script src="../assets/js/app-loader.js" defer></script>
+    <script defer src="../assets/js/utils.js"></script>
     <script src="../assets/js/project-page.js" defer></script>
 </head>
 <body>

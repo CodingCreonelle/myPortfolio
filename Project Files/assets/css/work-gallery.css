@@ -11,14 +11,13 @@
  */
 
 .work-gallery {
-    --work-bg: #0f1015;
     --work-surface: #17191f;
     --work-line: #24262c;
     --work-heading: #ffffff;
     --work-title: #ffffff;
     --work-body: #002aff;
     --work-action-bg: #0848c8;
-    --work-action-text: #0f1015;
+    --work-action-text: #ffffff;
     --work-visual-ratio: 4 / 1;
     --work-visual-width: 77%;
     --work-copy-width: 62%;
@@ -73,7 +72,7 @@
     margin: 0 0 1rem;
     color: var(--work-body);
     font-size: 0.75rem;
-    font-weight: 1000;
+    font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
@@ -171,6 +170,7 @@
 .work-gallery__action:focus-visible {
     transform: translateY(-2px);
     background: #ffffff;
+    color: #0f1015;
 }
 
 .work-gallery__action-arrow {

@@ -44,6 +44,7 @@
     live: null,
     index: -1,
     typed: false,
+    timer: 0,
   };
 
   function pad(value) {
@@ -52,6 +53,13 @@
 
   function reducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /** Stops any typing already queued, so an old chain cannot drive a new heading. */
+  function cancelTyping() {
+    if (!state.timer) return;
+    window.clearTimeout(state.timer);
+    state.timer = 0;
   }
 
   /**
@@ -64,6 +72,11 @@
 
     const text = heading.textContent.replace(/\s+/g, ' ').trim();
     if (!text) return;
+
+    // A rebuilt heading starts its reveal over rather than inheriting the old one's
+    // progress, which would otherwise leave it permanently blank.
+    cancelTyping();
+    state.typed = false;
 
     heading.dataset.typewriterBuilt = 'true';
     heading.textContent = '';
@@ -93,7 +106,7 @@
     state.characters[index].classList.add(CLASSES.typed);
     // The caret rides along with the text rather than sitting at the end.
     state.heading.insertBefore(state.caret, state.characters[index + 1] || null);
-    window.setTimeout(() => revealCharacter(index + 1), TYPE_SPEED);
+    state.timer = window.setTimeout(() => revealCharacter(index + 1), TYPE_SPEED);
   }
 
   function startTyping() {
@@ -106,7 +119,7 @@
     }
 
     state.heading.insertBefore(state.caret, state.characters[0] || null);
-    window.setTimeout(() => revealCharacter(0), TYPE_START_DELAY);
+    state.timer = window.setTimeout(() => revealCharacter(0), TYPE_START_DELAY);
   }
 
   /**
@@ -143,31 +156,45 @@
     step(event.key === 'ArrowLeft' ? -1 : 1);
   }
 
+  /**
+   * Attaches the deck controls once per gallery root. The listeners sit on the
+   * persistent controls rather than on the cards, so a re-rendered deck keeps
+   * working without stacking a second handler on every init().
+   */
+  function bindControls(root) {
+    if (root.dataset.galleryBound === 'true') return;
+    root.dataset.galleryBound = 'true';
+
+    const previous = root.querySelector(SELECTORS.previous);
+    const next = root.querySelector(SELECTORS.next);
+    if (previous) previous.addEventListener('click', () => step(-1));
+    if (next) next.addEventListener('click', () => step(1));
+
+    const controls = root.querySelector(SELECTORS.controls);
+    if (controls) controls.addEventListener('keydown', onKeydown);
+  }
+
   function init() {
     const root = document.querySelector(SELECTORS.root);
     if (!root) return;
 
+    // Re-read the deck on every call: data-loader replaces the cards and then
+    // calls init() again, so the state is rebuilt rather than kept.
     state.root = root;
     state.cards = Array.from(root.querySelectorAll(SELECTORS.card));
     state.counter = root.querySelector(SELECTORS.counter);
     state.live = root.querySelector(SELECTORS.live);
+    state.index = -1;
 
     if (!state.cards.length) return;
 
     const total = root.querySelector(SELECTORS.total);
     if (total) total.textContent = pad(state.cards.length);
 
-    const previous = root.querySelector(SELECTORS.previous);
-    const next = root.querySelector(SELECTORS.next);
-
     // Single project: nothing to step through, so the controls add nothing.
     if (state.cards.length > 1) {
       root.classList.add(CLASSES.enhanced);
-      if (previous) previous.addEventListener('click', () => step(-1));
-      if (next) next.addEventListener('click', () => step(1));
-
-      const controls = root.querySelector(SELECTORS.controls);
-      if (controls) controls.addEventListener('keydown', onKeydown);
+      bindControls(root);
     }
 
     buildTypewriter();

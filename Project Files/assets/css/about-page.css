@@ -590,12 +590,6 @@
 }
 
 /* ================================================= TECHNICAL PROJECTS */
-.ab-archive__list {
-    margin-top: 64px;
-    padding-left: 0;
-    list-style: none;
-}
-
 .ab-arch {
     display: grid;
     grid-template-columns: 62px 1fr auto;

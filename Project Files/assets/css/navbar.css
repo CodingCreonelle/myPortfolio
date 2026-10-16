@@ -147,10 +147,6 @@
     }
 }
 
-.brand.search-hovered{animation:none!important;transform:translateX(0)!important}
-.brand.search-hovered .brand-icon,
-.brand.search-hovered .brand-text{animation:none!important}
-
 .brand:hover,
 .brand.brand--active,
 .site-header:hover .brand {
@@ -205,108 +201,6 @@
 
 .header-action {
     flex:1 1 0;min-width:0
-}
-
-.search-bar {
-    --w:180px;--b:2.2rem;
-    display:flex;
-    align-items:center;
-    max-width:var(--w);
-    border-radius:999px;
-    overflow:hidden;
-    background:var(--primary);
-    color:#fff;
-    transition:max-width .5s ease, background .2s ease
-}
-
-.search-bar:is(:hover,:focus-within) {
-    width:100%;
-    max-width:100%;
-    background:var(--primary-dark)
-}
-
-.search-bar__button {
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:var(--b);
-    min-width:var(--b);
-    height:var(--b);
-    padding:0;
-    border:none;
-    background:transparent;
-    color:#fff;
-    cursor:pointer;
-    transition:background .2s ease
-}
-
-.search-bar__button:first-child {
-    border-radius:999px 0 0 999px;
-    border-right:1px solid rgba(255,255,255,.18)
-}
-
-.search-bar__button:last-child {
-    border-radius:0 999px 999px 0;
-    border-left:1px solid rgba(255,255,255,.18);
-    opacity:0;
-    width:0;
-    min-width:0;
-    pointer-events:none
-}
-
-.search-bar:is(:hover,:focus-within) .search-bar__button:last-child {
-    opacity:1;
-    width:var(--b);
-    min-width:var(--b);
-    pointer-events:auto
-}
-
-.search-bar__button:is(:hover,:focus-visible) {
-    background:rgba(255,255,255,.15)
-}
-
-.search-bar__preview,.search-bar__input {
-    flex:1 1 0;
-    min-width:0;
-    transition:opacity .25s ease,max-width .2s ease,padding .25s ease
-}
-
-.search-bar__preview {
-    max-width:100%;
-    padding:0 .5rem;
-    color:rgba(255,255,255,.85);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    font-size:0.85rem;
-}
-
-.search-bar:is(:hover,:focus-within) .search-bar__preview {
-    opacity:0;
-    max-width:0;
-    padding:0
-}
-
-.search-bar__input {
-    border:0;
-    outline:0;
-    background:transparent;
-    color:#fff;
-    padding:.65rem .5rem;
-    font-size:.85rem;
-    opacity:0;
-    max-width:0;
-    pointer-events:none
-}
-
-.search-bar:is(:hover,:focus-within) .search-bar__input {
-    opacity:1;
-    max-width:100%;
-    pointer-events:auto
-}
-
-.search-bar__input::placeholder {
-    color:rgba(255,255,255,.75)
 }
 
 @media (max-width: 720px) {

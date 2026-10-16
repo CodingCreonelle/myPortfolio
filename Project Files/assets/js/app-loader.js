@@ -147,7 +147,13 @@
 
     const setActiveLink = (link) => {
       navLinks.forEach(navLink => {
-        navLink.classList.toggle('active', navLink === link);
+        const isActive = navLink === link;
+        navLink.classList.toggle('active', isActive);
+        if (isActive) {
+          navLink.setAttribute('aria-current', 'page');
+        } else {
+          navLink.removeAttribute('aria-current');
+        }
       });
     };
 
@@ -236,43 +242,6 @@
     }
   }
 
-  function initializeNavbarSearch() {
-    const searchBar = document.querySelector('.search-bar');
-    const brand = document.querySelector('.brand');
-    if (!searchBar) return;
-
-    const searchInput = searchBar.querySelector('.search-bar__input');
-    const filterButton = searchBar.querySelector('.search-bar__button:last-child');
-
-    searchBar.addEventListener('pointerenter', () => {
-      if (searchInput) {
-        searchInput.focus({ preventScroll: true });
-      }
-      if (brand) {
-        brand.classList.add('search-hovered');
-      }
-    });
-
-    searchBar.addEventListener('pointerleave', () => {
-      if (searchInput && document.activeElement === searchInput) {
-        searchInput.blur();
-      }
-        if (brand) {
-        brand.classList.remove('search-hovered');
-      }
-    });
-
-    if (filterButton) {
-      filterButton.addEventListener('click', () => {
-        const query = searchInput?.value?.trim();
-        const params = new URLSearchParams();
-        if (query) params.set('q', query);
-        params.set('filter', 'true');
-        window.location.href = `${SITE_ROOT}projects.html?${params.toString()}`;
-      });
-    }
-  }
-
   function initializeNavbarBrand() {
     const brand = document.querySelector('.brand');
     if (!brand) return;
@@ -298,7 +267,6 @@
     fillMount(MOUNTS.footer, footer, 'end');
 
     initializeBackground(document.querySelector('.hero-bg'));
-    initializeNavbarSearch();
     initializeNavbarBrand();
     initializeNavbarSectionHighlight();
   }

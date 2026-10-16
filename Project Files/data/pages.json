@@ -27,15 +27,6 @@
       "lede": "I combine technical, problem-solving, and digital skills to build reliable systems and keep day-to-day work efficient.",
       "languagesLabel": "Languages",
       "toolsLabel": "Tools"
-    },
-    "contact": {
-      "label": "Contact",
-      "title": "Want to connect?",
-      "body": "If you'd like to collaborate or see more of my work, send an email directly or visit the contact page for other options.",
-      "actions": [
-        { "label": "Contact page", "href": "contact.html", "className": "button button-primary" },
-        { "label": "Email me", "href": "mailto:lopezcode741@gmail.com", "className": "button button-secondary" }
-      ]
     }
   },
 
@@ -69,11 +60,6 @@
       "title": "Trainings",
       "lede": "The milestones that shaped how I build."
     },
-    "archive": {
-      "eyebrow": "Archive",
-      "title": "Projects",
-      "lede": "A running log of everything I've shipped and studied."
-    },
     "cta": {
       "eyebrow": "Get In Touch",
       "display": "Let's\nWork\nTogether",
@@ -83,12 +69,6 @@
       "primaryHref": "contact.html",
       "secondaryLabel": "Send Me a Message",
       "secondaryHref": "contact.html"
-    },
-    "outro": {
-      "eyebrow": "Have a project in mind?",
-      "display": "Let's build\nsomething useful.",
-      "buttonLabel": "Hire Me",
-      "buttonHref": "contact.html"
     }
   },
 

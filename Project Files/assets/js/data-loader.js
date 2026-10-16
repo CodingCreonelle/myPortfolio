@@ -4,6 +4,22 @@
  * keeps them correct whether the page loading this sits at the root or in a
  * folder of its own.
  */
+
+/*
+ * Every value that comes from the JSON goes through here before it is
+ * interpolated into a template string. escapeHtml from utils.js is the shared
+ * implementation; the local copy keeps this file safe on a page that has not
+ * loaded utils.js (or loaded it after this script).
+ */
+function esc(value) {
+  const utils = window.PortfolioUtils;
+  if (utils && typeof utils.escapeHtml === 'function') {
+    return utils.escapeHtml(value);
+  }
+  const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => escapes[character]);
+}
+
 function scriptUrl() {
   if (document.currentScript && document.currentScript.src) {
     return document.currentScript.src;
@@ -47,7 +63,11 @@ function createCard(html) {
 function projectImageSrc(project) {
   const image = typeof project.image === 'string' ? project.image.trim() : '';
   if (!image) return '';
-  if (/^[a-z]+:/i.test(image) || image.startsWith('/')) return image;
+  // Protocol-relative, root-relative and plain relative addresses are kept;
+  // http(s) is allowed through; anything else carrying a scheme (javascript:,
+  // data:, vbscript:, ...) is refused so the card falls back to its placeholder.
+  if (/^(?:https?:)?\/\//i.test(image) || image.startsWith('/')) return image;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(image)) return '';
   return SITE_ROOT + image.replace(/^\.\//, '');
 }
 
@@ -59,16 +79,16 @@ function renderFeaturedProjects(projects) {
   projects.forEach((project, index) => {
     const src = projectImageSrc(project);
     const visual = src
-      ? `<img class="work-card__image" src="${src}" alt="" loading="lazy" decoding="async">`
+      ? `<img class="work-card__image" src="${esc(src)}" alt="" loading="lazy" decoding="async">`
       : `<div class="work-card__placeholder" data-index="${String(index + 1).padStart(2, '0')}" aria-hidden="true"></div>`;
 
     const card = createCard(`
       <article class="work-card">
         <div class="work-card__visual">${visual}</div>
         <div class="work-card__copy">
-          <h3 class="work-card__title">${project.title}</h3>
-          <p class="work-card__summary">${project.summary}</p>
-          <a href="${projectHref(project)}" class="work-card__link">
+          <h3 class="work-card__title">${esc(project.title)}</h3>
+          <p class="work-card__summary">${esc(project.summary)}</p>
+          <a href="${esc(projectHref(project))}" class="work-card__link">
             View project
             <span class="work-card__arrow" aria-hidden="true">&#8594;</span>
           </a>
@@ -138,9 +158,9 @@ function renderProjectList(projects) {
       <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
         <p class="archive-entry__index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>
         <div class="archive-entry__body">
-          <h2 class="archive-entry__title"><a href="${projectHref(project)}">${project.title}</a></h2>
-          <p class="archive-entry__summary">${project.summary}</p>
-          ${stack ? `<p class="archive-entry__stack">${stack}</p>` : ''}
+          <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+          <p class="archive-entry__summary">${esc(project.summary)}</p>
+          ${stack ? `<p class="archive-entry__stack">${esc(stack)}</p>` : ''}
           ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
         </div>
         <span class="archive-entry__open" aria-hidden="true">${EXTERNAL_ICON}</span>
@@ -149,49 +169,6 @@ function renderProjectList(projects) {
     container.appendChild(card);
   });
 
-  // Trigger stagger animation for dynamically added cards
-  if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
-    window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
-  }
-}
-
-function renderSkills(skills) {
-  const container = document.querySelector('#skills-grid');
-  if (!container || !Array.isArray(skills)) return;
-  container.innerHTML = '';
-
-  skills.forEach((skill, index) => {
-    const card = createCard(`
-      <div class="skill-card card-entrance" style="animation-delay: ${index * 100}ms;">
-        <h3>${skill}</h3>
-        <p>Experience working with ${skill} across portfolio projects.</p>
-      </div>
-    `);
-    container.appendChild(card);
-  });
-  
-  // Trigger stagger animation for dynamically added cards
-  if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
-    window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
-  }
-}
-
-function renderEducation(education) {
-  const container = document.querySelector('#education-content');
-  if (!container || !Array.isArray(education)) return;
-  container.innerHTML = '';
-
-  education.forEach((item, index) => {
-    const card = createCard(`
-      <div class="detail-card card-entrance" style="animation-delay: ${index * 100}ms;">
-        <h3>${item.title}</h3>
-        <p><strong>${item.institution}</strong> · ${item.dates}</p>
-        <p>${item.details}</p>
-      </div>
-    `);
-    container.appendChild(card);
-  });
-  
   // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
@@ -214,12 +191,12 @@ function renderContactCards(socials) {
   items.forEach((item) => {
     if (!item.value) return;
     const linkMarkup = item.href
-      ? `<p><a href="${item.href}" ${item.href.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}>${item.value}</a></p>`
-      : `<p>${item.value}</p>`;
+      ? `<p><a href="${esc(item.href)}" ${item.href.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}>${esc(item.value)}</a></p>`
+      : `<p>${esc(item.value)}</p>`;
 
     const card = createCard(`
       <div class="contact-card card-entrance" style="animation-delay: ${validIndex * 100}ms;">
-        <h2>${item.label}</h2>
+        <h2>${esc(item.label)}</h2>
         ${linkMarkup}
       </div>
     `);
@@ -247,15 +224,8 @@ async function loadDynamicData() {
   }
 
   if (experience) {
-    renderSkills(experience.skills);
-    renderEducation(experience.education);
-
     if (window.PortfolioTimeline && window.PortfolioTimeline.render) {
       window.PortfolioTimeline.render(experience.timeline);
-    }
-
-    if (window.PortfolioSkills && window.PortfolioSkills.render) {
-      window.PortfolioSkills.render(experience.skillMatrix);
     }
   }
 

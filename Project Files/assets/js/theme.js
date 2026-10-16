@@ -21,8 +21,23 @@
         try { return window.localStorage.getItem(KEY); } catch (e) { return null; }
     }
 
+    /* Falls back to the OS preference when nothing valid is stored. Without
+       this, a first-time visitor on a light-set OS would still get the dark
+       palette, because the only other signal we have is localStorage. */
+    function preferred() {
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? LIGHT : DARK;
+    }
+
     function current() {
-        return stored() === LIGHT ? LIGHT : DARK;
+        var value = stored();
+        if (value === LIGHT || value === DARK) { return value; }
+
+        var resolved = preferred();
+        // Present but unusable (typo, stale key): replace it with what we resolved.
+        if (value !== null) {
+            try { window.localStorage.setItem(KEY, resolved); } catch (e) { /* ignore */ }
+        }
+        return resolved;
     }
 
     /* Keeps the palette and the toggle's accessible state in step. Only
@@ -59,9 +74,16 @@
     // Apply the saved palette as early as possible.
     apply(current());
 
-    // Re-apply when the navbar arrives so aria-pressed is right from the start.
+    // Re-apply when the navbar arrives so aria-pressed is right from the start,
+    // then stop observing as soon as the toggle has been decorated.
     // Attribute writes do not trigger a childList observer, so this is safe.
-    var observer = new MutationObserver(function () { apply(current()); });
+    var observer = new MutationObserver(function () {
+        apply(current());
+        if (document.querySelector('[data-theme-toggle]')) {
+            observer.disconnect();
+        }
+    });
     observer.observe(document.body, { childList: true, subtree: true });
+    // Fallback only, for the case where the navbar never arrives.
     window.setTimeout(function () { observer.disconnect(); }, 5000);
 })();

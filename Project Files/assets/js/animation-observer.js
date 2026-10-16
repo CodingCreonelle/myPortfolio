@@ -10,7 +10,6 @@
   const CONFIG = {
     rootMargin: '0px 0px -10% 0px', // Trigger when element is 10% into viewport
     threshold: 0.1,
-    once: true, // Only animate once
   };
 
   // Replay configuration - opt-in per element via [data-animate-replay].
@@ -32,7 +31,6 @@
   const SELECTORS = {
     animate: '[data-animate]',
     stagger: '[data-animate-stagger]',
-    staggerChildren: '[data-animate-stagger-children]',
   };
 
   // Default animation classes
@@ -55,6 +53,10 @@
   const replaySections = [];
   let replayFrame = 0;
   let replayListenersBound = false;
+
+  // IntersectionObserver handles (module-scoped rather than leaked on window).
+  let observer = null;
+  let replayObserver = null;
 
   /**
    * Check if user prefers reduced motion
@@ -153,8 +155,7 @@
         const element = entry.target;
         
         // Check for stagger container
-        if (element.hasAttribute('data-animate-stagger') || 
-            element.hasAttribute('data-animate-stagger-children')) {
+        if (element.hasAttribute('data-animate-stagger')) {
           const config = getAnimationConfig(element);
           applyStaggerAnimation(element, config);
         } else {
@@ -372,14 +373,14 @@
     }
 
     // Create intersection observer
-    const observer = new IntersectionObserver(handleIntersections, {
+    observer = new IntersectionObserver(handleIntersections, {
       rootMargin: CONFIG.rootMargin,
       threshold: CONFIG.threshold,
     });
 
     // Replay sections need a multi-threshold observer so a callback fires at
     // the reset boundary (0.15) and not only on first entry.
-    const replayObserver = new IntersectionObserver(handleReplayIntersections, {
+    replayObserver = new IntersectionObserver(handleReplayIntersections, {
       rootMargin: CONFIG.rootMargin,
       threshold: REPLAY.thresholds,
     });
@@ -406,16 +407,6 @@
       }
     });
 
-    document.querySelectorAll(SELECTORS.staggerChildren).forEach(element => {
-      if (!element.closest(REPLAY.selector)) {
-        observer.observe(element);
-      }
-    });
-
-    // Store observers for potential cleanup / refresh
-    window._animationObserver = observer;
-    window._replayObserver = replayObserver;
-
     // Threshold callbacks alone miss part of the tall-section reset boundary,
     // so also recompute ratios while scrolling/resizing (rAF-throttled).
     if (!replayListenersBound) {
@@ -426,23 +417,6 @@
 
     // Establish the initial state of each replay section.
     evaluateReplaySections();
-  }
-
-  /**
-   * Manually trigger animation for an element (useful for dynamically added content)
-   */
-  function triggerAnimation(element, animationClass = DEFAULT_ANIMATION) {
-    if (prefersReducedMotion()) {
-      element.classList.add('force-visible');
-      return;
-    }
-
-    element.classList.add('animate-on-scroll');
-    element.classList.add(animationClass);
-    
-    requestAnimationFrame(() => {
-      element.classList.add('is-visible');
-    });
   }
 
   /**
@@ -479,30 +453,24 @@
    * Refresh observer (useful after dynamic content loads)
    */
   function refreshObserver() {
-    if (window._animationObserver) {
+    if (observer) {
       // Re-observe all elements (replay sections are handled separately).
       document.querySelectorAll(SELECTORS.animate).forEach(element => {
         if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
-          window._animationObserver.observe(element);
+          observer.observe(element);
         }
       });
 
       document.querySelectorAll(SELECTORS.stagger).forEach(element => {
         if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
-          window._animationObserver.observe(element);
-        }
-      });
-
-      document.querySelectorAll(SELECTORS.staggerChildren).forEach(element => {
-        if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
-          window._animationObserver.observe(element);
+          observer.observe(element);
         }
       });
     }
 
     // Keep replay sections observed and re-evaluate their current state.
-    if (window._replayObserver) {
-      replaySections.forEach(section => window._replayObserver.observe(section));
+    if (replayObserver) {
+      replaySections.forEach(section => replayObserver.observe(section));
     }
     evaluateReplaySections();
   }
@@ -517,7 +485,6 @@
   // Expose public API
   window.AnimationObserver = {
     init: initAnimationObserver,
-    trigger: triggerAnimation,
     triggerStagger: triggerStaggerAnimation,
     refresh: refreshObserver,
     prefersReducedMotion: prefersReducedMotion,

@@ -2,7 +2,7 @@
    About-page components.
 
    Renders the shared component set from the site's JSON: capability cards and
-   icon row (used by index.html and about.html), training rows, archive rows,
+   icon row (used by index.html and about.html), training rows,
    contact cards, and the profile stats + floating trait deck.
 
    The typewriter and the light/dark theme used to live here; they are now
@@ -171,26 +171,6 @@
         }).join('');
     }
 
-    /* -------------------------------------------------------------- archive */
-    function renderArchive(projects) {
-        var list = document.getElementById('ab-archive-list');
-        if (!list || !projects.length) { return; }
-
-        list.innerHTML = projects.map(function (project, index) {
-            var stack = (project.technologies || project.tags || []).join(' &middot; ');
-            return '' +
-                '<li class="ab-arch">' +
-                    '<span class="ab-arch__num">' + pad(index + 1) + '</span>' +
-                    '<div class="ab-arch__body">' +
-                        '<h3 class="ab-arch__title">' + esc(project.title) + '</h3>' +
-                        '<p class="ab-arch__desc">' + esc(project.summary) + '</p>' +
-                        (stack ? '<p class="ab-arch__stack">' + stack + '</p>' : '') +
-                    '</div>' +
-                    '<span class="ab-arch__year">' + esc(project.status || '') + '</span>' +
-                '</li>';
-        }).join('');
-    }
-
     /* ------------------------------------------------------------- contacts */
     function renderContacts(socials) {
         var list = document.getElementById('ab-contact-cards');
@@ -286,14 +266,13 @@
         var mounts = {
             skills:    !!document.getElementById('ab-skill-cards'),
             trainings: !!document.getElementById('ab-trainings-list'),
-            archive:   !!document.getElementById('ab-archive-list'),
             contacts:  !!document.getElementById('ab-contact-cards'),
             profile:   !!document.getElementById('ab-profile-stats') ||
                        !!document.getElementById('ab-trait-deck')
         };
 
         var needsExperience = mounts.skills || mounts.trainings || mounts.profile;
-        var needsProjects = mounts.archive || mounts.profile;
+        var needsProjects = mounts.profile;
         var needsSocials = mounts.contacts;
 
         // Pages that use none of these components skip the fetches entirely.
@@ -316,12 +295,11 @@
                 renderTools(tools);
             }
             if (mounts.trainings) { renderTrainings(timeline); }
-            if (mounts.archive) { renderArchive(projects); }
             if (mounts.contacts) { renderContacts(socials); }
             if (mounts.profile) { renderProfile(projects, languages, tools, timeline); }
 
             if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
-                ['ab-skill-cards', 'ab-contact-cards', 'ab-trainings-list', 'ab-archive-list']
+                ['ab-skill-cards', 'ab-contact-cards', 'ab-trainings-list']
                     .forEach(function (id) {
                         var el = document.getElementById(id);
                         if (el) { window.AnimationObserver.triggerStagger(el, 'card-entrance', 90); }
