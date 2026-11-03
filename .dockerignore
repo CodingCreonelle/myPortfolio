@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.vscode
+.verify
+.review-evidence
+review-evidence
+.env
+*.log
+.DS_Store
+Thumbs.db
+**/node_modules
+**/.DS_Store
