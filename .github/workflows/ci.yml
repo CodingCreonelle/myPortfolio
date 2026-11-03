@@ -62,7 +62,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Vulnerability Scan (Trivy)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: portfolio:ci
           format: 'table'
@@ -98,6 +98,21 @@ jobs:
 
           echo "Testing JSON data endpoint..."
           curl --fail --silent http://localhost:8080/data/projects.json | python3 -m json.tool > /dev/null
+
+          echo "Checking HTML references versioned assets..."
+          curl --fail --silent http://localhost:8080/ | grep -qE 'assets/css/global\.css\?v=[0-9a-f]{10}"'
+
+          echo "Checking cache headers..."
+          curl --fail --silent -D - -o /dev/null http://localhost:8080/ \
+            | grep -qi '^cache-control: no-cache'
+          curl --fail --silent -D - -o /dev/null "http://localhost:8080/assets/css/global.css?v=test" \
+            | grep -qi '^cache-control: public, max-age=31536000, immutable'
+          curl --fail --silent -D - -o /dev/null http://localhost:8080/assets/css/global.css \
+            | grep -qi '^cache-control: no-cache'
+          curl --fail --silent -D - -o /dev/null http://localhost:8080/data/projects.json \
+            | grep -qi '^cache-control: no-cache'
+          curl --fail --silent -D - -o /dev/null http://localhost:8080/data/projects.json \
+            | grep -qi '^etag:'
 
           echo "All smoke tests passed successfully!"
 
