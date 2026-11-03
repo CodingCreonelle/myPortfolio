@@ -85,34 +85,34 @@ jobs:
 
           # Test essential routes
           echo "Testing Home route..."
-          curl --fail --silent http://localhost:8080/ | grep -qi '<html'
+          curl --fail --silent http://localhost:8080/ | grep -i '<html' > /dev/null
 
           echo "Testing About page..."
-          curl --fail --silent http://localhost:8080/about.html | grep -qi 'About'
+          curl --fail --silent http://localhost:8080/about.html | grep -i 'About' > /dev/null
 
           echo "Testing Projects page..."
-          curl --fail --silent http://localhost:8080/projects.html | grep -qi 'Projects'
+          curl --fail --silent http://localhost:8080/projects.html | grep -i 'Projects' > /dev/null
 
           echo "Testing Contact page..."
-          curl --fail --silent http://localhost:8080/contact.html | grep -qi 'Contact'
+          curl --fail --silent http://localhost:8080/contact.html | grep -i 'Contact' > /dev/null
 
           echo "Testing JSON data endpoint..."
           curl --fail --silent http://localhost:8080/data/projects.json | python3 -m json.tool > /dev/null
 
           echo "Checking HTML references versioned assets..."
-          curl --fail --silent http://localhost:8080/ | grep -qE 'assets/css/global\.css\?v=[0-9a-f]{10}"'
+          curl --fail --silent http://localhost:8080/ | grep -E 'assets/css/global\.css\?v=[0-9a-f]{10}"' > /dev/null
 
           echo "Checking cache headers..."
           curl --fail --silent -D - -o /dev/null http://localhost:8080/ \
-            | grep -qi '^cache-control: no-cache'
+            | grep -i '^cache-control: no-cache' > /dev/null
           curl --fail --silent -D - -o /dev/null "http://localhost:8080/assets/css/global.css?v=test" \
-            | grep -qi '^cache-control: public, max-age=31536000, immutable'
+            | grep -i '^cache-control: public, max-age=31536000, immutable' > /dev/null
           curl --fail --silent -D - -o /dev/null http://localhost:8080/assets/css/global.css \
-            | grep -qi '^cache-control: no-cache'
+            | grep -i '^cache-control: no-cache' > /dev/null
           curl --fail --silent -D - -o /dev/null http://localhost:8080/data/projects.json \
-            | grep -qi '^cache-control: no-cache'
+            | grep -i '^cache-control: no-cache' > /dev/null
           curl --fail --silent -D - -o /dev/null http://localhost:8080/data/projects.json \
-            | grep -qi '^etag:'
+            | grep -i '^etag:' > /dev/null
 
           echo "All smoke tests passed successfully!"
 

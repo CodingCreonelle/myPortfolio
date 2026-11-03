@@ -17,7 +17,9 @@ while IFS= read -r asset; do
     echo "versioned ${asset} -> ?v=${hash}"
 done
 
-if find . -type f -name '*.html' -exec grep -nE 'assets/(css|js)/[^"?]+\.(css|js)"' {} +; then
+unversioned=$(find . -type f -name '*.html' -exec grep -nE 'assets/(css|js)/[^"?]+\.(css|js)"' {} + || true)
+if [ -n "$unversioned" ]; then
+    printf '%s\n' "$unversioned" >&2
     echo "error: unversioned asset references remain (listed above)" >&2
     exit 1
 fi
