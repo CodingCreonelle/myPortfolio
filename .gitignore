@@ -6,3 +6,5 @@
 
 .env
 .tmp-html-check.js
+docker-compose.yml
+Dockerfile
