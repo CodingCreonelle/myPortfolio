@@ -2,9 +2,10 @@
 .vscode/
 .maestro/
 .verify/
-.review-evidence/
+review-evidence/
 
 .env
 .tmp-html-check.js
 docker-compose.yml
 Dockerfile
+.dockerignore
