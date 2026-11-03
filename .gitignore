@@ -1,4 +1,3 @@
-.github/
 .vscode/
 .maestro/
 .verify/
@@ -9,3 +8,9 @@ review-evidence/
 docker-compose.yml
 Dockerfile
 .dockerignore
+nginx.conf
+*.log
+.DS_Store
+Thumbs.db
+**/node_modules
+**/.DS_Store

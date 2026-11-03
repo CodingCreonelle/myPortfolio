@@ -205,7 +205,7 @@
         setActiveLink(link);
 
         const href = link.getAttribute('href') || '';
-        const hashMatch = href.match(/#(hero|about|experience|contact)$/);
+        const hashMatch = href.match(/#(hero|about|contact)$/);
         pendingActiveSectionId = hashMatch ? hashMatch[1] : null;
 
         if (clickLockTimer) {
