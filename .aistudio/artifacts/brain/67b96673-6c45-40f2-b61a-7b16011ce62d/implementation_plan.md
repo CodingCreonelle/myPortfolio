@@ -1,38 +1,38 @@
-# Navbar Highlight Initialization Fix
+# GitHub Repository & CI Branch Configuration (`AI_Studio`)
 
-Resolves an issue where the navigation bar fails to highlight the active **Home** link upon first launching the portfolio at the root URL (`/`).
+Configures the project's GitHub Actions CI/CD workflow and local Git branch metadata to support the `AI_Studio` branch alongside `main`, while keeping portfolio showcase links pointed at the repository root.
 
 ## User Review & Critical Decisions
 
-> [!NOTE]
-> The root cause is unambiguous and self-contained within the navigation chrome initialization flow, so no additional configuration or design changes are required.
+> [!IMPORTANT]
+> **AI Studio GitHub Sync UI**: In addition to the repository configuration changes below, when committing or pushing from the AI Studio top toolbar (**GitHub** icon), select or enter `AI_Studio` as the target branch in the AI Studio GitHub dialog so cloud sync pushes directly to `AI_Studio`.
 
-- **Root Path Normalization**: Treat directory-root URLs ending with `/` (such as `/` on initial app launch) as equivalent to `/index.html` when matching navigation links and registering in-page section observers.
-- **Sub-route Highlight Continuity**: Keep **Projects** highlighted when viewing individual project detail or project documentation pages so navigation context is never lost.
+- **Confirmed Decision 1 — Multi-Branch CI Support**: Update the GitHub Actions CI workflow to trigger validation, Docker smoke tests, and image publishing on both `AI_Studio` and `main` (as well as `master`).
+- **Confirmed Decision 2 — Repository Root Links**: Keep public portfolio links in project data pointing to the default repository root (`https://github.com/CodingCreonelle/myPortfolio`).
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Ensures the navigation bar immediately highlights the active page link (**Home** on initial launch at `/`) and tracks in-page section scrolling seamlessly from the first load.
-- **Target Audience / Persona**: Portfolio visitors arriving at the root domain URL (`https://.../`) before clicking any explicit `.html` navigation links.
-- **Key Value**: Eliminates the uninitialized navigation state on first visit, providing immediate visual orientation (`active` pill styling and `aria-current="page"` accessibility state).
+- **What It Does**: Aligns the repository's continuous integration pipeline and local Git branch tracking with the `AI_Studio` branch so changes pushed from AI Studio are automatically validated, smoke-tested, and published.
+- **Target Audience / Persona**: The repository maintainer syncing work between Google AI Studio Build (`AI_Studio` branch) and GitHub.
+- **Key Value**: Ensures pushes and pull requests targeting `AI_Studio` run the full static asset validation, Dockerfile linting, container smoke tests, and GHCR image publishing pipeline without breaking `main`.
 
 ## 2. User Experience & Visual Design
 
 - **Key User Flows**:
-  1. **First Launch (`/` or `/index.html`)**: As soon as the shared navbar component mounts, the **Home** pill immediately receives the `.active` state and `aria-current="page"`.
-  2. **Hash & Section Navigation**: Loading with a hash (e.g., `/#hero`) or scrolling through observed sections updates the active highlight smoothly.
-  3. **Page-to-Page Navigation**: Navigating to **Projects**, **About**, or **Contact** highlights the corresponding link immediately on load.
+  1. **Pushing to `AI_Studio`**: When changes are pushed to the `AI_Studio` branch on GitHub, GitHub Actions automatically runs `Validate Static Assets`, `Lint Dockerfile`, `Docker Build & Smoke Test`, and `Publish to GHCR`.
+  2. **Portfolio Visitor Experience**: Visitors browsing the portfolio projects page continue to land on the clean root repository URL (`https://github.com/CodingCreonelle/myPortfolio`) with no visual regressions.
 - **Visual Identity & Theme**:
-  - Preserves the existing glassmorphic `.site-nav a.active` styling (`color: var(--primary)`, `background: var(--glass)`, `backdrop-filter: blur(8px)`, `transform: scale(1.08)`, and `box-shadow: inset 0 0 0 1px var(--glass-line)`).
-- **Interactive Feedback & Motion**:
-  - Retains the existing 0.2s transition on active pill state changes and the 800ms click-lock timer during smooth scrolling.
+  - No visual or layout changes to the frontend portfolio; preserves the existing dark/light theme tokens and editorial layout.
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Canonical Path Normalization (`/` ↔ `/index.html`)**
-  - *Chosen Approach*: Normalize any pathname ending in `/` by appending `index.html` before comparing `window.location.pathname` against resolved navbar link pathnames.
-  - *Why*: When the app first launches, the browser's pathname is `/`, whereas the navbar's **Home** link (`index.html#hero`) resolves to `/index.html`. Strict string equality (`'/' === '/index.html'`) fails for both initial link highlighting and `IntersectionObserver` section binding. Canonicalizing `/` to `/index.html` fixes both mechanisms at once while remaining compatible with subpath deployments.
-  - *Alternatives Considered*: Changing the navbar link href from `index.html#hero` to `/#hero` was passed over because the site chrome loader is designed to work at any directory depth without assuming a domain root.
+- **Decision 1: Dual-Branch CI Triggers (`AI_Studio` + `main`)**
+  - *Chosen Approach*: Add `AI_Studio` to `on.push.branches`, `on.pull_request.branches`, and the `publish-image` conditional check in the CI workflow.
+  - *Why*: Allows active development on `AI_Studio` to receive full automated testing and container registry updates while keeping `main` protected and operational when changes are merged.
+  - *Alternatives Considered*: Replacing `main` exclusively with `AI_Studio` was passed over so merges back to `main` still trigger production verification.
+- **Decision 2: Local Git Branch & Remote Initialization**
+  - *Chosen Approach*: Initialize the workspace Git repository on branch `AI_Studio` with `origin` linked to `https://github.com/CodingCreonelle/myPortfolio.git`.
+  - *Why*: Ensures any local Git inspection or CLI tooling within the workspace reflects `AI_Studio` as the active branch rather than defaulting to `main`.
 
 ## 4. Technical Architecture & Data Strategy *(Technical Reference)*
 
@@ -40,33 +40,36 @@ Resolves an issue where the navigation bar fails to highlight the active **Home*
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Initial App Launch (GET /)                   │
+│             AI Studio Workspace (Branch: AI_Studio)             │
+│    Remote Origin ──► github.com/CodingCreonelle/myPortfolio     │
 └───────────────────────────────┬─────────────────────────────────┘
+                                │
+                     Push / PR (AI_Studio or main)
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                  Site Chrome Loader (DOMContentLoaded)          │
-│     Fetches & mounts background, navbar, and footer partials    │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  Pathname Normalization Helper                  │
-│          Converts trailing "/" ──► "/index.html" so             │
-│       window.location.pathname matches resolved link URLs       │
+│                    GitHub Actions CI Pipeline                   │
+│         Triggers: branches [AI_Studio, main, master]            │
 └───────────────┬───────────────────────────────┬─────────────────┘
                 │                               │
                 ▼                               ▼
 ┌───────────────────────────────┐ ┌───────────────────────────────┐
-│   Initial Active Link Match   │ │  In-Page Section Observer     │
-│ Sets .active & aria-current   │ │ Binds IntersectionObserver to │
-│ on matching page/hash nav item│ │ #hero and other page sections │
-└───────────────────────────────┘ └───────────────────────────────┘
+│   Validate Assets & Hadolint  │ │   Docker Build & Smoke Test   │
+│  Checks JSON data & Dockerfile│ │  Verifies routes & cache rules│
+└───────────────┬───────────────┘ └─────────────┬─────────────────┘
+                │                               │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 Publish Container Image (GHCR)                  │
+│   Runs on push to refs/heads/AI_Studio or refs/heads/main       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 - **Data Model & State**:
-  - **Normalized Pathname**: Derived string representation of a URL pathname where trailing slashes resolve to `/index.html`.
-  - **Active Link State**: Controlled via `.active` CSS class and `aria-current="page"` attribute on `.site-nav a` elements, paired with `pendingActiveSectionId` click-lock state.
+  - **CI Branch Triggers**: `[AI_Studio, main, master]` for both `push` and `pull_request` events.
+  - **GHCR Publish Gate**: `github.event_name == 'push' && (github.ref == 'refs/heads/AI_Studio' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')`.
 - **Interactive Component & State Mapping**:
-  - **Initial Load (`initializeNavbarSectionHighlight`)**: Normalizes `window.location.pathname` and each navbar link's `URL.pathname` before computing `pageHashLinks` and `pathLink`. If no hash is present on `/`, `pathLink` matches the **Home** link (`index.html#hero`) and activates it immediately.
-  - **Scroll Observation (`IntersectionObserver`)**: Because `pageHashLinks` now includes `index.html#hero` even when the browser URL is `/`, the `#hero` section is properly observed on initial launch.
+  - Public project links remain unchanged (`https://github.com/CodingCreonelle/myPortfolio`).
+  - Local Git state tracks branch `AI_Studio` with remote `origin` pointed at `https://github.com/CodingCreonelle/myPortfolio.git`.
