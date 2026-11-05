@@ -1,13 +1,84 @@
+# Version Control
 .git
 .gitignore
-.github
-.vscode
+.gitattributes
+
+# CI/CD & Repository Automation
+.github/
+
+# Docker Configurations
+docker-compose*.yml
+docker-compose*.yaml
+Dockerfile*
+.dockerignore
+
+# Documentation & Specifications
+README.md
+*.md
+!Project Files/assets/icons/skills/ATTRIBUTION.md
+.aistudio/
+
+# Local Test Suites & Coverage
+tests/
+test/
+coverage/
+
+# Verification & Review Artifacts
 .verify
 .review-evidence
-review-evidence
+review-evidence/
+
+# Environment & Local Configuration
 .env
+.env*.local
+.env.*
+.env*
+!.env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build Outputs & Temporary Files
+dist/
+build/
+out/
+*.tmp
+*.temp
+.tmp-html-check.js
+.cache/
+.npm/
+.eslintcache
+.maestro/
+
+# Log Files
+logs/
 *.log
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sublime-*
+
+# Operating System Metadata
 .DS_Store
-Thumbs.db
-**/node_modules
 **/.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local Development Server & Metadata (Not needed in static Nginx image)
+server.js
+package.json
+package-lock.json
+metadata.json
