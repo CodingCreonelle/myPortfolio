@@ -79,14 +79,25 @@
       "title": "Let's connect",
       "body": "Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon."
     },
+    "availability": {
+      "label": "Availability",
+      "status": "Open to front-end roles & project collaborations",
+      "detail": "Remote / Philippines · Typical reply within 24–48h"
+    },
+    "channels": {
+      "label": "Direct channels",
+      "title": "Reach out directly",
+      "body": "Prefer a direct email, code review, or quick chat? Connect on any channel below or copy my address in one click."
+    },
     "form": {
       "label": "Send a message",
       "title": "Contact form",
+      "subtitle": "Select a topic and fill out the details below to open a pre-addressed message in your mail client or copy it to your clipboard.",
       "submitLabel": "Send message",
       "fields": [
         { "name": "name", "label": "Name", "type": "text", "placeholder": "Your name", "required": true },
         { "name": "email", "label": "Email", "type": "email", "placeholder": "you@example.com", "required": true },
-        { "name": "message", "label": "Message", "type": "textarea", "placeholder": "Tell me about your project or question", "rows": 6, "required": false }
+        { "name": "message", "label": "Message", "type": "textarea", "placeholder": "Tell me about your project, timeline, or question", "rows": 6, "required": true }
       ]
     }
   },

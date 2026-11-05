@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/homepage.css">
+    <link rel="stylesheet" href="assets/css/contact-page.css">
     <link rel="stylesheet" href="assets/css/animations.css">
     <script src="assets/js/theme.js" defer></script>
     <script src="assets/js/content.js" defer></script>
@@ -34,43 +35,90 @@
     <div id="site-navbar"></div>
 
     <main class="contact-page">
-        <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
-            <div class="page-title">
-                <p class="eyebrow" data-bind="hero.eyebrow">Contact</p>
-                <h1 data-bind="hero.title">Let's connect</h1>
-                <p data-bind="hero.body">Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon.</p>
+        <header class="contact-hero" data-animate="animate-entrance" data-animate-delay="0">
+            <div class="contact-hero__grid">
+                <div class="page-title">
+                    <p class="eyebrow" data-bind="hero.eyebrow">Contact</p>
+                    <h1 class="contact-hero__title" data-bind="hero.title">Let's connect</h1>
+                    <p class="contact-hero__body" data-bind="hero.body">Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon.</p>
+                </div>
+                <aside class="contact-hero__meta" aria-label="Availability and response time">
+                    <p class="contact-hero__meta-label" data-bind="availability.label">Availability</p>
+                    <p class="contact-hero__meta-value" data-bind="availability.status">Open to front-end roles &amp; project collaborations</p>
+                    <p class="contact-hero__meta-sub" data-bind="availability.detail">Remote / Philippines · Typical reply within 24–48h</p>
+                </aside>
             </div>
-        </section>
+        </header>
 
-        <section class="contact-overview" data-animate="animate-entrance" data-animate-delay="200">
-            <div class="contact-cards animate-stagger" id="contact-cards" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
-        </section>
+        <div class="contact-workspace">
+            <section class="contact-overview" aria-labelledby="contact-channels-heading" data-animate="animate-entrance" data-animate-delay="120">
+                <div class="contact-section-head">
+                    <p class="section-label" data-bind="channels.label">Direct channels</p>
+                    <h2 id="contact-channels-heading" data-bind="channels.title">Reach out directly</h2>
+                    <p data-bind="channels.body">Prefer a direct email, code review, or quick chat? Connect on any channel below or copy my address in one click.</p>
+                </div>
+                <div class="contact-cards animate-stagger" id="contact-cards" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
+            </section>
 
-        <section class="contact-form-section" data-animate="animate-entrance" data-animate-delay="200">
-            <div class="section-header section-header-animate">
-                <p class="section-label" data-bind="form.label">Send a message</p>
-                <h2 data-bind="form.title">Contact form</h2>
-            </div>
-            <form class="contact-form" action="#" method="post" data-contact-form>
-                <label>
-                    <span data-bind="form.fields.0.label">Name</span>
-                    <input type="text" name="name" placeholder="Your name" required
-                           data-bind-placeholder="form.fields.0.placeholder">
-                </label>
-                <label>
-                    <span data-bind="form.fields.1.label">Email</span>
-                    <input type="email" name="email" placeholder="you@example.com" required
-                           data-bind-placeholder="form.fields.1.placeholder">
-                </label>
-                <label>
-                    <span data-bind="form.fields.2.label">Message</span>
-                    <textarea name="message" rows="6" placeholder="Tell me about your project or question"
-                              data-bind-placeholder="form.fields.2.placeholder"></textarea>
-                </label>
-                <button type="submit" class="button button-primary" data-bind="form.submitLabel">Send message</button>
-                <p class="contact-form__status" data-contact-form-status role="status" aria-live="polite" hidden></p>
-            </form>
-        </section>
+            <section class="contact-form-section contact-form-panel" aria-labelledby="contact-form-heading" data-animate="animate-entrance" data-animate-delay="200">
+                <div class="contact-section-head section-header-animate">
+                    <p class="section-label" data-bind="form.label">Send a message</p>
+                    <h2 id="contact-form-heading" data-bind="form.title">Contact form</h2>
+                    <p data-bind="form.subtitle">Select a topic and fill out the details below to open a pre-addressed message in your mail client or copy it to your clipboard.</p>
+                </div>
+
+                <div class="contact-topics" role="group" aria-labelledby="contact-topic-label">
+                    <span class="contact-topics__label" id="contact-topic-label">What can I help with?</span>
+                    <div class="contact-topics__group" data-contact-topics>
+                        <button type="button" class="contact-topic-btn" data-topic="Project Inquiry" aria-pressed="true">Project Inquiry</button>
+                        <button type="button" class="contact-topic-btn" data-topic="Role / Opportunity" aria-pressed="false">Role / Opportunity</button>
+                        <button type="button" class="contact-topic-btn" data-topic="Collaboration" aria-pressed="false">Collaboration</button>
+                        <button type="button" class="contact-topic-btn" data-topic="General Question" aria-pressed="false">General Question</button>
+                    </div>
+                </div>
+
+                <form class="contact-form" action="#" method="post" data-contact-form>
+                    <input type="hidden" name="topic" value="Project Inquiry" data-contact-topic-input>
+
+                    <div class="contact-form__row">
+                        <label>
+                            <span data-bind="form.fields.0.label">Name</span>
+                            <input type="text" name="name" placeholder="Your name" autocomplete="name" required
+                                   data-bind-placeholder="form.fields.0.placeholder">
+                        </label>
+                        <label>
+                            <span data-bind="form.fields.1.label">Email</span>
+                            <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required
+                                   data-bind-placeholder="form.fields.1.placeholder">
+                        </label>
+                    </div>
+
+                    <label>
+                        <span>Subject</span>
+                        <input type="text" name="subject" placeholder="Project Inquiry — Web Development"
+                               data-contact-subject>
+                    </label>
+
+                    <label>
+                        <span class="contact-form__label-row">
+                            <span data-bind="form.fields.2.label">Message</span>
+                            <span class="contact-form__counter" data-contact-counter aria-live="off">0 / 1800</span>
+                        </span>
+                        <textarea name="message" rows="6" maxlength="1800" required
+                                  placeholder="Tell me about your project or question"
+                                  data-bind-placeholder="form.fields.2.placeholder"
+                                  data-contact-message></textarea>
+                    </label>
+
+                    <div class="contact-form__actions">
+                        <button type="submit" class="button button-primary contact-form__submit" data-bind="form.submitLabel">Send message</button>
+                        <button type="button" class="contact-form__copy-btn" data-contact-copy-message>Copy formatted message</button>
+                    </div>
+
+                    <p class="contact-form__status" data-contact-form-status role="status" aria-live="polite" hidden></p>
+                </form>
+            </section>
+        </div>
     </main>
 
     <div id="site-footer"></div>
