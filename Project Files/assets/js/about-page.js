@@ -15,26 +15,38 @@
 (function () {
     'use strict';
 
-    var SCRIPT_URL = document.currentScript ? document.currentScript.src : '';
-    var SITE_ROOT = SCRIPT_URL ? new URL('../../', SCRIPT_URL).href : '';
+    var SITE_ROOT = (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
+        ? window.PortfolioUtils.getSiteRoot()
+        : (function () {
+            var s = document.currentScript || document.querySelector('script[src*="about-page.js"]');
+            return s && s.src ? new URL('../../', s.src).href : '';
+        })();
 
     var TRAITS = ['Problem Solver', 'Digital Generalist', 'Detail-Oriented', 'Curious', 'Reliable'];
 
     /* ------------------------------------------------------------- helpers */
     function esc(value) {
-        return String(value == null ? '' : value)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
+            return window.PortfolioUtils.escapeHtml(value);
+        }
+        return String(value == null ? '' : value);
     }
 
     function pad(n) { return n < 10 ? '0' + n : String(n); }
 
     function reduceMotion() {
+        if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+            return window.PortfolioUtils.reduceMotion();
+        }
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
     function fetchJSON(path) {
-        return fetch(SITE_ROOT + path).then(function (res) {
+        var fullUrl = SITE_ROOT + path;
+        if (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function') {
+            return window.PortfolioUtils.fetchJSON(fullUrl);
+        }
+        return fetch(fullUrl).then(function (res) {
             if (!res.ok) { throw new Error('Failed to load ' + path); }
             return res.json();
         }).catch(function (err) {

@@ -28,8 +28,12 @@
 (function () {
     'use strict';
 
-    var SCRIPT_URL = document.currentScript ? document.currentScript.src : '';
-    var SITE_ROOT = SCRIPT_URL ? new URL('../../', SCRIPT_URL).href : '';
+    var SITE_ROOT = (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
+        ? window.PortfolioUtils.getSiteRoot()
+        : (function () {
+            var s = document.currentScript || document.querySelector('script[src*="content.js"]');
+            return s && s.src ? new URL('../../', s.src).href : '';
+        })();
 
     /* index.html is the homepage; anything unmapped (project detail, docs)
        simply gets no bindings. */
@@ -49,9 +53,10 @@
     var data = null;
 
     function escapeHtml(value) {
-        return String(value == null ? '' : value)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
+            return window.PortfolioUtils.escapeHtml(value);
+        }
+        return String(value == null ? '' : value);
     }
 
     /* Resolution base for the current binding context. */
@@ -83,7 +88,7 @@
     function applyBindings(el, scope) {
         /* work-gallery.js rebuilds this heading into per-character spans for its
            typing animation; overwriting it afterwards would destroy that. */
-        if (el.hasAttribute('data-work-typewriter') && el.dataset.typewriterBuilt === 'true') {
+        if (el.hasAttribute('data-bind-ignore') || (el.hasAttribute('data-work-typewriter') && el.dataset.typewriterBuilt === 'true')) {
             return;
         }
 
@@ -138,6 +143,18 @@
         });
     }
 
+    function dispatchContentReady(page, contentData) {
+        if (typeof document !== 'undefined' && typeof CustomEvent === 'function') {
+            try {
+                document.dispatchEvent(new CustomEvent('portfolio:content-ready', {
+                    detail: { page: page, data: contentData }
+                }));
+            } catch (err) {
+                /* Non-fatal in testing environments without CustomEvent */
+            }
+        }
+    }
+
     function afterContent() {
         /* Typed headings and scroll entrances may have been injected after their
            modules initialised, so let both re-scan. */
@@ -150,15 +167,20 @@
     var ready = Promise.resolve();
 
     if (pageKey) {
-        ready = fetch(SITE_ROOT + 'data/pages.json')
-            .then(function (response) {
+        var pagesUrl = SITE_ROOT + 'data/pages.json';
+        var fetchPromise = (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function')
+            ? window.PortfolioUtils.fetchJSON(pagesUrl)
+            : fetch(pagesUrl).then(function (response) {
                 if (!response.ok) { throw new Error('Failed to load data/pages.json'); }
                 return response.json();
-            })
+            });
+
+        ready = fetchPromise
             .then(function (json) {
                 data = json;
                 bindWithin(document, undefined);
                 afterContent();
+                dispatchContentReady(pageKey, data);
                 return json;
             })
             .catch(function (error) {

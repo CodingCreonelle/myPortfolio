@@ -14,9 +14,9 @@
 (function () {
   'use strict';
 
-  const BACKGROUND_COMPONENT = 'assets/js/components/background.html';
-  const NAVBAR_COMPONENT = 'assets/js/components/navbar.html';
-  const FOOTER_COMPONENT = 'assets/js/components/footer.html';
+  const BACKGROUND_COMPONENT = 'components/background.html';
+  const NAVBAR_COMPONENT = 'components/navbar.html';
+  const FOOTER_COMPONENT = 'components/footer.html';
 
   const MOUNTS = {
     background: '#site-background',

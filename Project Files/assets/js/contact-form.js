@@ -1,104 +1,196 @@
 /*
- * contact-form.js — C6 / M14
+ * contact-form.js — C6 / M14 / Milestone M3 (MVC Refactoring)
  *
  * This is a static site: there is no server to POST to, and `action="#"` made
  * the browser navigate to the same page with a POST, which a plain file host
  * answers with 405 Method Not Allowed. The form is now intercepted here.
  *
- * Includes interactive topic selection, live character counter, required field
- * validation, mailto: assembly, and a one-click clipboard copy fallback so
- * visitors without a local mail client can still copy their formatted message.
+ * DOM Controller Responsibilities:
+ * - Interactive topic button selection, aria states, and dynamic placeholders
+ * - Live message character counter and threshold warning styling
+ * - Visual validation feedback and screen-reader status announcements
+ * - Action handling: form submit interception (mailto trigger) and clipboard copy
+ *
+ * Domain Logic Delegation:
+ * - Pure data validation, recipient extraction, mailto encoding, and plain-text
+ *   formatting are delegated to PortfolioContactModel (assets/js/contact-model.js).
+ * - Full backward compatibility is preserved: all Contract 1 CommonJS named exports
+ *   continue to be exported from this file.
  */
 (function (global) {
     'use strict';
 
-    var FALLBACK_EMAIL = 'charlesdavidlopez741@gmail.com';
-    var MAILTO_BODY_LIMIT = 1800;
     var BOUND_FLAG = 'contactFormBound';
+    var initialized = false;
 
-    var TOPIC_DEFAULTS = {
-        'Project Inquiry': {
-            subject: 'Project Inquiry — Web Development',
-            placeholder: 'Tell me about your project scope, goals, and target timeline'
-        },
-        'Role / Opportunity': {
-            subject: 'Role Opportunity — Front-End Engineering',
-            placeholder: 'Share details about the team, role responsibilities, and location'
-        },
-        'Collaboration': {
-            subject: 'Collaboration Idea — Open Source / Creative Web',
-            placeholder: 'Tell me what you are building and how we might collaborate'
-        },
-        'General Question': {
-            subject: 'Hello from your portfolio',
-            placeholder: 'Ask a question or share your thoughts'
+    /**
+     * Resolves the PortfolioContactModel from the ambient environment.
+     * Checks browser global (window.PortfolioContactModel), globalThis, or CommonJS require.
+     *
+     * @returns {Object|null} The resolved contact model API, or null if unresolvable.
+     */
+    function resolveModel() {
+        if (typeof window !== 'undefined' && window.PortfolioContactModel) {
+            return window.PortfolioContactModel;
+        }
+        if (typeof globalThis !== 'undefined' && globalThis.PortfolioContactModel) {
+            return globalThis.PortfolioContactModel;
+        }
+        if (typeof require === 'function') {
+            try {
+                return require('./contact-model.js');
+            } catch (e) {
+                // Defensive fallback for non-CommonJS or resolution mismatch
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Defensive fallback constants in case contact-model.js fails to load.
+     */
+    var FALLBACK_CONSTANTS = {
+        FALLBACK_EMAIL: 'charlesdavidlopez741@gmail.com',
+        MAILTO_BODY_LIMIT: 1800,
+        TOPIC_DEFAULTS: {
+            'Project Inquiry': {
+                subject: 'Project Inquiry — Web Development',
+                placeholder: 'Tell me about your project scope, goals, and target timeline'
+            },
+            'Role / Opportunity': {
+                subject: 'Role Opportunity — Front-End Engineering',
+                placeholder: 'Share details about the team, role responsibilities, and location'
+            },
+            'Collaboration': {
+                subject: 'Collaboration Idea — Open Source / Creative Web',
+                placeholder: 'Tell me what you are building and how we might collaborate'
+            },
+            'General Question': {
+                subject: 'Hello from your portfolio',
+                placeholder: 'Ask a question or share your thoughts'
+            }
         }
     };
 
-    var initialized = false;
-
-    function extractRecipientAddress(href, fallback) {
-        var defaultEmail = fallback || FALLBACK_EMAIL;
-        if (!href || typeof href !== 'string') return defaultEmail;
-        if (href.slice(0, 'mailto:'.length).toLowerCase() !== 'mailto:') {
-            return defaultEmail;
+    /**
+     * Retrieves the active contact model or creates a resilient inline fallback.
+     *
+     * @returns {Object} Active model API.
+     */
+    function getModel() {
+        var resolved = resolveModel();
+        if (resolved) {
+            return resolved;
         }
-        var address = href.slice('mailto:'.length).split('?')[0].trim();
-        return address || defaultEmail;
-    }
-
-    function validateContactFields(fields) {
-        var name = String((fields && fields.name) || '').trim();
-        var email = String((fields && fields.email) || '').trim();
-        var message = String((fields && fields.message) || '').trim();
-
-        if (!name) {
-            return { valid: false, error: 'Please enter your name before sending.' };
-        }
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return { valid: false, error: 'Please enter a valid email address.' };
-        }
-        if (!message) {
-            return { valid: false, error: 'Please enter a message before sending.' };
-        }
-        return { valid: true, error: '' };
-    }
-
-    function buildMailtoPayload(fields, recipient) {
-        var to = extractRecipientAddress('mailto:' + (recipient || FALLBACK_EMAIL), FALLBACK_EMAIL);
-        var name = String((fields && fields.name) || '').trim();
-        var email = String((fields && fields.email) || '').trim();
-        var topic = String((fields && fields.topic) || '').trim();
-        var customSubject = String((fields && fields.subject) || '').trim();
-        var message = String((fields && fields.message) || '').trim();
-
-        var baseSubject = customSubject || (topic ? '[' + topic + '] Portfolio contact' : 'Portfolio contact');
-        var subject = name && customSubject.indexOf(name) === -1
-            ? baseSubject + ' from ' + name
-            : baseSubject;
-
-        var topicHeader = topic ? 'Topic: ' + topic + '\n\n' : '';
-        var body = topicHeader + message + '\n\n— ' + (name || 'Visitor') + ' (' + (email || 'no email provided') + ')';
-        if (body.length > MAILTO_BODY_LIMIT) {
-            body = body.slice(0, MAILTO_BODY_LIMIT) + '…';
-        }
-
-        var mailto = 'mailto:' + to +
-            '?subject=' + encodeURIComponent(subject) +
-            '&body=' + encodeURIComponent(body);
 
         return {
-            to: to,
-            subject: subject,
-            body: body,
-            mailto: mailto
+            FALLBACK_EMAIL: FALLBACK_CONSTANTS.FALLBACK_EMAIL,
+            MAILTO_BODY_LIMIT: FALLBACK_CONSTANTS.MAILTO_BODY_LIMIT,
+            TOPIC_DEFAULTS: FALLBACK_CONSTANTS.TOPIC_DEFAULTS,
+            extractRecipientAddress: function (href, fallback) {
+                var defaultEmail = (fallback && typeof fallback === 'string') ? fallback : FALLBACK_CONSTANTS.FALLBACK_EMAIL;
+                if (!href || typeof href !== 'string') return defaultEmail;
+                var trimmed = href.trim();
+                if (trimmed.slice(0, 'mailto:'.length).toLowerCase() !== 'mailto:') return defaultEmail;
+                var address = trimmed.slice('mailto:'.length).split('?')[0].trim();
+                return address || defaultEmail;
+            },
+            validateContactFields: function (fields) {
+                var name = String((fields && fields.name) || '').trim();
+                var email = String((fields && fields.email) || '').trim();
+                var message = String((fields && fields.message) || '').trim();
+
+                if (!name) return { valid: false, error: 'Please enter your name before sending.' };
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { valid: false, error: 'Please enter a valid email address.' };
+                if (!message) return { valid: false, error: 'Please enter a message before sending.' };
+                return { valid: true, error: '' };
+            },
+            buildMailtoPayload: function (fields, recipient) {
+                var to = recipient || FALLBACK_CONSTANTS.FALLBACK_EMAIL;
+                var name = String((fields && fields.name) || '').trim();
+                var email = String((fields && fields.email) || '').trim();
+                var topic = String((fields && fields.topic) || '').trim();
+                var customSubject = String((fields && fields.subject) || '').trim();
+                var message = String((fields && fields.message) || '').trim();
+
+                var baseSubject = customSubject || (topic ? '[' + topic + '] Portfolio contact' : 'Portfolio contact');
+                var subject = name && customSubject.indexOf(name) === -1 ? baseSubject + ' from ' + name : baseSubject;
+                var topicHeader = topic ? 'Topic: ' + topic + '\n\n' : '';
+                var body = topicHeader + message + '\n\n— ' + (name || 'Visitor') + ' (' + (email || 'no email provided') + ')';
+
+                var isTruncated = body.length > FALLBACK_CONSTANTS.MAILTO_BODY_LIMIT;
+                if (isTruncated) {
+                    body = body.slice(0, FALLBACK_CONSTANTS.MAILTO_BODY_LIMIT) + '…';
+                }
+
+                var mailto = 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+                return {
+                    to: to,
+                    recipient: to,
+                    subject: subject,
+                    body: body,
+                    mailto: mailto,
+                    url: mailto,
+                    isTruncated: isTruncated,
+                    bodyLength: body.length
+                };
+            },
+            formatClipboardMessage: function (fields, recipient) {
+                var p = this.buildMailtoPayload(fields, recipient);
+                return 'To: ' + p.to + '\nSubject: ' + p.subject + '\n\n' + p.body;
+            }
         };
     }
 
-    function formatClipboardMessage(fields, recipient) {
-        var payload = buildMailtoPayload(fields, recipient);
-        return 'To: ' + payload.to + '\nSubject: ' + payload.subject + '\n\n' + payload.body;
+    var initialModel = getModel();
+    var FALLBACK_EMAIL = initialModel.FALLBACK_EMAIL;
+    var MAILTO_BODY_LIMIT = initialModel.MAILTO_BODY_LIMIT;
+    var TOPIC_DEFAULTS = initialModel.TOPIC_DEFAULTS;
+
+    /**
+     * Delegates recipient address extraction to the active contact model.
+     *
+     * @param {string} [href] - Mailto URI or email string.
+     * @param {string} [fallback] - Safe fallback email.
+     * @returns {string} Normalized email address.
+     */
+    function extractRecipientAddress(href, fallback) {
+        return getModel().extractRecipientAddress(href, fallback);
     }
+
+    /**
+     * Delegates contact field validation to the active contact model.
+     *
+     * @param {Object} [fields] - Form field values.
+     * @returns {{ valid: boolean, error: string }} Validation result.
+     */
+    function validateContactFields(fields) {
+        return getModel().validateContactFields(fields);
+    }
+
+    /**
+     * Delegates mailto payload generation to the active contact model.
+     *
+     * @param {Object} [fields] - Field values.
+     * @param {string} [recipient] - Target recipient address.
+     * @returns {Object} Payload containing to, subject, body, and mailto URL.
+     */
+    function buildMailtoPayload(fields, recipient) {
+        return getModel().buildMailtoPayload(fields, recipient);
+    }
+
+    /**
+     * Delegates clipboard message formatting to the active contact model.
+     *
+     * @param {Object} [fields] - Field values.
+     * @param {string} [recipient] - Target recipient address.
+     * @returns {string} Plain-text clipboard representation.
+     */
+    function formatClipboardMessage(fields, recipient) {
+        return getModel().formatClipboardMessage(fields, recipient);
+    }
+
+    /* ------------------------------------------------------------- DOM View Accessors */
 
     function findForm() {
         if (typeof document === 'undefined') return null;
@@ -145,31 +237,17 @@
     }
 
     function copyToClipboard(text) {
-        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () {
-                return fallbackCopy(text);
-            });
+        var utils = typeof window !== 'undefined' ? window.PortfolioUtils : (typeof globalThis !== 'undefined' ? globalThis.PortfolioUtils : null);
+        if (utils && typeof utils.copyToClipboard === 'function') {
+            return utils.copyToClipboard(text);
         }
-        return Promise.resolve(fallbackCopy(text));
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return false; });
+        }
+        return Promise.resolve(false);
     }
 
-    function fallbackCopy(text) {
-        if (typeof document === 'undefined') return false;
-        try {
-            var area = document.createElement('textarea');
-            area.value = String(text || '');
-            area.setAttribute('readonly', '');
-            area.style.position = 'fixed';
-            area.style.opacity = '0';
-            document.body.appendChild(area);
-            area.select();
-            document.execCommand('copy');
-            document.body.removeChild(area);
-            return true;
-        } catch (err) {
-            return false;
-        }
-    }
+    /* ------------------------------------------------------------- Event Controllers */
 
     function bindTopics(form) {
         var group = document.querySelector('[data-contact-topics]');
@@ -178,6 +256,7 @@
         var messageInput = form.querySelector('[data-contact-message]');
         if (!group) return;
 
+        var currentDefaults = getModel().TOPIC_DEFAULTS || TOPIC_DEFAULTS;
         var buttons = Array.prototype.slice.call(group.querySelectorAll('[data-topic]'));
         buttons.forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -188,7 +267,7 @@
                 if (topicInput) {
                     topicInput.value = topic;
                 }
-                var defaults = TOPIC_DEFAULTS[topic];
+                var defaults = currentDefaults[topic];
                 if (defaults) {
                     if (subjectInput && (!subjectInput.value || subjectInput.dataset.autoFilled !== 'false')) {
                         subjectInput.placeholder = defaults.subject;
@@ -212,10 +291,12 @@
         var counter = form.querySelector('[data-contact-counter]');
         if (!messageInput || !counter) return;
 
+        var limit = getModel().MAILTO_BODY_LIMIT || MAILTO_BODY_LIMIT;
+
         function updateCounter() {
             var len = String(messageInput.value || '').length;
-            counter.textContent = len + ' / ' + MAILTO_BODY_LIMIT;
-            counter.classList.toggle('is-near-limit', len >= Math.floor(MAILTO_BODY_LIMIT * 0.85));
+            counter.textContent = len + ' / ' + limit;
+            counter.classList.toggle('is-near-limit', len >= Math.floor(limit * 0.85));
         }
 
         messageInput.addEventListener('input', updateCounter);
@@ -303,17 +384,21 @@
         }
     }
 
+    /* ------------------------------------------------------------- Contract 1 Re-Exports */
+
     var api = {
         FALLBACK_EMAIL: FALLBACK_EMAIL,
         MAILTO_BODY_LIMIT: MAILTO_BODY_LIMIT,
+        TOPIC_DEFAULTS: TOPIC_DEFAULTS,
         extractRecipientAddress: extractRecipientAddress,
         validateContactFields: validateContactFields,
         buildMailtoPayload: buildMailtoPayload,
-        formatClipboardMessage: formatClipboardMessage
+        formatClipboardMessage: formatClipboardMessage,
+        init: init
     };
 
     global.PortfolioContactForm = api;
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
     }
-})(typeof window !== 'undefined' ? window : globalThis);
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

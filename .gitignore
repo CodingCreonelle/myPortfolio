@@ -20,6 +20,7 @@ out/
 *.tmp
 *.temp
 .tmp-html-check.js
+.agents/
 
 # Runtime Caches & Temporary Directories
 .cache/
@@ -53,3 +54,7 @@ Desktop.ini
 
 # Verification & Review Artifacts
 review-evidence/
+tests/
+scripts/*.mjs
+scripts/*.cjs
+scripts/*.json

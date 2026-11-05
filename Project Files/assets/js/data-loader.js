@@ -12,32 +12,30 @@
  * loaded utils.js (or loaded it after this script).
  */
 function esc(value) {
-  const utils = window.PortfolioUtils;
-  if (utils && typeof utils.escapeHtml === 'function') {
-    return utils.escapeHtml(value);
+  if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
+    return window.PortfolioUtils.escapeHtml(value);
   }
-  const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => escapes[character]);
+  return String(value == null ? '' : value);
 }
 
-function scriptUrl() {
-  if (document.currentScript && document.currentScript.src) {
-    return document.currentScript.src;
-  }
-  const script = document.querySelector('script[src*="data-loader.js"]');
-  return script ? script.src : '';
-}
-
-const script = scriptUrl();
-const SITE_ROOT = script ? new URL('../../', script).href : '';
+const SITE_ROOT = (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
+  ? window.PortfolioUtils.getSiteRoot()
+  : (function () {
+      const script = document.currentScript || document.querySelector('script[src*="data-loader.js"]');
+      return script && script.src ? new URL('../../', script.src).href : '';
+    })();
 
 function projectHref(project) {
   return `${SITE_ROOT}projects/project.html?id=${encodeURIComponent(project.id)}`;
 }
 
 async function fetchJSON(path) {
+  const fullUrl = SITE_ROOT + path;
+  if (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function') {
+    return window.PortfolioUtils.fetchJSON(fullUrl);
+  }
   try {
-    const response = await fetch(SITE_ROOT + path);
+    const response = await fetch(fullUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${path}: ${response.status}`);
     }
@@ -51,7 +49,7 @@ async function fetchJSON(path) {
 function createCard(html) {
   const template = document.createElement('template');
   template.innerHTML = html.trim();
-  return template.content.firstChild;
+  return template.content.firstElementChild;
 }
 
 /*
@@ -184,27 +182,10 @@ const CONTACT_ICONS = {
 };
 
 function copyTextToClipboard(text) {
-  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-    return navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+  if (window.PortfolioUtils && typeof window.PortfolioUtils.copyToClipboard === 'function') {
+    return window.PortfolioUtils.copyToClipboard(text);
   }
-  return Promise.resolve(fallbackCopyText(text));
-}
-
-function fallbackCopyText(text) {
-  try {
-    const textarea = document.createElement('textarea');
-    textarea.value = String(text || '');
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return true;
-  } catch (err) {
-    return false;
-  }
+  return Promise.resolve(false);
 }
 
 function renderContactCards(socials) {
