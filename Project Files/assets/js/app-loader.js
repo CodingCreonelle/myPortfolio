@@ -125,17 +125,23 @@
     const navLinks = document.querySelectorAll('.site-nav a');
     if (!navLinks.length) return;
 
+    const normalizePathname = (pathname) => {
+      if (!pathname) return '';
+      return pathname.endsWith('/') ? `${pathname}index.html` : pathname;
+    };
+
     /*
      * Only in-page anchors that resolve to THIS page may drive the section
      * highlight. On about.html the nav's "#hero" link points at index.html, so
      * without this guard the observer would light up "Home" on a page whose own
-     * link is already the active one.
+     * link is already the active one. Directory roots ending in "/" are normalized
+     * to "/index.html" so root URL launches match properly.
      */
-    const currentPath = window.location.pathname;
+    const currentPath = normalizePathname(window.location.pathname);
     const pageHashLinks = Array.from(navLinks).filter((link) => {
       try {
         const url = new URL(link.href);
-        return url.pathname === currentPath && url.hash.length > 1;
+        return normalizePathname(url.pathname) === currentPath && url.hash.length > 1;
       } catch (error) {
         return false;
       }
@@ -163,30 +169,44 @@
 
     /*
      * The links are addressed from the site root, so they are compared as the URLs
-     * they resolve to rather than as the text in the attribute.
+     * they resolve to rather than as the text in the attribute. Directory roots
+     * are normalized to index.html so "/" matches "index.html".
      */
     const linkPath = (link) => {
       try {
-        return new URL(link.href).pathname;
+        return normalizePathname(new URL(link.href).pathname);
       } catch (error) {
         return null;
       }
     };
 
     const currentHash = window.location.hash;
+    let initialLink = null;
     if (currentHash) {
-      const initialLink = Array.from(navLinks).find((link) => {
-        const url = new URL(link.href);
-        return url.pathname === window.location.pathname && url.hash === currentHash;
+      initialLink = Array.from(navLinks).find((link) => {
+        try {
+          const url = new URL(link.href);
+          return normalizePathname(url.pathname) === currentPath && url.hash === currentHash;
+        } catch (error) {
+          return false;
+        }
       });
       if (initialLink) {
         setActiveLink(initialLink);
       }
     }
 
-    const pathLink = Array.from(navLinks).find(link => linkPath(link) === window.location.pathname);
-    if (pathLink) {
-      setActiveLink(pathLink);
+    if (!initialLink) {
+      let pathLink = Array.from(navLinks).find(link => linkPath(link) === currentPath);
+      if (!pathLink && /(?:\/projects\/|\/docs\/)/i.test(currentPath)) {
+        pathLink = Array.from(navLinks).find((link) => {
+          const path = linkPath(link);
+          return path && path.endsWith('/projects.html');
+        });
+      }
+      if (pathLink) {
+        setActiveLink(pathLink);
+      }
     }
 
     let pendingActiveSectionId = null;
