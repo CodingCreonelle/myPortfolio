@@ -51,7 +51,10 @@
   }
 
   function fetchComponent(path) {
-    return fetch(SITE_ROOT + path)
+    const fetchFn = (typeof window !== 'undefined' && typeof window.__nativeFetch === 'function')
+      ? window.__nativeFetch
+      : fetch;
+    return fetchFn(SITE_ROOT + path)
       .then((response) => {
         if (!response.ok) throw new Error(`${path}: ${response.status}`);
         return response.text();

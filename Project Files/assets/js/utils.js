@@ -272,7 +272,8 @@
         const cache = requestCache();
         if (cache.has(key)) return cache.get(key);
 
-        const request = fetch(key)
+        const fetchFn = typeof global.__nativeFetch === 'function' ? global.__nativeFetch : fetch;
+        const request = fetchFn(key)
             .then((response) => {
                 if (!response.ok) throw new Error(`Failed to fetch ${key}: ${response.status}`);
                 return response.json();

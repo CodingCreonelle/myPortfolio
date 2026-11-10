@@ -8,9 +8,14 @@ const staticDir = path.join(__dirname, 'Project Files');
 
 app.disable('x-powered-by');
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use(
   express.static(staticDir, {
     index: 'index.html',
+    extensions: ['html'],
     etag: true,
     setHeaders: (res, filePath) => {
       if (/\.(css|js)$/i.test(filePath) && res.req && res.req.query && res.req.query.v) {
@@ -26,6 +31,10 @@ app.use((req, res) => {
   res.status(404).send('Not Found');
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server listening on http://${HOST}:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`Server listening on http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = app;
