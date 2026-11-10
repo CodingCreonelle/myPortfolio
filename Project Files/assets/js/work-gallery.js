@@ -1,224 +1,364 @@
 /**
- * Featured work gallery.
+ * Featured work deck — stacked card carousel + heading typewriter.
  *
- * Shows one project at a time and steps through them with the previous / next
- * controls, wrapping around at either end. The heading types itself out the
- * first time the section is on screen.
- *
- * Cards are left visible in the markup and only collapsed into a viewer once
- * this script runs, so the section still reads as a list of projects without it.
+ * `initWorkGallery(projects)` is called by `data-loader.js` once
+ * `data/projects.json` resolves. Filtering prefers entries with
+ * `featured: true` and falls back to the full list so the stage is never
+ * left empty while projects exist.
  */
 (function () {
-  'use strict';
+  var SLOTS = ['active', 'next', 'prev', 'hidden'];
+  var TYPE_SPEED = 55;
+  var SWIPE_THRESHOLD = 44;
 
-  const SELECTORS = {
-    root: '.work-gallery',
-    card: '.work-card',
-    title: '.work-card__title',
-    heading: '[data-work-typewriter]',
-    stage: '.work-gallery__stage',
-    controls: '.work-gallery__controls',
-    previous: '[data-work-prev]',
-    next: '[data-work-next]',
-    counter: '[data-work-counter]',
-    total: '[data-work-total]',
-    live: '[data-work-live]',
+  var SKILL_ICON_BASE = 'assets/icons/skills/';
+  var SKILL_ICONS = {
+    html:       { file: 'html.svg',       label: 'HTML5' },
+    html5:      { file: 'html.svg',       label: 'HTML5' },
+    css:        { file: 'css.svg',        label: 'CSS3' },
+    css3:       { file: 'css.svg',        label: 'CSS3' },
+    javascript: { file: 'javascript.svg', label: 'JavaScript' },
+    js:         { file: 'javascript.svg', label: 'JavaScript' },
+    git:        { file: 'git.svg',        label: 'Git' },
+    github:     { file: 'github.svg',     label: 'GitHub' },
+    vscode:     { file: 'vscode.svg',     label: 'VS Code' },
+    'vs code':  { file: 'vscode.svg',     label: 'VS Code' }
   };
 
-  const CLASSES = {
-    typed: 'is-typed',
-    active: 'is-active',
-    enhanced: 'is-enhanced',
+  var prefersReducedMotion = function () {
+    return (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   };
 
-  const TYPE_SPEED = 52;
-  const TYPE_START_DELAY = 220;
-
-  const state = {
-    root: null,
-    cards: [],
-    characters: [],
-    caret: null,
-    heading: null,
-    counter: null,
-    live: null,
-    index: -1,
-    typed: false,
-    timer: 0,
+  var pad2 = function (n) {
+    return String(n).padStart(2, '0');
   };
 
-  function pad(value) {
-    return String(value).padStart(2, '0');
+  function resolveSkillIcons(tech) {
+    if (!Array.isArray(tech)) return [];
+    var seen = {};
+    var out = [];
+    tech.forEach(function (name) {
+      var key = String(name || '').trim().toLowerCase();
+      var hit = SKILL_ICONS[key];
+      if (hit && !seen[hit.file]) {
+        seen[hit.file] = true;
+        out.push(hit);
+      }
+    });
+    return out;
   }
 
-  function reducedMotion() {
-    if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
-      return window.PortfolioUtils.reduceMotion();
+  function buildCard(project, index, total) {
+    var article = document.createElement('article');
+    article.className = 'work-card';
+    article.dataset.index = String(index);
+    article.setAttribute('role', 'group');
+    article.setAttribute('aria-roledescription', 'slide');
+    article.setAttribute(
+      'aria-label',
+      (index + 1) + ' of ' + total + ': ' + (project.title || 'Project')
+    );
+
+    var media = document.createElement('div');
+    media.className = 'work-card__media';
+    if (project.image) {
+      var img = document.createElement('img');
+      img.src = project.image;
+      img.alt = project.imageAlt || project.title || '';
+      img.loading = 'lazy';
+      media.appendChild(img);
+    } else {
+      var placeholder = document.createElement('div');
+      placeholder.className = 'work-card__media-placeholder';
+      placeholder.setAttribute('aria-hidden', 'true');
+      var num = document.createElement('span');
+      num.className = 'work-card__media-num';
+      num.textContent = pad2(index + 1);
+      placeholder.appendChild(num);
+      media.appendChild(placeholder);
     }
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
 
-  /** Stops any typing already queued, so an old chain cannot drive a new heading. */
-  function cancelTyping() {
-    if (!state.timer) return;
-    window.clearTimeout(state.timer);
-    state.timer = 0;
-  }
+    var body = document.createElement('div');
+    body.className = 'work-card__body';
 
-  /**
-   * Split the heading into per-character spans so the text can be revealed one
-   * letter at a time without moving anything around it.
-   */
-  function buildTypewriter() {
-    const heading = state.root.querySelector(SELECTORS.heading);
-    if (!heading || heading.dataset.typewriterBuilt === 'true') return;
+    var indexLabel = document.createElement('p');
+    indexLabel.className = 'work-card__index';
+    indexLabel.textContent = pad2(index + 1) + ' / ' + pad2(total);
 
-    const text = heading.textContent.replace(/\s+/g, ' ').trim();
-    if (!text) return;
+    var title = document.createElement('h3');
+    title.className = 'work-card__title';
+    title.textContent = project.title || 'Untitled project';
 
-    // A rebuilt heading starts its reveal over rather than inheriting the old one's
-    // progress, which would otherwise leave it permanently blank.
-    cancelTyping();
-    state.typed = false;
+    var summary = document.createElement('p');
+    summary.className = 'work-card__summary';
+    summary.textContent = project.summary || project.description || '';
 
-    heading.dataset.typewriterBuilt = 'true';
-    heading.setAttribute('data-bind-ignore', 'true');
-    heading.textContent = '';
+    var stack = document.createElement('p');
+    stack.className = 'work-card__stack';
+    stack.textContent =
+      Array.isArray(project.tech) && project.tech.length > 0
+        ? project.tech.join(' \u00B7 ')
+        : '';
 
-    const caret = document.createElement('span');
-    caret.className = 'work-gallery__caret';
-    caret.setAttribute('aria-hidden', 'true');
+    var icons = resolveSkillIcons(project.tech);
+    var iconsRow = null;
+    if (icons.length > 0) {
+      iconsRow = document.createElement('ul');
+      iconsRow.className = 'work-card__icons';
+      iconsRow.setAttribute('aria-label', 'Technologies used');
+      icons.forEach(function (icon) {
+        var item = document.createElement('li');
+        item.className = 'work-card__icon';
+        item.title = icon.label;
 
-    const characters = [];
-    for (const character of text) {
-      const span = document.createElement('span');
-      span.className = 'work-gallery__char';
-      span.textContent = character;
-      characters.push(span);
-      heading.appendChild(span);
+        var iconImg = document.createElement('img');
+        iconImg.src = SKILL_ICON_BASE + icon.file;
+        iconImg.alt = icon.label;
+        iconImg.width = 20;
+        iconImg.height = 20;
+        iconImg.loading = 'lazy';
+
+        item.appendChild(iconImg);
+        iconsRow.appendChild(item);
+      });
     }
-    heading.appendChild(caret);
 
-    state.characters = characters;
-    state.caret = caret;
-    state.heading = heading;
+    var link = document.createElement('a');
+    link.className = 'work-card__link';
+    link.href = 'projects/project.html?id=' + encodeURIComponent(project.id);
+    link.appendChild(document.createTextNode('View project'));
+    var arrow = document.createElement('span');
+    arrow.className = 'work-card__link-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.innerHTML = '&#8594;';
+    link.appendChild(arrow);
+
+    body.appendChild(indexLabel);
+    body.appendChild(title);
+    body.appendChild(summary);
+    if (stack.textContent) body.appendChild(stack);
+    if (iconsRow) body.appendChild(iconsRow);
+    body.appendChild(link);
+
+    article.appendChild(media);
+    article.appendChild(body);
+    return article;
   }
 
-  function revealCharacter(index) {
-    if (index >= state.characters.length) return;
-
-    state.characters[index].classList.add(CLASSES.typed);
-    // The caret rides along with the text rather than sitting at the end.
-    state.heading.insertBefore(state.caret, state.characters[index + 1] || null);
-    state.timer = window.setTimeout(() => revealCharacter(index + 1), TYPE_SPEED);
+  function setInteractivity(card, isActive) {
+    if (isActive) {
+      card.removeAttribute('aria-hidden');
+      card.removeAttribute('inert');
+    } else {
+      card.setAttribute('aria-hidden', 'true');
+      card.setAttribute('inert', '');
+    }
+    var focusables = card.querySelectorAll('a, button, input, [tabindex]');
+    focusables.forEach(function (el) {
+      if (isActive) {
+        el.removeAttribute('tabindex');
+      } else {
+        el.setAttribute('tabindex', '-1');
+      }
+    });
   }
 
-  function startTyping() {
-    if (state.typed || !state.characters.length) return;
-    state.typed = true;
+  function assignSlots(cards, activeIndex) {
+    var total = cards.length;
+    cards.forEach(function (card, idx) {
+      var slot = 'hidden';
+      if (idx === activeIndex) {
+        slot = 'active';
+      } else if (total > 1 && idx === (activeIndex + 1) % total) {
+        slot = 'next';
+      } else if (total > 2 && idx === (activeIndex - 1 + total) % total) {
+        slot = 'prev';
+      }
+      SLOTS.forEach(function (s) {
+        if (s !== slot) card.classList.remove('work-card--' + s);
+      });
+      card.classList.add('work-card--' + slot);
+      setInteractivity(card, slot === 'active');
+    });
+  }
 
-    if (reducedMotion()) {
-      state.characters.forEach((character) => character.classList.add(CLASSES.typed));
+  function runTypewriter(section) {
+    var target = section.querySelector('[data-work-typewriter]');
+    if (!target || target.dataset.typed === 'true') return;
+
+    var fullText = (target.dataset.text || target.textContent || '').trim();
+    if (!fullText) return;
+    target.dataset.text = fullText;
+    target.dataset.typed = 'true';
+
+    if (prefersReducedMotion()) {
+      target.textContent = fullText;
       return;
     }
 
-    state.heading.insertBefore(state.caret, state.characters[0] || null);
-    state.timer = window.setTimeout(() => revealCharacter(0), TYPE_START_DELAY);
-  }
+    var startTyping = function () {
+      target.textContent = '';
+      target.classList.add('is-typing');
+      var i = 0;
+      var tick = function () {
+        i += 1;
+        target.textContent = fullText.slice(0, i);
+        if (i < fullText.length) {
+          window.setTimeout(tick, TYPE_SPEED);
+        } else {
+          target.classList.remove('is-typing');
+          target.classList.add('is-done');
+        }
+      };
+      window.setTimeout(tick, 180);
+    };
 
-  /**
-   * Announce the project that just came into view, so the change is not silent
-   * for anyone who cannot see the deck turn over.
-   */
-  function announce(index) {
-    if (!state.live) return;
-    const title = state.cards[index].querySelector(SELECTORS.title);
-    const name = title ? title.textContent.trim() : 'Project';
-    state.live.textContent = `${name} (${index + 1} of ${state.cards.length})`;
-  }
-
-  function show(index, options) {
-    const count = state.cards.length;
-    const target = ((index % count) + count) % count;
-    if (target === state.index) return;
-
-    state.index = target;
-    state.cards.forEach((card, position) => {
-      card.classList.toggle(CLASSES.active, position === target);
-    });
-    if (state.counter) state.counter.textContent = pad(target + 1);
-    if (!options || options.announce !== false) announce(target);
-  }
-
-  function step(offset) {
-    show(state.index + offset);
-  }
-
-  function onKeydown(event) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    event.preventDefault();
-    step(event.key === 'ArrowLeft' ? -1 : 1);
-  }
-
-  /**
-   * Attaches the deck controls once per gallery root. The listeners sit on the
-   * persistent controls rather than on the cards, so a re-rendered deck keeps
-   * working without stacking a second handler on every init().
-   */
-  function bindControls(root) {
-    if (root.dataset.galleryBound === 'true') return;
-    root.dataset.galleryBound = 'true';
-
-    const previous = root.querySelector(SELECTORS.previous);
-    const next = root.querySelector(SELECTORS.next);
-    if (previous) previous.addEventListener('click', () => step(-1));
-    if (next) next.addEventListener('click', () => step(1));
-
-    const controls = root.querySelector(SELECTORS.controls);
-    if (controls) controls.addEventListener('keydown', onKeydown);
-  }
-
-  function init() {
-    const root = document.querySelector(SELECTORS.root);
-    if (!root) return;
-
-    // Re-read the deck on every call: data-loader replaces the cards and then
-    // calls init() again, so the state is rebuilt rather than kept.
-    state.root = root;
-    state.cards = Array.from(root.querySelectorAll(SELECTORS.card));
-    state.counter = root.querySelector(SELECTORS.counter);
-    state.live = root.querySelector(SELECTORS.live);
-    state.index = -1;
-
-    if (!state.cards.length) return;
-
-    const total = root.querySelector(SELECTORS.total);
-    if (total) total.textContent = pad(state.cards.length);
-
-    // Single project: nothing to step through, so the controls add nothing.
-    if (state.cards.length > 1) {
-      root.classList.add(CLASSES.enhanced);
-      bindControls(root);
-    }
-
-    buildTypewriter();
-    show(0, { announce: false });
-
-    const stage = root.querySelector(SELECTORS.stage);
-    if (stage && 'IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            startTyping();
-            observer.disconnect();
-          }
-        });
-      }, { threshold: 0.35 });
-      observer.observe(stage);
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              io.disconnect();
+              startTyping();
+            }
+          });
+        },
+        { threshold: 0.35 }
+      );
+      io.observe(section);
     } else {
       startTyping();
     }
   }
 
-  window.PortfolioWorkGallery = { init: init };
+  function initWorkGallery(projects) {
+    var section = document.querySelector('.work-gallery');
+    var deck = document.getElementById('featured-projects');
+    if (!section || !deck) return;
+
+    runTypewriter(section);
+
+    var list = Array.isArray(projects) ? projects : [];
+    var featured = list.filter(function (p) { return p && p.featured; });
+    if (featured.length === 0) featured = list;
+
+    var prevBtn = section.querySelector('[data-work-prev]');
+    var nextBtn = section.querySelector('[data-work-next]');
+    var counterEl = section.querySelector('[data-work-counter]');
+    var totalEl = section.querySelector('[data-work-total]');
+    var liveEl = section.querySelector('[data-work-live]');
+
+    deck.innerHTML = '';
+
+    if (featured.length === 0) {
+      var empty = document.createElement('p');
+      empty.className = 'work-gallery__empty';
+      empty.textContent = 'Featured projects coming soon.';
+      deck.appendChild(empty);
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
+    var total = featured.length;
+    var cards = featured.map(function (project, idx) {
+      var card = buildCard(project, idx, total);
+      deck.appendChild(card);
+      return card;
+    });
+
+    if (totalEl) totalEl.textContent = pad2(total);
+    if (prevBtn) prevBtn.disabled = total < 2;
+    if (nextBtn) nextBtn.disabled = total < 2;
+
+    var active = 0;
+
+    var goTo = function (nextIndex, announce) {
+      if (total === 0) return;
+      active = ((nextIndex % total) + total) % total;
+      assignSlots(cards, active);
+      if (counterEl) counterEl.textContent = pad2(active + 1);
+      if (announce && liveEl) {
+        var current = featured[active];
+        liveEl.textContent =
+          'Showing project ' +
+          (active + 1) +
+          ' of ' +
+          total +
+          ': ' +
+          (current && current.title ? current.title : '');
+      }
+    };
+
+    goTo(0, false);
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        goTo(active - 1, true);
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        goTo(active + 1, true);
+      });
+    }
+
+    cards.forEach(function (card, idx) {
+      card.addEventListener('click', function (event) {
+        if (idx !== active) {
+          event.preventDefault();
+          goTo(idx, true);
+        }
+      });
+    });
+
+    section.addEventListener('keydown', function (event) {
+      if (total < 2) return;
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goTo(active + 1, true);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goTo(active - 1, true);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        goTo(0, true);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        goTo(total - 1, true);
+      }
+    });
+
+    var touchStartX = null;
+    var touchStartY = null;
+    deck.addEventListener(
+      'touchstart',
+      function (event) {
+        if (event.touches.length !== 1) return;
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+      },
+      { passive: true }
+    );
+
+    deck.addEventListener(
+      'touchend',
+      function (event) {
+        if (touchStartX === null || event.changedTouches.length === 0) return;
+        var dx = event.changedTouches[0].clientX - touchStartX;
+        var dy = event.changedTouches[0].clientY - touchStartY;
+        touchStartX = null;
+        touchStartY = null;
+        if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+          goTo(dx < 0 ? active + 1 : active - 1, true);
+        }
+      },
+      { passive: true }
+    );
+  }
+
+  window.initWorkGallery = initWorkGallery;
 })();

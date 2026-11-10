@@ -1,15 +1,11 @@
-/*
- * The data addresses everything from the site root, and the project cards link to
- * the one project page, so both are resolved from this script's own URL. That
- * keeps them correct whether the page loading this sits at the root or in a
- * folder of its own.
- */
-
-/*
- * Every value that comes from the JSON goes through here before it is
- * interpolated into a template string. escapeHtml from utils.js is the shared
- * implementation; the local copy keeps this file safe on a page that has not
- * loaded utils.js (or loaded it after this script).
+/**
+ * Central data loader for `projects.json`, `experience.json`, and `socials.json`.
+ *
+ * Connects the JSON data files to:
+ *  - `window.initWorkGallery(projects)` on `index.html`
+ *  - `renderProjectList(projects)` on `projects.html`
+ *  - `window.initTimeline(entries)` on `index.html`
+ *  - `renderContactCards(socials)` on `contact.html`
  */
 function esc(value) {
   if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
@@ -30,10 +26,10 @@ function projectHref(project) {
 }
 
 async function fetchJSON(path) {
-  const fullUrl = SITE_ROOT + path;
   if (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function') {
-    return window.PortfolioUtils.fetchJSON(fullUrl);
+    return window.PortfolioUtils.fetchJSON(path);
   }
+  const fullUrl = SITE_ROOT + path;
   try {
     const response = await fetch(fullUrl);
     if (!response.ok) {
@@ -52,68 +48,32 @@ function createCard(html) {
   return template.content.firstElementChild;
 }
 
-/*
- * A project's screenshot is optional: the gallery renders the frame either way
- * and falls back to a styled placeholder so the composition survives until an
- * image is supplied. Relative paths are resolved from the site root, matching
- * the data files' own convention.
- */
 function projectImageSrc(project) {
   const image = typeof project.image === 'string' ? project.image.trim() : '';
   if (!image) return '';
-  // Protocol-relative, root-relative and plain relative addresses are kept;
-  // http(s) is allowed through; anything else carrying a scheme (javascript:,
-  // data:, vbscript:, ...) is refused so the card falls back to its placeholder.
   if (/^(?:https?:)?\/\//i.test(image) || image.startsWith('/')) return image;
   if (/^[a-z][a-z0-9+.-]*:/i.test(image)) return '';
   return SITE_ROOT + image.replace(/^\.\//, '');
 }
 
 function renderFeaturedProjects(projects) {
-  const container = document.querySelector('#featured-projects');
-  if (!container || !Array.isArray(projects)) return;
-  container.innerHTML = '';
-
-  projects.forEach((project, index) => {
-    const src = projectImageSrc(project);
-    const visual = src
-      ? `<img class="work-card__image" src="${esc(src)}" alt="" loading="lazy" decoding="async">`
-      : `<div class="work-card__placeholder" data-index="${String(index + 1).padStart(2, '0')}" aria-hidden="true"></div>`;
-
-    const card = createCard(`
-      <article class="work-card">
-        <div class="work-card__visual">${visual}</div>
-        <div class="work-card__copy">
-          <h3 class="work-card__title">${esc(project.title)}</h3>
-          <p class="work-card__summary">${esc(project.summary)}</p>
-          <a href="${esc(projectHref(project))}" class="work-card__link">
-            View project
-            <span class="work-card__arrow" aria-hidden="true">&#8594;</span>
-          </a>
-        </div>
-      </article>
-    `);
-    container.appendChild(card);
-  });
-
-  if (window.PortfolioWorkGallery && window.PortfolioWorkGallery.init) {
-    window.PortfolioWorkGallery.init();
+  if (typeof window.initWorkGallery === 'function') {
+    window.initWorkGallery(projects);
+    return;
   }
 }
 
-/*
- * Technologies are shown as their skill logo where the site already ships one.
- * Anything without an icon still appears in the stack line, so the row never
- * misrepresents what a project used.
- */
 const SKILL_ICONS = {
   html: 'html',
+  html5: 'html',
   css: 'css',
+  css3: 'css',
   javascript: 'javascript',
   js: 'javascript',
   git: 'git',
   github: 'github',
   vscode: 'vscode',
+  'vs code': 'vscode',
 };
 
 const EXTERNAL_ICON = `
@@ -125,8 +85,14 @@ const EXTERNAL_ICON = `
   </svg>
 `;
 
+function getProjectTechList(project) {
+  if (Array.isArray(project.tech) && project.tech.length > 0) return project.tech;
+  if (Array.isArray(project.technologies) && project.technologies.length > 0) return project.technologies;
+  return [];
+}
+
 function projectStackIcons(project) {
-  const technologies = Array.isArray(project.technologies) ? project.technologies : [];
+  const technologies = getProjectTechList(project);
   const used = new Set();
 
   return technologies
@@ -138,7 +104,7 @@ function projectStackIcons(project) {
     })
     .map((icon) => `
         <li>
-          <img src="${SITE_ROOT}assets/icons/skills/${icon}.svg" alt="" width="22" height="22" loading="lazy" decoding="async">
+          <img src="${SITE_ROOT}assets/icons/skills/${icon}.svg" alt="${esc(icon)}" width="20" height="20" loading="lazy" decoding="async">
         </li>`)
     .join('');
 }
@@ -149,15 +115,25 @@ function renderProjectList(projects) {
   container.innerHTML = '';
 
   projects.forEach((project, index) => {
-    const stack = Array.isArray(project.technologies) ? project.technologies.join(' ') : '';
+    const techList = getProjectTechList(project);
+    const stack = techList.length > 0 ? techList.join(' · ') : '';
     const icons = projectStackIcons(project);
+    const thumbSrc = projectImageSrc(project);
+    const metricsMarkup = Array.isArray(project.metrics) && project.metrics.length > 0
+      ? `<p class="archive-entry__metrics">${project.metrics.map((m) => `<span><strong>${esc(m.value)}</strong> ${esc(m.label)}</span>`).join(' · ')}</p>`
+      : '';
 
     const card = createCard(`
       <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
         <p class="archive-entry__index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>
+        ${thumbSrc ? `<div class="archive-entry__thumb"><img src="${esc(thumbSrc)}" alt="${esc(project.imageAlt || project.title)}" loading="lazy" decoding="async"></div>` : ''}
         <div class="archive-entry__body">
-          <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+          <div class="archive-entry__title-row">
+            <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+            ${project.status ? `<span class="archive-entry__status">${esc(project.status)}</span>` : ''}
+          </div>
           <p class="archive-entry__summary">${esc(project.summary)}</p>
+          ${metricsMarkup}
           ${stack ? `<p class="archive-entry__stack">${esc(stack)}</p>` : ''}
           ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
         </div>
@@ -167,7 +143,6 @@ function renderProjectList(projects) {
     container.appendChild(card);
   });
 
-  // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
   }
@@ -296,7 +271,6 @@ function renderContactCards(socials) {
     });
   });
 
-  // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
   }
@@ -315,8 +289,11 @@ async function loadDynamicData() {
   }
 
   if (experience) {
-    if (window.PortfolioTimeline && window.PortfolioTimeline.render) {
-      window.PortfolioTimeline.render(experience.timeline);
+    const entries = Array.isArray(experience) ? experience : (experience.timeline || []);
+    if (typeof window.initTimeline === 'function') {
+      window.initTimeline(entries);
+    } else if (window.PortfolioTimeline && typeof window.PortfolioTimeline.render === 'function') {
+      window.PortfolioTimeline.render(entries);
     }
   }
 

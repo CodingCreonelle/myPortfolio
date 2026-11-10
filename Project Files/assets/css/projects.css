@@ -24,17 +24,13 @@
 }
 
 /*
- * Archive list.
- *
- * One numbered row per project: the index sits in its own gutter, the title,
- * summary, tech stack and tech icons stack in a single column, and the open
- * icon is pinned to the right. Rows are separated by a hairline instead of card
- * chrome, and the index and open icon centre themselves against the row body.
+ * Archive list — numbered engineering case study rows with 16:9 visual
+ * thumbnails, inline verification metrics, and unboxed stack metadata.
  */
 .project-list {
-    --archive-index: #808085;
-    --archive-stack: #8b8f95;
-    --archive-line: rgba(255, 255, 255, 0.09);
+    --archive-index: var(--muted);
+    --archive-stack: var(--muted);
+    --archive-line: var(--border);
 
     display: grid;
     padding: 0;
@@ -43,59 +39,107 @@
 .archive-entry {
     position: relative;
     display: grid;
-    grid-template-columns: clamp(36px, 5%, 68px) minmax(0, 1fr) auto;
+    grid-template-columns: clamp(32px, 4%, 52px) 220px minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: clamp(12px, 1.8vw, 20px);
-    padding: 1.15rem 0;
+    column-gap: clamp(16px, 2.2vw, 28px);
+    padding: 1.65rem 0;
+    transition: background-color 0.2s ease;
 }
 
-/* The rule sits between rows only, so the list opens straight off the header. */
 .archive-entry + .archive-entry {
     border-top: 1px solid var(--archive-line);
 }
 
 .archive-entry__index {
     margin: 0;
-    color: var(--archive-index);
-    font-size: 0.875rem;
+    color: var(--primary);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.85rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
+}
+
+.archive-entry__thumb {
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #070b14;
+}
+
+.archive-entry__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.archive-entry:hover .archive-entry__thumb img {
+    transform: scale(1.04);
+}
+
+.archive-entry__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.45rem;
 }
 
 .archive-entry__title {
-    margin: 0 0 0.4rem;
-    font-size: 1.0625rem;
+    margin: 0;
+    font-size: 1.25rem;
     line-height: 1.25;
 }
 
 .archive-entry__title a {
-    color: var(--text);
+    color: var(--on-surface);
+    transition: color 0.2s ease;
 }
 
-/*
- * The title carries the link and stretches it over the whole row, so the row is
- * the click target while the icon on the right stays a plain affordance.
- */
 .archive-entry__title a::after {
     content: '';
     position: absolute;
     inset: 0;
 }
 
+.archive-entry__status {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
 .archive-entry__summary {
-    max-width: 90ch;
-    margin: 0 0 0.6rem;
+    max-width: 78ch;
+    margin: 0 0 0.65rem;
     color: var(--muted);
-    font-size: 0.9375rem;
-    line-height: 1.5;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.archive-entry__metrics {
+    margin: 0 0 0.55rem;
+    color: var(--on-surface);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.archive-entry__metrics strong {
+    color: var(--primary);
+    font-family: var(--ab-mono, monospace);
 }
 
 .archive-entry__stack {
     margin: 0;
     color: var(--archive-stack);
-    font-size: 0.8125rem;
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.76rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     line-height: 1.3;
     text-transform: uppercase;
 }
@@ -105,7 +149,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.85rem;
-    margin-top: 0.6rem;
+    margin-top: 0.65rem;
 }
 
 .archive-entry__icons img {
@@ -116,23 +160,38 @@
 .archive-entry__open {
     display: grid;
     place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
     color: var(--archive-index);
-    transition: color 0.25s ease, transform 0.25s ease;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
 .archive-entry:hover .archive-entry__open,
 .archive-entry:focus-within .archive-entry__open {
-    color: var(--text);
+    color: var(--primary);
+    border-color: var(--primary);
     transform: translate(2px, -2px);
 }
 
 .archive-entry:hover .archive-entry__title a,
 .archive-entry:focus-within .archive-entry__title a {
-    color: var(--primary-soft);
+    color: var(--primary);
 }
 
 @media (max-width: 840px) {
     .page-hero {
         flex-direction: column;
+    }
+
+    .archive-entry {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+    }
+
+    .archive-entry__thumb {
+        grid-column: 2 / -1;
+        max-width: 320px;
+        margin-bottom: 10px;
     }
 }
