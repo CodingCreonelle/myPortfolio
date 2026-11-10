@@ -82,3 +82,6 @@ server.js
 package.json
 package-lock.json
 metadata.json
+
+# AI Agents
+.agents/
