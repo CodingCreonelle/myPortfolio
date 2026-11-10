@@ -29,6 +29,7 @@ out/
 .maestro/
 .aistudio/
 
+
 # Log Files
 logs/
 *.log
@@ -53,3 +54,7 @@ Desktop.ini
 
 # Verification & Review Artifacts
 review-evidence/
+tests/
+
+# AI Agents
+.agents/
