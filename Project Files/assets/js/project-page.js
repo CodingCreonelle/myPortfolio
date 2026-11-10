@@ -21,16 +21,12 @@
    * Resolved from this script's own URL rather than the page's, so one set of
    * addresses in the data works from either template, at any depth.
    */
-  function scriptUrl() {
-    if (document.currentScript && document.currentScript.src) {
-      return document.currentScript.src;
-    }
-    const script = document.querySelector(`script[src*="${SCRIPT_NAME}"]`);
-    return script ? script.src : '';
-  }
-
-  const script = scriptUrl();
-  const SITE_ROOT = script ? new URL('../../', script).href : '';
+  const SITE_ROOT = (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
+    ? window.PortfolioUtils.getSiteRoot()
+    : (function () {
+        const script = document.currentScript || document.querySelector(`script[src*="${SCRIPT_NAME}"]`);
+        return script && script.src ? new URL('../../', script.src).href : '';
+      })();
 
   /*
    * A value is only site-relative when it is not already addressed from somewhere
@@ -66,7 +62,10 @@
   function addHtml(parent, tag, className, html) {
     const node = document.createElement(tag);
     if (className) node.className = className;
-    node.innerHTML = html;
+    const cleanHtml = (window.PortfolioUtils && typeof window.PortfolioUtils.sanitizeHtml === 'function')
+      ? window.PortfolioUtils.sanitizeHtml(html)
+      : html;
+    node.innerHTML = cleanHtml;
     parent.appendChild(node);
     return node;
   }
@@ -252,8 +251,33 @@
     }
   }
 
+  function renderError(isDocs, message) {
+    document.title = 'Error Loading Project | Charles Portfolio';
+
+    const mount = document.querySelector('[data-view]');
+    const nav = document.querySelector('#doc-nav');
+    if (nav) nav.textContent = '';
+    if (!mount) return;
+    mount.textContent = '';
+
+    const panel = document.createElement('div');
+    panel.className = 'project-view__empty project-view__error';
+    addText(panel, 'h1', null, 'Failed to load project');
+    addText(panel, 'p', null, message || 'An error occurred while loading project information.');
+    const action = document.createElement('p');
+    addAnchor(action, 'a', 'button button-secondary', `${SITE_ROOT}projects.html`, 'Back to all projects');
+    panel.appendChild(action);
+    mount.appendChild(panel);
+  }
+
   async function loadProjects() {
-    const response = await fetch(`${SITE_ROOT}${DATA_PATH}`);
+    const fullUrl = `${SITE_ROOT}${DATA_PATH}`;
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function') {
+      const data = await window.PortfolioUtils.fetchJSON(fullUrl);
+      if (!data) throw new Error(`${DATA_PATH}: network or parsing failure`);
+      return data;
+    }
+    const response = await fetch(fullUrl);
     if (!response.ok) throw new Error(`${DATA_PATH}: ${response.status}`);
     return response.json();
   }
@@ -266,10 +290,17 @@
     const id = requestedId();
 
     let projects = null;
+    let loadFailed = false;
     try {
       projects = await loadProjects();
     } catch (error) {
       console.error('Project data could not be loaded:', error);
+      loadFailed = true;
+    }
+
+    if (loadFailed || projects === null) {
+      renderError(isDocs, 'Unable to load project data. Please check your network connection and try again.');
+      return;
     }
 
     const project = Array.isArray(projects) ? projects.find((entry) => entry.id === id) : null;

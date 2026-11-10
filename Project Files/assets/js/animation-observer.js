@@ -62,6 +62,9 @@
    * Check if user prefers reduced motion
    */
   function prefersReducedMotion() {
+    if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+      return window.PortfolioUtils.reduceMotion();
+    }
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -473,6 +476,12 @@
       replaySections.forEach(section => replayObserver.observe(section));
     }
     evaluateReplaySections();
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('portfolio:content-ready', function () {
+      refreshObserver();
+    });
   }
 
   // Initialize on DOM ready

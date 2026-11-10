@@ -1,33 +1,33 @@
 /* =========================================================================
-   Shared helpers.
+   Shared helpers & Core Kernel Architecture (PortfolioUtils).
 
-   Three kinds of duplication end here: the prefers-reduced-motion check, the
-   JSON fetch, and the HTML escaping every renderer needs before it interpolates
-   data into a template string.
+   Centralized utility kernel for the Charles David Portfolio:
+   - HTML escaping (escapeHtml) & DOM-template sanitization (sanitizeHtml)
+   - Protocol/scheme validation (safeUrl)
+   - Accessibility & animation preference (reduceMotion)
+   - Cross-browser async clipboard copy with legacy fallback (copyToClipboard)
+   - Cached Promise-based JSON fetching (fetchJSON)
+   - Canonical site root resolution (getSiteRoot)
 
-   escapeHtml and safeUrl are deliberately pure and dependency-free. They are the
-   only thing standing between JSON and innerHTML, so they must not depend on the
-   DOM, on load order, or on each other.
-
-   window.PortfolioUtils is published by merging rather than assigning. This
-   file's <script> tag is added per page by the HTML, so a page can load it after
-   a consumer has already fallen back to a local copy; merging keeps both sides
-   working and, because the request cache lives on the namespace, keeps one
-   request per URL no matter which copy answers.
+   Published via dual UMD/CommonJS interface for browser and Node.js testing.
    ========================================================================= */
+
+/**
+ * @typedef {Object} PortfolioUtilsAPI
+ * @property {(value: any) => string} escapeHtml - Escapes HTML special characters (&, <, >, ", ').
+ * @property {(value: any) => string} safeUrl - Sanitizes URL, preventing dangerous schemes (javascript:, data:, etc.).
+ * @property {(html: string) => string} sanitizeHtml - Sanitizes authored HTML using an inert template DOM element.
+ * @property {() => boolean} reduceMotion - Detects if the user prefers reduced motion.
+ * @property {(text: string) => Promise<boolean>} copyToClipboard - Copies text via modern Clipboard API with textarea fallback.
+ * @property {(url: string) => Promise<any>} fetchJSON - Fetches and caches JSON, deduplicating concurrent in-flight requests.
+ * @property {(customUrl?: string) => string} getSiteRoot - Resolves the canonical site root URL from script location.
+ */
+
 (function (global) {
     'use strict';
 
+    /* ------------------------------------------------------------- Constants */
     const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-
-    /*
-     * Every interpolated value goes through here. null and undefined render as
-     * empty text rather than the words "null"/"undefined", which is what the
-     * renderers already expect of a missing optional field.
-     */
-    function escapeHtml(value) {
-        return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => ESCAPES[character]);
-    }
 
     const SAFE_SCHEME = /^(?:https?|mailto)$/i;
     const ANY_SCHEME = /^([a-z][a-z0-9+.-]*):/i;
@@ -35,23 +35,6 @@
        before it reads a scheme, so "java\tscript:" has to be refused outright
        rather than trusted to fail the scheme test. */
     const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
-
-    /*
-     * A URL out of the data is accepted only when it is a fragment, a
-     * site-relative path, a protocol-relative address, http(s) or mailto.
-     * Everything else - javascript:, data:, vbscript: and every other scheme -
-     * becomes '#'. Callers put the result in href/src, so this is the one check
-     * that keeps an authored URL from being a program.
-     */
-    function safeUrl(value) {
-        const url = String(value == null ? '' : value).trim();
-        if (!url || CONTROL_CHARACTERS.test(url)) return '#';
-
-        const scheme = ANY_SCHEME.exec(url);
-        if (scheme && !SAFE_SCHEME.test(scheme[1])) return '#';
-
-        return url;
-    }
 
     const ALLOWED_TAGS = ('p br h2 h3 h4 ul ol li code pre strong em b i a span ' +
         'blockquote hr table thead tbody tr th td').split(' ');
@@ -63,6 +46,79 @@
 
     const ALLOWED_ATTRIBUTES = { a: ['href', 'title'], code: ['class'], pre: ['class'] };
 
+    const CACHE_KEY = 'requestCache';
+
+    /* ------------------------------------------------------------- Script URL & Site Root */
+    /**
+     * Resolves the absolute URL of utils.js as loaded in the current document.
+     * @returns {string} Absolute script URL or empty string if not in DOM.
+     */
+    function findScriptUrl() {
+        if (typeof document === 'undefined') return '';
+        if (document.currentScript && document.currentScript.src) {
+            return document.currentScript.src;
+        }
+        const script = document.querySelector('script[src*="utils.js"]') ||
+                       document.querySelector('script[src*="assets/js/"]');
+        return script && script.src ? script.src : '';
+    }
+
+    // Cache the detected script URL at initial script evaluation time
+    const initialScriptUrl = findScriptUrl();
+
+    /**
+     * Computes the canonical site root path matching new URL('../../', scriptUrl).href.
+     * Because utils.js resides at assets/js/utils.js, navigating two directory segments up
+     * reaches the application root directory across root paths, subpaths, and file:// URLs.
+     *
+     * @param {string} [customUrl] - Optional script URL override for explicit resolution.
+     * @returns {string} Canonical site root URL ending in a slash, or empty string if unresolvable.
+     */
+    function getSiteRoot(customUrl) {
+        const target = customUrl || initialScriptUrl || findScriptUrl();
+        if (!target) return '';
+        try {
+            return new URL('../../', target).href;
+        } catch {
+            return '';
+        }
+    }
+
+    /* ------------------------------------------------------------- HTML Escaping & Sanitization */
+    /**
+     * Escapes HTML special characters in any value before template interpolation.
+     * Null and undefined values are rendered as empty strings.
+     *
+     * @param {any} value - Value to interpolate.
+     * @returns {string} Escaped HTML string safe for innerHTML insertion.
+     */
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => ESCAPES[character]);
+    }
+
+    /**
+     * Validates and sanitizes an authored URL. Only safe schemes (http, https, mailto),
+     * site-relative paths, protocol-relative addresses, and fragments are permitted.
+     * Unsafe URLs (javascript:, data:, vbscript:, etc.) or strings with control characters
+     * resolve to '#'.
+     *
+     * @param {any} value - Authored URL value.
+     * @returns {string} Safe URL string or '#'.
+     */
+    function safeUrl(value) {
+        const url = String(value == null ? '' : value).trim();
+        if (!url || CONTROL_CHARACTERS.test(url)) return '#';
+
+        const scheme = ANY_SCHEME.exec(url);
+        if (scheme && !SAFE_SCHEME.test(scheme[1])) return '#';
+
+        return url;
+    }
+
+    /**
+     * Unwraps a DOM element by promoting its children to its parent and removing the element.
+     * @param {Element} element - DOM element to unwrap.
+     */
     function unwrap(element) {
         const parent = element.parentNode;
         if (!parent) return;
@@ -70,6 +126,11 @@
         parent.removeChild(element);
     }
 
+    /**
+     * Strips disallowed attributes and validates href/src values via safeUrl.
+     * @param {Element} element - DOM element to inspect.
+     * @param {string} tag - Lowercase tag name.
+     */
     function stripAttributes(element, tag) {
         const allowed = ALLOWED_ATTRIBUTES[tag] || [];
 
@@ -83,15 +144,14 @@
         });
     }
 
-    /*
-     * The prose fields in data/projects.json are authored HTML and are inserted
-     * as markup, on purpose. That makes the data trusted by convention, which is
-     * the assumption worth removing: an allowlist here means a hand-edited (or
-     * later, remote) JSON file cannot introduce a script, an event handler or a
-     * javascript: URL. Anything not on the list keeps its text and loses its tag.
+    /**
+     * Sanitizes authored HTML using an inert <template> element parser.
+     * Strips dangerous tags (script, iframe, style, etc.), unwraps unlisted tags,
+     * removes disallowed attributes, and validates address attributes.
      *
-     * A <template> is the parser because it is inert - nothing inside it loads,
-     * runs or renders while it is being cleaned.
+     * @param {string} html - Raw authored HTML markup.
+     * @returns {string} Sanitized HTML string safe for DOM insertion.
+     * @throws {Error} If called in an environment without DOM document support.
      */
     function sanitizeHtml(html) {
         if (typeof document === 'undefined') {
@@ -119,27 +179,93 @@
         return template.innerHTML;
     }
 
-    /* One check instead of the five copies this replaced. */
+    /* ------------------------------------------------------------- Motion Preferences */
+    /**
+     * Checks if the user has requested reduced motion via prefers-reduced-motion media query.
+     *
+     * @returns {boolean} True if reduced motion is requested, false otherwise.
+     */
     function reduceMotion() {
         return typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            typeof window.matchMedia === 'function' &&
+            Boolean(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     }
 
-    const CACHE_KEY = 'requestCache';
+    /* ------------------------------------------------------------- Clipboard Copy */
+    /**
+     * Synchronous DOM fallback for clipboard copying using a temporary hidden textarea
+     * and document.execCommand('copy').
+     *
+     * @param {string} text - Text to copy.
+     * @returns {boolean} True if copy succeeded, false otherwise.
+     */
+    function fallbackCopy(text) {
+        if (typeof document === 'undefined' || !document.body) return false;
+        let area = null;
+        try {
+            area = document.createElement('textarea');
+            area.value = String(text == null ? '' : text);
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.left = '-9999px';
+            area.style.top = '0';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.focus();
+            area.select();
+            if (typeof area.setSelectionRange === 'function') {
+                area.setSelectionRange(0, area.value.length);
+            }
+            const successful = document.execCommand('copy');
+            return successful !== false;
+        } catch (err) {
+            return false;
+        } finally {
+            if (area) {
+                if (area.parentNode) {
+                    area.parentNode.removeChild(area);
+                } else if (document.body && typeof document.body.removeChild === 'function') {
+                    document.body.removeChild(area);
+                }
+            }
+        }
+    }
 
+    /**
+     * Copies text to clipboard using the modern asynchronous Clipboard API (navigator.clipboard.writeText),
+     * automatically falling back to document.execCommand('copy') on older browsers or non-HTTPS origins.
+     * Never rejects; resolves to true on success and false on failure.
+     *
+     * @param {string} text - Text string to copy.
+     * @returns {Promise<boolean>} Resolves to true if copying succeeded, false otherwise.
+     */
+    function copyToClipboard(text) {
+        const textToCopy = String(text == null ? '' : text);
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            return navigator.clipboard.writeText(textToCopy)
+                .then(() => true)
+                .catch(() => fallbackCopy(textToCopy));
+        }
+        return Promise.resolve(fallbackCopy(textToCopy));
+    }
+
+    /* ------------------------------------------------------------- Fetch & Request Caching */
+    /**
+     * Retrieves or initializes the shared Promise request cache Map on the global namespace.
+     * @returns {Map<string, Promise<any>>} The request cache Map instance.
+     */
     function requestCache() {
         const namespace = global.PortfolioUtils || (global.PortfolioUtils = {});
         return namespace[CACHE_KEY] || (namespace[CACHE_KEY] = new Map());
     }
 
-    /*
-     * One request per URL per page load. The cache holds the promise rather than
-     * the parsed body, so two callers asking in the same tick - data-loader.js
-     * and about-page.js share two of their three files on the homepage - join the
-     * request already in flight instead of starting another.
+    /**
+     * Fetches and parses a JSON endpoint with in-memory Promise caching.
+     * Concurrent requests for the same URL join the existing in-flight request.
+     * Network or HTTP errors resolve to null and remain cached to prevent error cascades.
      *
-     * A failure stays cached as a resolved null: the contract is one request per
-     * URL, and every caller renders absent data as an empty section.
+     * @param {string} url - Target URL or path to fetch.
+     * @returns {Promise<any>} Resolves to parsed JSON object/array, or null on error.
      */
     function fetchJSON(url) {
         const key = String(url);
@@ -160,17 +286,23 @@
         return request;
     }
 
+    /* ------------------------------------------------------------- Public API Export */
+    /** @type {PortfolioUtilsAPI} */
     const api = {
         escapeHtml: escapeHtml,
         safeUrl: safeUrl,
         sanitizeHtml: sanitizeHtml,
         reduceMotion: reduceMotion,
+        copyToClipboard: copyToClipboard,
         fetchJSON: fetchJSON,
+        getSiteRoot: getSiteRoot,
     };
 
-    global.PortfolioUtils = Object.assign({}, global.PortfolioUtils, api);
+    // Publish to global namespace by merging, preserving existing namespace properties (e.g. requestCache)
+    global.PortfolioUtils = Object.assign(global.PortfolioUtils || {}, api);
 
-    /* Node has no window, so the harness that counts requests and exercises the
-       escaping can require this file directly. */
-    if (typeof module !== 'undefined' && module.exports) module.exports = api;
+    // Export for CommonJS test environments (Node.js)
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = api;
+    }
 })(typeof window !== 'undefined' ? window : globalThis);

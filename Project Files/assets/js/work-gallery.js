@@ -52,6 +52,9 @@
   }
 
   function reducedMotion() {
+    if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+      return window.PortfolioUtils.reduceMotion();
+    }
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -79,6 +82,7 @@
     state.typed = false;
 
     heading.dataset.typewriterBuilt = 'true';
+    heading.setAttribute('data-bind-ignore', 'true');
     heading.textContent = '';
 
     const caret = document.createElement('span');

@@ -17,16 +17,22 @@ README.md
 *.md
 !Project Files/assets/icons/skills/ATTRIBUTION.md
 .aistudio/
+.agents/
 
 # Local Test Suites & Coverage
 tests/
 test/
 coverage/
+scripts/*.mjs
+scripts/*.cjs
+scripts/*.json
 
 # Verification & Review Artifacts
 .verify
 .review-evidence
 review-evidence/
+tests/
+
 
 # Environment & Local Configuration
 .env

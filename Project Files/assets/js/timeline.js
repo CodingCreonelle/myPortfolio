@@ -22,6 +22,82 @@
   const MEASURING_CLASS = 'is-measuring';
   const TIMELINE_DATE_PATTERN = /^(\d{4})-(\d{2})$/;
 
+  /**
+   * Inline defensive fallback math implementations.
+   * Ensures timeline.js functions seamlessly even if timeline-math.js is not loaded.
+   */
+  const FallbackMath = {
+    entryMonth: function (entry) {
+      const match = TIMELINE_DATE_PATTERN.exec(entry?.date || '');
+      return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+    },
+    entryYear: function (entry) {
+      const match = TIMELINE_DATE_PATTERN.exec(entry?.date || '');
+      return match ? match[1] : (entry?.year || '');
+    },
+    computeRidgeHeights: function (timeline) {
+      const months = (timeline || []).map(FallbackMath.entryMonth);
+      const heights = [0];
+      for (let index = 1; index < months.length; index += 1) {
+        const previous = months[index - 1];
+        const current = months[index];
+        const gap = previous === null || current === null ? 0 : Math.abs(current - previous);
+        heights.push(heights[index - 1] + (index % 2 === 1 ? gap : -gap));
+      }
+      const lowest = Math.min.apply(null, heights);
+      const span = Math.max.apply(null, heights) - lowest;
+      const rises = heights.map(function (h) {
+        return span > 0 ? (h - lowest) / span : 0;
+      });
+      return { heights, lowest, highest: Math.max.apply(null, heights), span, rises };
+    },
+    computeSlope: function (from, to, options) {
+      const run = Number(options?.run) || 0;
+      const climbSpan = Number(options?.climbSpan) || 0;
+      const climb = -(to - from) * climbSpan;
+      const length = Math.hypot(run, climb);
+      const angle = (Math.atan2(climb, run) * 180) / Math.PI;
+      return {
+        climb,
+        slopeLength: length,
+        lengthPx: `${length.toFixed(2)}px`,
+        slopeAngle: angle,
+        angleStr: `${angle.toFixed(3)}deg`
+      };
+    },
+    calculatePinDistance: function (span, ratio) {
+      return (!Number.isFinite(ratio) || ratio <= 0 || span <= 0) ? 0 : span * ratio;
+    },
+    calculatePinProgress: function (offset, top, height, pinHeight) {
+      const travel = height - pinHeight;
+      return travel <= 0 ? 0 : Math.min(1, Math.max(0, (offset - top) / travel));
+    },
+    calculateScrollOffset: function (progress, scrollWidth, clientWidth) {
+      return progress * Math.max(0, scrollWidth - clientWidth);
+    },
+    clampIndex: function (idx, count) {
+      return Math.max(0, Math.min(count - 1, idx));
+    },
+    calculateTrackScrollTarget: function (left, width, clientWidth) {
+      return left + width / 2 - clientWidth / 2;
+    },
+    calculateWindowScrollTarget: function (top, offset, travel, idx, count) {
+      const ratio = count > 1 ? idx / (count - 1) : 0;
+      return top - offset + travel * ratio;
+    }
+  };
+
+  function getMath() {
+    if (typeof window !== 'undefined' && window.PortfolioTimelineMath) {
+      return window.PortfolioTimelineMath;
+    }
+    if (typeof globalThis !== 'undefined' && globalThis.PortfolioTimelineMath) {
+      return globalThis.PortfolioTimelineMath;
+    }
+    return FallbackMath;
+  }
+
+
   /*
    * Every value that comes from the timeline JSON goes through here before it is
    * interpolated into markup or into an attribute. escapeHtml from utils.js is
@@ -29,12 +105,10 @@
    * that has not loaded utils.js (or loaded it after this script).
    */
   function esc(value) {
-    const utils = window.PortfolioUtils;
-    if (utils && typeof utils.escapeHtml === 'function') {
-      return utils.escapeHtml(value);
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
+      return window.PortfolioUtils.escapeHtml(value);
     }
-    const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => escapes[character]);
+    return String(value == null ? '' : value);
   }
 
   let activeFrame = 0;
@@ -50,7 +124,7 @@
   function createNode(html) {
     const template = document.createElement('template');
     template.innerHTML = html.trim();
-    return template.content.firstChild;
+    return template.content.firstElementChild;
   }
 
   function timelineEntryMarkup(entry, index) {
@@ -73,45 +147,38 @@
     `;
   }
 
-  /** Month index for an entry, or null when it has no usable date. */
+  /** Month index for an entry, or null when it has no usable date. Delegated to PortfolioTimelineMath. */
   function entryMonth(entry) {
-    const match = TIMELINE_DATE_PATTERN.exec(entry.date || '');
-    return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+    const math = getMath();
+    if (typeof math.entryMonth === 'function') {
+      return math.entryMonth(entry);
+    }
+    return FallbackMath.entryMonth(entry);
   }
 
-  /** Displayed year, taken from the date so the label and the climb cannot drift. */
+  /** Displayed year, taken from the date so the label and the climb cannot drift. Delegated to PortfolioTimelineMath. */
   function entryYear(entry) {
-    const match = TIMELINE_DATE_PATTERN.exec(entry.date || '');
-    return match ? match[1] : entry.year;
+    const math = getMath();
+    if (typeof math.entryYear === 'function') {
+      return math.entryYear(entry);
+    }
+    return FallbackMath.entryYear(entry);
   }
 
   /**
    * Turns the gaps between entries into a mountain profile. Each entry's --rise
    * is how high it sits, 0 being the lowest point and 1 the highest.
-   *
-   * The climb alternates direction, so the trail rises and falls like a ridge
-   * instead of only ascending, and the size of each step is the real gap between
-   * the two entries. The whole profile is normalised into 0-1, which is what
-   * lets it fit a fixed lane however many entries get added.
+   * Delegated to PortfolioTimelineMath.computeRidgeHeights with inline fallback.
    */
   function applyRise(timeline, track) {
-    const months = timeline.map(entryMonth);
+    const math = getMath();
+    const result = (typeof math.computeRidgeHeights === 'function')
+      ? math.computeRidgeHeights(timeline)
+      : FallbackMath.computeRidgeHeights(timeline);
 
-    // Cumulative height, alternating up and down. An entry without a usable date
-    // holds its position rather than inventing a step.
-    const heights = [0];
-    for (let index = 1; index < months.length; index += 1) {
-      const previous = months[index - 1];
-      const current = months[index];
-      const gap = previous === null || current === null ? 0 : Math.abs(current - previous);
-      heights.push(heights[index - 1] + (index % 2 === 1 ? gap : -gap));
-    }
-
-    const lowest = Math.min.apply(null, heights);
-    const span = Math.max.apply(null, heights) - lowest;
-
+    const rises = result && result.rises ? result.rises : [];
     Array.prototype.forEach.call(track.children, (element, index) => {
-      const rise = span > 0 ? (heights[index] - lowest) / span : 0;
+      const rise = rises[index] != null ? rises[index] : 0;
       element.style.setProperty('--rise', rise.toFixed(4));
     });
   }
@@ -142,6 +209,7 @@
    * Gives every entry the diagonal leading to the next orb. The horizontal run is
    * fixed by the layout and the rise comes from --rise, so each segment only has
    * to be stretched and rotated to land exactly on the next orb.
+   * Delegated to PortfolioTimelineMath.computeSlope with inline fallback.
    */
   function applySlopes(track) {
     const entries = Array.prototype.slice.call(track.children);
@@ -160,6 +228,8 @@
 
     if (!Number.isFinite(run) || !Number.isFinite(climbSpan)) return;
 
+    const math = getMath();
+
     entries.forEach((element, index) => {
       const next = entries[index + 1];
       if (!next) return;
@@ -167,12 +237,15 @@
       const from = parseFloat(element.style.getPropertyValue('--rise')) || 0;
       const to = parseFloat(next.style.getPropertyValue('--rise')) || 0;
 
-      // Screen y grows downward, so climbing to a later entry is a negative
-      // delta. That makes the rotation carry the segment up to the next orb.
-      const climb = -(to - from) * climbSpan;
+      const slope = (math && typeof math.computeSlope === 'function')
+        ? math.computeSlope(from, to, { run, climbSpan })
+        : FallbackMath.computeSlope(from, to, { run, climbSpan });
 
-      element.style.setProperty('--slope-length', `${Math.hypot(run, climb).toFixed(2)}px`);
-      element.style.setProperty('--slope-angle', `${(Math.atan2(climb, run) * 180 / Math.PI).toFixed(3)}deg`);
+      const lengthStr = slope.lengthPx || slope.formattedLength || `${Number(slope.slopeLength || slope.length).toFixed(2)}px`;
+      const angleStr = slope.angleStr || slope.formattedAngle || `${Number(slope.slopeAngle || slope.angleDeg).toFixed(3)}deg`;
+
+      element.style.setProperty('--slope-length', lengthStr);
+      element.style.setProperty('--slope-angle', angleStr);
     });
   }
 
@@ -257,7 +330,10 @@
     });
   }
 
-  function prefersReducedMotion() {
+  function reduceMotion() {
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+      return window.PortfolioUtils.reduceMotion();
+    }
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
@@ -304,7 +380,7 @@
     const entry = entries[clamped];
     if (!entry) return;
 
-    const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
+    const behavior = reduceMotion() ? 'auto' : 'smooth';
 
     // While the page is driving the timeline, moving the track alone would be
     // undone by the very next scroll, so the page is moved instead.

@@ -17,6 +17,9 @@
     var SPEED = 55; // ms per character
 
     function reduceMotion() {
+        if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+            return window.PortfolioUtils.reduceMotion();
+        }
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
@@ -75,6 +78,13 @@
     }
 
     window.Typewriter = { init: init };
+
+    /* Decoupled event listener: responds whenever dynamic page content is rendered. */
+    if (typeof document !== 'undefined') {
+        document.addEventListener('portfolio:content-ready', function () {
+            init();
+        });
+    }
 
     /* Wait for the JSON copy so we type the final text, not the markup fallback. */
     if (window.SiteContent && window.SiteContent.ready) {

@@ -20,6 +20,7 @@ out/
 *.tmp
 *.temp
 .tmp-html-check.js
+.agents/
 
 # Runtime Caches & Temporary Directories
 .cache/
@@ -58,3 +59,6 @@ tests/
 
 # AI Agents
 .agents/
+scripts/*.mjs
+scripts/*.cjs
+scripts/*.json
