@@ -26,6 +26,9 @@
   };
 
   var prefersReducedMotion = function () {
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+      return window.PortfolioUtils.reduceMotion();
+    }
     return (
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -84,9 +87,20 @@
     var body = document.createElement('div');
     body.className = 'work-card__body';
 
+    var topMeta = document.createElement('div');
+    topMeta.className = 'work-card__top-meta';
+
     var indexLabel = document.createElement('p');
     indexLabel.className = 'work-card__index';
     indexLabel.textContent = pad2(index + 1) + ' / ' + pad2(total);
+    topMeta.appendChild(indexLabel);
+
+    if (project && project.status) {
+      var statusBadge = document.createElement('span');
+      statusBadge.className = 'work-card__status';
+      statusBadge.textContent = project.status;
+      topMeta.appendChild(statusBadge);
+    }
 
     var title = document.createElement('h3');
     title.className = 'work-card__title';
@@ -136,7 +150,7 @@
     arrow.innerHTML = '&#8594;';
     link.appendChild(arrow);
 
-    body.appendChild(indexLabel);
+    body.appendChild(topMeta);
     body.appendChild(title);
     body.appendChild(summary);
     if (stack.textContent) body.appendChild(stack);
@@ -193,6 +207,8 @@
     if (!fullText) return;
     target.dataset.text = fullText;
     target.dataset.typed = 'true';
+    target.dataset.typewriterBuilt = 'true';
+    target.setAttribute('data-bind-ignore', 'true');
 
     if (prefersReducedMotion()) {
       target.textContent = fullText;

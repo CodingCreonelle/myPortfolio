@@ -278,6 +278,19 @@
     });
   }
 
+  function initializeNavbarScrollState() {
+    const header = document.querySelector('.site-header');
+    if (!header || header.dataset.scrollBound === 'true') return;
+    header.dataset.scrollBound = 'true';
+
+    const update = () => {
+      header.classList.toggle('is-scrolled', window.scrollY > 24);
+    };
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
+
   async function loadSiteChrome() {
     const [background, navbar, footer] = await Promise.all([
       fetchComponent(BACKGROUND_COMPONENT),
@@ -292,6 +305,7 @@
     initializeBackground(document.querySelector('.hero-bg'));
     initializeNavbarBrand();
     initializeNavbarSectionHighlight();
+    initializeNavbarScrollState();
   }
 
   document.addEventListener('DOMContentLoaded', loadSiteChrome);

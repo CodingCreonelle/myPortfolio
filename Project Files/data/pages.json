@@ -27,6 +27,16 @@
       "lede": "I combine technical, problem-solving, and digital skills to build reliable systems and keep day-to-day work efficient.",
       "languagesLabel": "Languages",
       "toolsLabel": "Tools"
+    },
+    "cta": {
+      "eyebrow": "Get In Touch",
+      "display": "Let's\nWork\nTogether",
+      "sub": "Looking for the next problem worth solving.",
+      "body": "I'm open to opportunities where I can contribute to front-end development, accessibility, and thoughtful digital workflows.",
+      "primaryLabel": "Download Resume",
+      "primaryHref": "contact.html",
+      "secondaryLabel": "Send Me a Message",
+      "secondaryHref": "contact.html"
     }
   },
 

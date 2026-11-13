@@ -355,6 +355,35 @@
         );
     }
 
+    function hydrateFromQuery(form) {
+        if (typeof window === 'undefined' || !window.location || typeof URLSearchParams !== 'function') return;
+        var params = new URLSearchParams(window.location.search);
+        if (!params.toString()) return;
+
+        var topicParam = params.get('topic');
+        if (topicParam) {
+            var needle = topicParam.trim().toLowerCase();
+            var buttons = form.querySelectorAll('[data-contact-topic]');
+            for (var i = 0; i < buttons.length; i++) {
+                var btn = buttons[i];
+                var label = (btn.dataset.contactTopic || btn.textContent || '').trim().toLowerCase();
+                if (label === needle || label.indexOf(needle) !== -1) {
+                    btn.click();
+                    break;
+                }
+            }
+        }
+
+        ['name', 'email', 'subject', 'message'].forEach(function (field) {
+            var val = params.get(field);
+            var input = form.elements && form.elements[field];
+            if (val && input && !input.value) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    }
+
     function init() {
         if (initialized || typeof document === 'undefined') return;
 
@@ -370,6 +399,7 @@
         bindTopics(form);
         bindCharacterCounter(form);
         bindCopyMessageButton(form, status);
+        hydrateFromQuery(form);
 
         form.addEventListener('submit', function (event) {
             onSubmit(form, status, event);

@@ -251,6 +251,7 @@
 .hero-animate-description { animation: slide-up 800ms ease-out 300ms forwards; opacity: 0; }
 .hero-animate-actions { animation: slide-up 800ms ease-out 450ms forwards; opacity: 0; }
 .hero-animate-visual { animation: scale-in 1000ms ease-out 600ms forwards; opacity: 0; }
+.hero-animate-avatar { animation: scale-in 900ms var(--ease-out-expo, ease-out) 450ms forwards; opacity: 0; }
 
 /* Card entrance animations */
 .card-entrance {

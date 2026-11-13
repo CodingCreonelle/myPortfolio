@@ -18,13 +18,29 @@
   function resolveUrl(href) {
     var raw = String(href || '').trim();
     if (!raw) return '';
-    if (/^(?:https?:)?\/\//i.test(raw) || raw.charWith === '/') return raw;
-    if (raw.indexOf('/') === 0) return raw;
-    if (utils && typeof utils.getSiteRoot === 'function') {
-      var root = utils.getSiteRoot();
+    if (/^(?:https?:)?\/\//i.test(raw) || raw.indexOf('/') === 0) return raw;
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function') {
+      var root = PortfolioUtils.getSiteRoot();
       if (root) return root + raw.replace(/^\.\//, '');
     }
     return '../' + raw.replace(/^\.\//, '');
+  }
+
+  function sanitizeProse(html) {
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.sanitizeHtml === 'function') {
+      return window.PortfolioUtils.sanitizeHtml(html);
+    }
+    return html;
+  }
+
+  function renderError(container, title, message) {
+    if (!container) return;
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.renderError === 'function') {
+      window.PortfolioUtils.renderError(container, title, message);
+      return;
+    }
+    container.innerHTML =
+      '<div class="project-view__error"><h2>' + esc(title) + '</h2><p>' + esc(message) + '</p></div>';
   }
 
   function findProject(projects, id) {
@@ -140,7 +156,7 @@
       project.summary ? '<p class="project-view__summary">' + esc(project.summary) + '</p>' : '',
       visualBlock,
       '<h2>System Overview</h2>',
-      '<p>' + esc(project.description || project.summary || '') + '</p>',
+      sanitizeProse('<p>' + esc(project.description || project.summary || '') + '</p>'),
       highlightsBlock,
       techBlock,
       actionsHtml
@@ -197,7 +213,7 @@
       var headingText = (sec && sec.heading) ? sec.heading : ('Section ' + (idx + 1));
       var id = slugify(headingText, idx + 1);
       var paragraphs = String((sec && sec.body) || '').split(/\n\s*\n/);
-      var bodyMarkup = paragraphs.map(function (block) {
+      var bodyMarkup = sanitizeProse(paragraphs.map(function (block) {
         var trimmed = block.trim();
         if (!trimmed) return '';
         var lines = trimmed.split('\n');
@@ -208,7 +224,7 @@
           }).join('') + '</ul>';
         }
         return '<p>' + esc(trimmed) + '</p>';
-      }).join('\n');
+      }).join('\n'));
 
       return (
         '<section class="doc-section" id="' + esc(id) + '">' +
@@ -256,8 +272,8 @@
       })
       .catch(function (err) {
         console.warn('Could not load project data:', err);
-        if (projectDetailEl) renderProjectDetailContainer(projectDetailEl, null);
-        if (docContentEl) renderDocContentContainer(docNavEl, docContentEl, null);
+        if (projectDetailEl) renderError(projectDetailEl, 'Unable to load project', 'Please return to the projects archive and try again.');
+        if (docContentEl) renderError(docContentEl, 'Unable to load documentation', 'Please return to the projects archive and try again.');
       });
   });
 })();

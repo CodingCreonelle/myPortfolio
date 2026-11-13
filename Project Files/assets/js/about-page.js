@@ -122,7 +122,8 @@
             var title = name + (item.level ? ' \u2014 ' + item.level : '');
             return '<li class="ab-skill-icon" title="' + esc(title) + '">' +
                 '<img src="' + iconPath(item) + '" alt="' + esc(name) + '" ' +
-                'data-monogram="' + esc(monogram(name)) + '" loading="lazy"></li>';
+                'data-monogram="' + esc(monogram(name)) + '" loading="lazy">' +
+                '<span class="ab-skill-icon__label">' + esc(name) + '</span></li>';
         }).join('');
 
         addIconFallbacks(list);
@@ -160,14 +161,16 @@
         var list = document.getElementById('ab-trainings-list');
         if (!list || !items.length) { return; }
 
-        list.innerHTML = items.map(function (item) {
+        list.innerHTML = items.map(function (item, index) {
             var tags = (item.tags || []).map(function (tag) {
                 return '<span class="ab-tag">' + esc(tag) + '</span>';
             }).join('');
+            var step = String(index + 1).padStart(2, '0');
 
             return '' +
                 '<li class="ab-train">' +
                     '<div class="ab-train__visual" aria-hidden="true">' +
+                        '<span class="ab-train__step">' + esc(step) + '</span>' +
                         '<span class="ab-train__year">' + esc(item.year) + '</span>' +
                     '</div>' +
                     '<div class="ab-train__body">' +
@@ -252,7 +255,7 @@
             value.textContent = traits[0];
             var index = 0;
 
-            window.setInterval(function () {
+            function advance() {
                 index = (index + 1) % traits.length;
                 var card = deck.querySelector('.ab-trait__card');
                 if (!card) { return; }
@@ -261,7 +264,25 @@
                     value.textContent = traits[index];
                     card.classList.remove('is-swapping');
                 }, 260);
-            }, 2200);
+            }
+
+            var timer = window.setInterval(advance, 2600);
+            deck.setAttribute('tabindex', '0');
+            deck.setAttribute('role', 'button');
+            deck.setAttribute('aria-label', 'Cycle personal trait');
+            deck.addEventListener('click', function () {
+                window.clearInterval(timer);
+                advance();
+                timer = window.setInterval(advance, 2600);
+            });
+            deck.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    window.clearInterval(timer);
+                    advance();
+                    timer = window.setInterval(advance, 2600);
+                }
+            });
         }
 
         if (window.SiteContent && window.SiteContent.ready) {

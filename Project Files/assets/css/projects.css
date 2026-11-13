@@ -1,15 +1,53 @@
 .projects-page {
     max-width: var(--max-width);
     margin: 0 auto;
-    padding: 0 24px 80px;
+    padding: 0 var(--page-gutter) 80px;
 }
 
 .page-hero {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 24px;
-    padding-top: 88px;
+    padding: 116px 0 24px;
+}
+
+.project-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 8px 0 20px;
+}
+
+.project-filter-pill {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: var(--surface);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-out-expo);
+}
+
+.project-filter-pill:hover,
+.project-filter-pill:focus-visible {
+    color: var(--text);
+    border-color: var(--card-hover-border);
+    transform: translateY(-1px);
+}
+
+.project-filter-pill.is-active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
 }
 
 .page-title h1 {
@@ -19,8 +57,9 @@
 
 .page-actions {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /*
@@ -180,9 +219,9 @@
     color: var(--primary);
 }
 
-@media (max-width: 840px) {
+@media (max-width: 860px) {
     .page-hero {
-        flex-direction: column;
+        padding: 104px 0 20px;
     }
 
     .archive-entry {
@@ -193,5 +232,41 @@
         grid-column: 2 / -1;
         max-width: 320px;
         margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-hero {
+        padding: 96px 0 16px;
+        gap: 18px;
+    }
+
+    .page-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .page-actions .button {
+        width: 100%;
+    }
+
+    .archive-entry {
+        grid-template-columns: 1fr;
+        row-gap: 12px;
+        padding: 1.4rem 0;
+    }
+
+    .archive-entry__thumb {
+        grid-column: 1;
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .page-actions {
+        grid-template-columns: 1fr;
     }
 }

@@ -112,6 +112,52 @@ function projectStackIcons(project) {
 function renderProjectList(projects) {
   const container = document.querySelector('#project-list');
   if (!container || !Array.isArray(projects)) return;
+
+  if (!container.dataset.filtersBuilt && container.parentNode) {
+    const allProjects = projects.slice();
+    const techSet = new Set();
+    allProjects.forEach((item) => {
+      const stack = Array.isArray(item.tech) ? item.tech : (Array.isArray(item.stack) ? item.stack : []);
+      stack.forEach((t) => { if (t) techSet.add(String(t)); });
+    });
+
+    if (techSet.size > 0) {
+      const filterBar = document.createElement('div');
+      filterBar.id = 'project-filters';
+      filterBar.className = 'project-filters';
+      filterBar.setAttribute('role', 'group');
+      filterBar.setAttribute('aria-label', 'Filter projects by technology');
+
+      const options = ['All'].concat(Array.from(techSet));
+      options.forEach((label) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'project-filter-pill' + (label === 'All' ? ' is-active' : '');
+        btn.dataset.tech = label;
+        btn.setAttribute('aria-pressed', label === 'All' ? 'true' : 'false');
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          filterBar.querySelectorAll('.project-filter-pill').forEach((pill) => {
+            const active = pill === btn;
+            pill.classList.toggle('is-active', active);
+            pill.setAttribute('aria-pressed', active ? 'true' : 'false');
+          });
+          const filtered = label === 'All'
+            ? allProjects
+            : allProjects.filter((item) => {
+                const stack = Array.isArray(item.tech) ? item.tech : (Array.isArray(item.stack) ? item.stack : []);
+                return stack.map(String).includes(label);
+              });
+          renderProjectList(filtered);
+        });
+        filterBar.appendChild(btn);
+      });
+
+      container.parentNode.insertBefore(filterBar, container);
+    }
+    container.dataset.filtersBuilt = 'true';
+  }
+
   container.innerHTML = '';
 
   projects.forEach((project, index) => {

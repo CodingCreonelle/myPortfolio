@@ -1,15 +1,17 @@
 .homepage-layout {
     max-width: var(--max-width);
     margin: 0 auto;
-    padding: 0 24px 0;
+    padding: 0 var(--page-gutter) 0;
 }
 
 .hero {
     display: grid;
-    grid-template-columns: 1.3fr 0.7fr;
-    gap: 48px;
+    grid-template-columns: minmax(0, 1.25fr) auto;
+    justify-content: space-between;
+    gap: clamp(28px, 5vw, 56px);
     align-items: center;
     min-height: 100vh;
+    padding: 112px 0 72px;
 }
 
 .hero-copy h1 {
@@ -19,8 +21,10 @@
 .hero-description {
     color: var(--muted);
     margin-bottom: 32px;
+    max-width: 60ch;
     white-space: pre-line;
-    text-align: justify;
+    text-align: left;
+    text-wrap: pretty;
 }
 
 .hero-actions {
@@ -34,15 +38,24 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    justify-self: end;
     gap: 16px;
 }
 
 .hero-avatar img {
-    width: 320px;
-    height: 320px;
+    width: clamp(200px, 25vw, 320px);
+    height: clamp(200px, 25vw, 320px);
     border-radius: 36px;
     object-fit: cover;
+    border: 1px solid var(--card-border);
     box-shadow: var(--shadow);
+    transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s ease, border-color 0.3s ease;
+}
+
+.hero-avatar img:hover {
+    transform: translateY(-4px) scale(1.015);
+    border-color: var(--card-hover-border);
+    box-shadow: var(--shadow-hover);
 }
 
 .about-section,
@@ -98,14 +111,57 @@
 }
 
 @media (max-width: 900px) {
-    .hero,
     .skills-grid,
     .form-row {
         grid-template-columns: 1fr;
     }
 
     .hero {
+        grid-template-columns: minmax(0, 1fr) auto;
         min-height: auto;
-        padding-top: 120px;
+        padding: 116px 0 56px;
+        gap: 28px;
+    }
+
+    .hero-avatar {
+        justify-self: end;
+    }
+
+    .hero-avatar img {
+        width: clamp(168px, 22vw, 220px);
+        height: clamp(168px, 22vw, 220px);
+        border-radius: 28px;
+    }
+}
+
+@media (max-width: 720px) {
+    .hero {
+        grid-template-columns: 1fr;
+        padding: 100px 0 44px;
+        gap: 24px;
+    }
+
+    .hero-avatar {
+        order: -1;
+        justify-self: start;
+    }
+
+    .hero-avatar img {
+        width: clamp(112px, 28vw, 144px);
+        height: clamp(112px, 28vw, 144px);
+        border-radius: 24px;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .hero-actions .button {
+        width: 100%;
     }
 }
