@@ -94,6 +94,7 @@
     <link rel="stylesheet" href="assets/css/homepage.css">
     <link rel="stylesheet" href="assets/css/contact-page.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/typewriter.css">
     <script src="assets/js/theme.js" defer></script>
     <script src="assets/js/utils.js" defer></script>
     <script src="assets/js/content.js" defer></script>
@@ -101,6 +102,7 @@
     <script src="assets/js/contact-model.js" defer></script>
     <script defer src="assets/js/contact-form.js"></script>
     <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/typewriter.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
 <body>
@@ -108,11 +110,11 @@
     <div id="site-navbar"></div>
 
     <main class="contact-page">
-        <header class="contact-hero" data-animate="animate-entrance" data-animate-delay="0">
+        <header class="contact-hero" data-animate="animate-entrance" data-animate-delay="0" data-animate-replay="true">
             <div class="contact-hero__grid">
                 <div class="page-title">
                     <p class="eyebrow" data-bind="hero.eyebrow">Contact</p>
-                    <h1 class="contact-hero__title" data-bind="hero.title">Let's connect</h1>
+                    <h1 class="contact-hero__title" data-typewriter data-bind="hero.title">Let's connect</h1>
                     <p class="contact-hero__body" data-bind="hero.body">Questions, project requests, or collaboration ideas? Reach out and I'll get back to you soon.</p>
                 </div>
                 <aside class="contact-hero__meta" aria-label="Availability and response time">
@@ -124,19 +126,19 @@
         </header>
 
         <div class="contact-workspace">
-            <section class="contact-overview" aria-labelledby="contact-channels-heading" data-animate="animate-entrance" data-animate-delay="120">
+            <section class="contact-overview" aria-labelledby="contact-channels-heading" data-animate="animate-entrance" data-animate-delay="120" data-animate-replay="true">
                 <div class="contact-section-head">
                     <p class="section-label" data-bind="channels.label">Direct channels</p>
-                    <h2 id="contact-channels-heading" data-bind="channels.title">Reach out directly</h2>
+                    <h2 id="contact-channels-heading" data-typewriter data-bind="channels.title">Reach out directly</h2>
                     <p data-bind="channels.body">Prefer a direct email, code review, or quick chat? Connect on any channel below or copy my address in one click.</p>
                 </div>
                 <div class="contact-cards animate-stagger" id="contact-cards" data-animate-stagger="true" data-animate-stagger-delay="100"></div>
             </section>
 
-            <section class="contact-form-section contact-form-panel" aria-labelledby="contact-form-heading" data-animate="animate-entrance" data-animate-delay="200">
+            <section class="contact-form-section contact-form-panel" aria-labelledby="contact-form-heading" data-animate="animate-entrance" data-animate-delay="200" data-animate-replay="true">
                 <div class="contact-section-head section-header-animate">
                     <p class="section-label" data-bind="form.label">Send a message</p>
-                    <h2 id="contact-form-heading" data-bind="form.title">Contact form</h2>
+                    <h2 id="contact-form-heading" data-typewriter data-bind="form.title">Contact form</h2>
                     <p data-bind="form.subtitle">Select a topic and fill out the details below to open a pre-addressed message in your mail client or copy it to your clipboard.</p>
                 </div>
 

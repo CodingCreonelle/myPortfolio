@@ -83,12 +83,16 @@
     letter-spacing: -0.03em;
 }
 
-/* Typewriter caret — blinks while typing, settles once finished. */
+/* Typewriter caret — inline .tw-caret tracks typing; ::after settles once finished. */
 [data-work-typewriter] {
     display: inline;
 }
 
-[data-work-typewriter].is-typing::after,
+[data-work-typewriter].is-typing::after {
+    display: none;
+    content: none;
+}
+
 [data-work-typewriter].is-done::after {
     content: '';
     display: inline-block;
@@ -98,9 +102,6 @@
     vertical-align: -0.06em;
     background: var(--primary);
     animation: work-caret 1.05s steps(2, start) infinite;
-}
-
-[data-work-typewriter].is-done::after {
     animation-iteration-count: 4;
     opacity: 0;
 }

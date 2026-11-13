@@ -346,6 +346,10 @@ async function loadDynamicData() {
   if (socials) {
     renderContactCards(socials);
   }
+
+  if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+    window.AnimationObserver.refresh();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', loadDynamicData);

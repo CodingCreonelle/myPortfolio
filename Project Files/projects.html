@@ -93,11 +93,13 @@
     <link rel="stylesheet" href="assets/css/navbar.css">
     <link rel="stylesheet" href="assets/css/projects.css">
     <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/typewriter.css">
     <script src="assets/js/theme.js" defer></script>
     <script src="assets/js/utils.js" defer></script>
     <script src="assets/js/content.js" defer></script>
     <script src="assets/js/app-loader.js" defer></script>
     <script src="assets/js/data-loader.js" defer></script>
+    <script src="assets/js/typewriter.js" defer></script>
     <script src="assets/js/animation-observer.js" defer></script>
 </head>
 <body>
@@ -105,16 +107,16 @@
     <div id="site-navbar"></div>
 
     <main class="projects-page">
-        <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0">
+        <section class="page-hero" data-animate="animate-entrance" data-animate-delay="0" data-animate-replay="true">
             <div class="page-title">
                 <p class="eyebrow" data-bind="hero.eyebrow">Projects</p>
-                <h1 data-bind="hero.title">Complete project showcase</h1>
+                <h1 data-typewriter data-bind="hero.title">Complete project showcase</h1>
                 <p data-bind="hero.body">Explore a curated list of portfolio projects, demos, and live experiences.</p>
             </div>
             <div class="page-actions" data-list="hero.actions" data-list-template="tpl-action"></div>
         </section>
 
-        <section class="project-list" id="project-list" data-animate-stagger="true" data-animate-stagger-delay="100" data-animate-delay="200"></section>
+        <section class="project-list" id="project-list" data-animate="animate-entrance" data-animate-replay="true" data-animate-stagger="true" data-animate-stagger-delay="100" data-animate-delay="200"></section>
     </main>
 
     <!-- Repeated-action template: used by the page hero button row. -->

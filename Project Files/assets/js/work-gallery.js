@@ -201,53 +201,32 @@
 
   function runTypewriter(section) {
     var target = section.querySelector('[data-work-typewriter]');
-    if (!target || target.dataset.typed === 'true') return;
+    if (!target) return;
 
-    var fullText = (target.dataset.text || target.textContent || '').trim();
-    if (!fullText) return;
-    target.dataset.text = fullText;
-    target.dataset.typed = 'true';
-    target.dataset.typewriterBuilt = 'true';
     target.setAttribute('data-bind-ignore', 'true');
 
-    if (prefersReducedMotion()) {
-      target.textContent = fullText;
+    if (window.Typewriter && typeof window.Typewriter.init === 'function') {
+      window.Typewriter.init();
       return;
     }
 
-    var startTyping = function () {
-      target.textContent = '';
-      target.classList.add('is-typing');
-      var i = 0;
-      var tick = function () {
-        i += 1;
-        target.textContent = fullText.slice(0, i);
-        if (i < fullText.length) {
-          window.setTimeout(tick, TYPE_SPEED);
-        } else {
-          target.classList.remove('is-typing');
-          target.classList.add('is-done');
-        }
-      };
-      window.setTimeout(tick, 180);
-    };
+    if (target.dataset.typed === 'true') return;
+    var fullText = (target.dataset.text || target.getAttribute('data-typewriter-text') || target.textContent || '').trim();
+    if (!fullText) return;
+    target.dataset.text = fullText;
+    target.setAttribute('data-typewriter-text', fullText);
+    target.dataset.typed = 'true';
+    target.dataset.typewriterBuilt = 'true';
 
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(
-        function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              io.disconnect();
-              startTyping();
-            }
-          });
-        },
-        { threshold: 0.35 }
-      );
-      io.observe(section);
-    } else {
-      startTyping();
+    if (prefersReducedMotion()) {
+      target.textContent = fullText;
+      target.classList.remove('is-typing');
+      target.classList.add('is-done');
+      return;
     }
+
+    target.textContent = fullText;
+    target.classList.add('is-done');
   }
 
   function initWorkGallery(projects) {

@@ -29,6 +29,28 @@
   to { opacity: 0; }
 }
 
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 36px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes section-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -24px, 0) scale(0.985);
+  }
+}
+
 /* Slide animations */
 @keyframes slide-up {
   from {
@@ -154,8 +176,8 @@
    ANIMATION CLASSES - Apply these to elements
    ========================================================================== */
 
-/* Base animation class - elements start hidden */
-.animate-on-scroll {
+/* Base animation class - hidden only while awaiting visibility */
+.animate-on-scroll:not(.is-visible) {
   opacity: 0;
 }
 
@@ -208,15 +230,18 @@
    PRESET ANIMATION COMBINATIONS
    ========================================================================== */
 
-/* Default entrance - slide up with fade */
+/* Default entrance - slide & scale up with fade */
 .animate-entrance {
-  animation: slide-up 500ms ease-out forwards;
+  animation: section-enter 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.experience-section.is-visible:not(.is-exiting) {
+  transform: none !important;
 }
 
 /* Staggered children animations */
 .animate-stagger > * {
-  opacity: 0;
-  animation: slide-up 500ms ease-out forwards;
+  animation: slide-up 500ms ease-out both;
 }
 
 .animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
@@ -234,8 +259,7 @@
 
 /* Reverse stagger */
 .animate-stagger-reverse > * {
-  opacity: 0;
-  animation: slide-up 500ms ease-out forwards;
+  animation: slide-up 500ms ease-out both;
 }
 
 .animate-stagger-reverse > *:nth-last-child(1) { animation-delay: 0ms; }
@@ -246,17 +270,16 @@
 .animate-stagger-reverse > *:nth-last-child(6) { animation-delay: 500ms; }
 
 /* Hero specific animations */
-.hero-animate-title { animation: slide-up 800ms ease-out forwards; }
-.hero-animate-subtitle { animation: slide-up 800ms ease-out 150ms forwards; opacity: 0; }
-.hero-animate-description { animation: slide-up 800ms ease-out 300ms forwards; opacity: 0; }
-.hero-animate-actions { animation: slide-up 800ms ease-out 450ms forwards; opacity: 0; }
-.hero-animate-visual { animation: scale-in 1000ms ease-out 600ms forwards; opacity: 0; }
-.hero-animate-avatar { animation: scale-in 900ms var(--ease-out-expo, ease-out) 450ms forwards; opacity: 0; }
+.hero-animate-title { animation: slide-up 800ms ease-out both; }
+.hero-animate-subtitle { animation: slide-up 800ms ease-out 150ms both; }
+.hero-animate-description { animation: slide-up 800ms ease-out 300ms both; }
+.hero-animate-actions { animation: slide-up 800ms ease-out 450ms both; }
+.hero-animate-visual { animation: scale-in 1000ms ease-out 600ms both; }
+.hero-animate-avatar { animation: scale-in 900ms var(--ease-out-expo, ease-out) 450ms both; }
 
 /* Card entrance animations */
 .card-entrance {
-  opacity: 0;
-  animation: slide-up 500ms ease-out forwards;
+  animation: slide-up 500ms ease-out both;
 }
 
 .card-entrance:nth-child(1) { animation-delay: 0ms; }
@@ -268,8 +291,7 @@
 
 /* List item animations */
 .list-animate > li {
-  opacity: 0;
-  animation: slide-right 400ms ease-out forwards;
+  animation: slide-right 400ms ease-out both;
 }
 
 .list-animate > li:nth-child(1) { animation-delay: 0ms; }
@@ -283,27 +305,24 @@
 
 /* Section header animations */
 .section-header-animate .section-label {
-  animation: slide-right 400ms ease-out forwards;
+  animation: slide-right 400ms ease-out both;
 }
 
 .section-header-animate h2 {
-  animation: slide-up 500ms ease-out 100ms forwards;
-  opacity: 0;
+  animation: slide-up 500ms ease-out 100ms both;
 }
 
 .section-header-animate p:not(.section-label) {
-  animation: slide-up 500ms ease-out 200ms forwards;
-  opacity: 0;
+  animation: slide-up 500ms ease-out 200ms both;
 }
 
 /* Navbar animations */
 .navbar-animate .brand {
-  animation: slide-down 500ms ease-out forwards;
+  animation: slide-down 500ms ease-out both;
 }
 
 .navbar-animate .site-nav a {
-  opacity: 0;
-  animation: slide-down 400ms ease-out forwards;
+  animation: slide-down 400ms ease-out both;
 }
 
 .navbar-animate .site-nav a:nth-child(1) { animation-delay: 100ms; }
@@ -314,8 +333,7 @@
 
 /* Footer animations */
 .footer-animate .footer-inner > * {
-  opacity: 0;
-  animation: slide-up 500ms ease-out forwards;
+  animation: slide-up 500ms ease-out both;
 }
 
 .footer-animate .footer-inner > *:nth-child(1) { animation-delay: 0ms; }
@@ -341,7 +359,7 @@
 }
 
 [data-animate-stagger].is-visible > * {
-  animation: slide-up 500ms ease-out forwards;
+  animation: slide-up 500ms ease-out both;
 }
 
 [data-animate-stagger].is-visible > *:nth-child(1) { animation-delay: 0ms; }
@@ -388,10 +406,10 @@
    animation-observer.js.
    ========================================================================== */
 
-/* Exit state - fade out in place (opacity only).
+/* Exit state - slide up & fade out in place.
    The 300ms duration must match REPLAY.exitDuration in animation-observer.js. */
 [data-animate-replay].is-exiting {
-  animation: fade-out 300ms ease-out forwards !important;
+  animation: section-exit 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
   /* Beats the inline animation-delay that applyAnimation() writes for
      data-animate-delay, so the exit starts immediately rather than waiting. */
   animation-delay: 0ms !important;
@@ -399,18 +417,45 @@
 }
 
 /* Animated descendants exit alongside their section (the parent already
-   disables pointer events, so they only need the fade). */
+   disables pointer events, so they only need the exit transition). */
 [data-animate-replay] .is-exiting {
-  animation: fade-out 300ms ease-out forwards !important;
+  animation: section-exit 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
   animation-delay: 0ms !important;
 }
 
 /* Reset state - every animation under the section is suppressed while it is
    hidden off-screen. Removing this class after a forced reflow is what restarts
    the filled CSS animations from the beginning on re-entry. */
-[data-animate-replay].animate-reset,
-[data-animate-replay] .animate-reset {
+[data-animate-replay].animate-reset:not(.is-visible),
+[data-animate-replay] .animate-reset:not(.is-visible) {
   animation: none !important;
+  opacity: 0 !important;
+}
+
+/* Progressive enhancement: CSS Scroll-Driven View-Timeline entry/exit effects */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes view-entry-exit {
+      entry 0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+      }
+      entry 100%,
+      exit 0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      exit 100% {
+        opacity: 0;
+        transform: translateY(-18px) scale(0.98);
+      }
+    }
+
+    .scroll-entry-exit-item {
+      animation: view-entry-exit auto linear both;
+      animation-timeline: view();
+    }
+  }
 }
 
 /* Reduced motion: the replay machinery is disabled in JS, but guard the states

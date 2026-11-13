@@ -338,6 +338,9 @@
                         if (el) { window.AnimationObserver.triggerStagger(el, 'card-entrance', 90); }
                     });
             }
+            if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+                window.AnimationObserver.refresh();
+            }
         });
     }
 

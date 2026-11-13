@@ -107,18 +107,22 @@
     var highlightsBlock = '';
     if (Array.isArray(project.highlights) && project.highlights.length > 0) {
       highlightsBlock =
-        '<h2>Architectural Highlights</h2>' +
+        '<section class="project-view__section" data-animate="animate-entrance" data-animate-replay="true">' +
+        '<h2 data-typewriter>Architectural Highlights</h2>' +
         '<ul>' +
         project.highlights.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') +
-        '</ul>';
+        '</ul>' +
+        '</section>';
     }
 
     var techList = Array.isArray(project.tech) ? project.tech : (Array.isArray(project.technologies) ? project.technologies : []);
     var techBlock = '';
     if (techList.length > 0) {
       techBlock =
-        '<h2>Technology Stack</h2>' +
-        '<p class="project-view__tags">' + esc(techList.join(' · ')) + '</p>';
+        '<section class="project-view__section" data-animate="animate-entrance" data-animate-replay="true">' +
+        '<h2 data-typewriter>Technology Stack</h2>' +
+        '<p class="project-view__tags">' + esc(techList.join(' · ')) + '</p>' +
+        '</section>';
     }
 
     var links = project.links || {};
@@ -151,16 +155,27 @@
     actionsHtml += '</div>';
 
     container.innerHTML = [
+      '<section class="project-view__section" data-animate="animate-entrance" data-animate-replay="true">',
       metaRow,
-      '<h1>' + esc(project.title || 'Untitled Project') + '</h1>',
+      '<h1 data-typewriter>' + esc(project.title || 'Untitled Project') + '</h1>',
       project.summary ? '<p class="project-view__summary">' + esc(project.summary) + '</p>' : '',
       visualBlock,
-      '<h2>System Overview</h2>',
+      '</section>',
+      '<section class="project-view__section" data-animate="animate-entrance" data-animate-replay="true">',
+      '<h2 data-typewriter>System Overview</h2>',
       sanitizeProse('<p>' + esc(project.description || project.summary || '') + '</p>'),
+      '</section>',
       highlightsBlock,
       techBlock,
       actionsHtml
     ].join('\n');
+
+    if (window.Typewriter && typeof window.Typewriter.init === 'function') {
+      window.Typewriter.init();
+    }
+    if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+      window.AnimationObserver.refresh();
+    }
   }
 
   function renderDocContentContainer(navEl, contentEl, project) {
@@ -201,12 +216,14 @@
     }
 
     var headerHtml = [
+      '<header class="project-view__section" data-animate="animate-entrance" data-animate-replay="true">',
       '<div class="project-view__meta">',
       '  <span class="project-view__status">Architecture Spec</span>',
       project.tech ? '  <span class="project-view__tags">' + esc(project.tech.join(' · ')) + '</span>' : '',
       '</div>',
-      '<h1>' + esc((project.title || 'Project') + ' — Technical Documentation') + '</h1>',
-      project.summary ? '<p class="project-view__summary">' + esc(project.summary) + '</p>' : ''
+      '<h1 data-typewriter>' + esc((project.title || 'Project') + ' — Technical Documentation') + '</h1>',
+      project.summary ? '<p class="project-view__summary">' + esc(project.summary) + '</p>' : '',
+      '</header>'
     ].join('\n');
 
     var sectionsHtml = sections.map(function (sec, idx) {
@@ -227,8 +244,8 @@
       }).join('\n'));
 
       return (
-        '<section class="doc-section" id="' + esc(id) + '">' +
-        '  <h2>' + esc(headingText) + '</h2>' +
+        '<section class="doc-section" id="' + esc(id) + '" data-animate="animate-entrance" data-animate-replay="true">' +
+        '  <h2 data-typewriter>' + esc(headingText) + '</h2>' +
         '  <div class="doc-section__body">' + bodyMarkup + '</div>' +
         '</section>'
       );
@@ -249,6 +266,13 @@
       '</div>';
 
     contentEl.innerHTML = headerHtml + '\n' + sectionsHtml + '\n' + footerAction;
+
+    if (window.Typewriter && typeof window.Typewriter.init === 'function') {
+      window.Typewriter.init();
+    }
+    if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+      window.AnimationObserver.refresh();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', function () {

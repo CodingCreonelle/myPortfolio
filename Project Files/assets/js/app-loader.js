@@ -611,6 +611,242 @@
   }
 
   /**
+   * Loads self-hosted Three.js dynamically and renders a 3D WebGL particle cloud
+   * + floating geometric polyhedra layer above the 2D canvas, responding to
+   * scroll depth, pointer parallax, click bursts, and dark/light theme changes.
+   */
+  function initializeThreeBackdrop(background) {
+    if (!background || background.querySelector('.hero-bg__webgl')) return;
+
+    const webglCanvas = document.createElement('canvas');
+    webglCanvas.className = 'hero-bg__webgl';
+    webglCanvas.dataset.bgThree = 'true';
+    webglCanvas.setAttribute('aria-hidden', 'true');
+    background.append(webglCanvas);
+
+    const scriptUrl = SITE_ROOT + 'assets/js/three.min.js';
+    const motionQuery = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+
+    function loadThreeGlobal(src) {
+      if (window.THREE) return Promise.resolve(window.THREE);
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = () => resolve(window.THREE);
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    loadThreeGlobal(scriptUrl)
+      .then((THREE) => {
+        if (!THREE) return;
+        webglCanvas.dataset.threeLoaded = 'true';
+
+        let renderer = null;
+        try {
+          renderer = new THREE.WebGLRenderer({
+            canvas: webglCanvas,
+            alpha: true,
+            antialias: true,
+            powerPreference: 'low-power',
+          });
+        } catch (err) {
+          webglCanvas.dataset.webgl = 'fallback';
+          return;
+        }
+
+        if (!renderer || !renderer.getContext()) {
+          webglCanvas.dataset.webgl = 'fallback';
+          return;
+        }
+
+        webglCanvas.dataset.webgl = 'active';
+        let width = Math.max(1, window.innerWidth || 1280);
+        let height = Math.max(1, window.innerHeight || 720);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(width, height, false);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 1000);
+        camera.position.z = 28;
+
+        // 3D particle cloud
+        const particleCount = 220;
+        const positions = new Float32Array(particleCount * 3);
+        const seed = (n) => {
+          const x = Math.sin(n * 19.31 + 41.7) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        for (let i = 0; i < particleCount; i++) {
+          positions[i * 3] = (seed(i + 1) - 0.5) * 72;
+          positions[i * 3 + 1] = (seed(i + 301) - 0.5) * 48;
+          positions[i * 3 + 2] = seed(i + 601) * 28 - 18;
+        }
+        const pointsGeom = new THREE.BufferGeometry();
+        pointsGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const pointsMat = new THREE.PointsMaterial({
+          size: 0.22,
+          transparent: true,
+          opacity: 0.68,
+          color: 0x60a5fa,
+        });
+        const points = new THREE.Points(pointsGeom, pointsMat);
+        scene.add(points);
+
+        // Wireframe polyhedra group
+        const polyGroup = new THREE.Group();
+        const wireMat = new THREE.MeshBasicMaterial({
+          wireframe: true,
+          transparent: true,
+          opacity: 0.18,
+          color: 0x38bdf8,
+        });
+
+        const specs = [
+          { geom: new THREE.IcosahedronGeometry(2.2, 0), pos: [-14, 7, -4], speed: [0.0022, 0.0031] },
+          { geom: new THREE.OctahedronGeometry(1.8, 0), pos: [15, -5, -6], speed: [-0.0028, 0.0024] },
+          { geom: new THREE.TorusGeometry(1.6, 0.45, 8, 20), pos: [-11, -8, -3], speed: [0.003, -0.002] },
+          { geom: new THREE.DodecahedronGeometry(1.9, 0), pos: [13, 8, -5], speed: [-0.0019, -0.0026] },
+        ];
+        const meshes = specs.map((spec) => {
+          const mesh = new THREE.Mesh(spec.geom, wireMat);
+          mesh.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
+          mesh.userData.rotSpeed = spec.speed;
+          polyGroup.add(mesh);
+          return mesh;
+        });
+        scene.add(polyGroup);
+
+        function applyThreeTheme() {
+          const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+          pointsMat.color.setHex(isLight ? 0x2563eb : 0x60a5fa);
+          pointsMat.opacity = isLight ? 0.42 : 0.68;
+          wireMat.color.setHex(isLight ? 0x0284c7 : 0x38bdf8);
+          wireMat.opacity = isLight ? 0.13 : 0.18;
+          webglCanvas.dataset.theme = isLight ? 'light' : 'dark';
+        }
+        applyThreeTheme();
+
+        let burstEnergy = 0;
+        let targetPointerX = 0;
+        let targetPointerY = 0;
+        let reducedMotion = Boolean(motionQuery && motionQuery.matches);
+        let rafId = 0;
+
+        window.__spawnThreeBurst = function () {
+          if (reducedMotion) return;
+          burstEnergy = 1;
+        };
+
+        window.addEventListener('pointermove', (event) => {
+          if (reducedMotion) return;
+          targetPointerX = ((event.clientX / Math.max(1, width)) - 0.5) * 2;
+          targetPointerY = ((event.clientY / Math.max(1, height)) - 0.5) * 2;
+        }, { passive: true });
+
+        window.addEventListener('pointerdown', () => {
+          if (typeof window.__spawnThreeBurst === 'function') {
+            window.__spawnThreeBurst();
+          }
+        }, { passive: true });
+
+        function renderThreeFrame() {
+          const scrollNorm = (window.scrollY || 0) * 0.0035;
+          const speedBoost = 1 + burstEnergy * 3.5;
+
+          if (!reducedMotion) {
+            points.rotation.y += 0.0007 * speedBoost;
+            points.rotation.x += 0.00025 * speedBoost;
+            meshes.forEach((mesh) => {
+              mesh.rotation.x += mesh.userData.rotSpeed[0] * speedBoost;
+              mesh.rotation.y += mesh.userData.rotSpeed[1] * speedBoost;
+            });
+            camera.position.x += (targetPointerX * 2.2 - camera.position.x) * 0.04;
+            camera.position.y += (-targetPointerY * 1.5 - scrollNorm * 0.4 - camera.position.y) * 0.05;
+            polyGroup.position.y = Math.sin(scrollNorm * 0.6) * 1.2 - scrollNorm * 0.5;
+            burstEnergy *= 0.94;
+            if (burstEnergy < 0.01) burstEnergy = 0;
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            pointsMat.opacity = (isLight ? 0.42 : 0.68) + burstEnergy * 0.22;
+            wireMat.opacity = (isLight ? 0.13 : 0.18) + burstEnergy * 0.14;
+          }
+
+          camera.lookAt(0, 0, 0);
+          renderer.render(scene, camera);
+        }
+
+        function startThreeLoop() {
+          if (reducedMotion) {
+            if (rafId) {
+              window.cancelAnimationFrame(rafId);
+              rafId = 0;
+            }
+            renderThreeFrame();
+            return;
+          }
+          if (!rafId && !document.hidden) {
+            const tick = () => {
+              if (reducedMotion || document.hidden) {
+                rafId = 0;
+                return;
+              }
+              renderThreeFrame();
+              rafId = window.requestAnimationFrame(tick);
+            };
+            rafId = window.requestAnimationFrame(tick);
+          }
+        }
+
+        window.addEventListener('resize', () => {
+          width = Math.max(1, window.innerWidth || 1280);
+          height = Math.max(1, window.innerHeight || 720);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          renderer.setSize(width, height, false);
+          if (reducedMotion) renderThreeFrame();
+        }, { passive: true });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && rafId) {
+            window.cancelAnimationFrame(rafId);
+            rafId = 0;
+          } else if (!document.hidden) {
+            startThreeLoop();
+          }
+        });
+
+        const themeObserver = new MutationObserver(() => {
+          applyThreeTheme();
+          if (reducedMotion) renderThreeFrame();
+        });
+        themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-theme'],
+        });
+
+        if (motionQuery) {
+          const onMotionChange = (e) => {
+            reducedMotion = Boolean(e.matches);
+            startThreeLoop();
+          };
+          if (typeof motionQuery.addEventListener === 'function') {
+            motionQuery.addEventListener('change', onMotionChange);
+          }
+        }
+
+        startThreeLoop();
+      })
+      .catch(() => {
+        webglCanvas.dataset.threeLoaded = 'false';
+      });
+  }
+
+  /**
    * Alternates the two takes of the backdrop. Each one plays to the end and hands
    * over, so the footage cuts on its own last frame rather than on a timer.
    */
@@ -618,6 +854,7 @@
     if (!background) return;
 
     initializeCanvasBackdrop(background);
+    initializeThreeBackdrop(background);
 
     const videos = Array.from(background.querySelectorAll('.hero-bg__video'));
     if (!videos.length) return;
@@ -820,6 +1057,194 @@
     window.addEventListener('scroll', update, { passive: true });
   }
 
+  /**
+   * Spring-physics external motion controller (React-Spring / Framer-Motion style):
+   * applies 3D perspective card tilt + radial glare and magnetic button pull.
+   */
+  function initializeExternalMotionEffects() {
+    if (document.documentElement.dataset.externalMotionBound === 'true') return;
+    document.documentElement.dataset.externalMotionBound = 'true';
+
+    const CARD_SELECTOR = '.work-card--active, .project-card, .ab-skill-card, .ab-train__item, .contact-card, .ab-contact__card, .ab-trait__card, .project-view__metric';
+    const MAGNETIC_SELECTOR = '.button, .ab-btn, .work-gallery__control, .theme-toggle, .project-filter-btn';
+
+    const prefersReducedMotion = () => {
+      if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+        return window.PortfolioUtils.reduceMotion();
+      }
+      return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    };
+
+    const cardStates = new WeakMap();
+    const magneticStates = new WeakMap();
+    const activeElements = new Set();
+    let rafId = 0;
+
+    function tagTargets() {
+      document.querySelectorAll(CARD_SELECTOR).forEach((el) => {
+        el.setAttribute('data-motion-card', 'true');
+      });
+      document.querySelectorAll(MAGNETIC_SELECTOR).forEach((el) => {
+        el.setAttribute('data-motion-magnetic', 'true');
+      });
+    }
+
+    function ensureSpringLoop() {
+      if (rafId || prefersReducedMotion()) return;
+      const tick = () => {
+        rafId = 0;
+        if (prefersReducedMotion()) {
+          activeElements.clear();
+          return;
+        }
+
+        const nextActive = [];
+        activeElements.forEach((el) => {
+          const cardState = cardStates.get(el);
+          if (cardState) {
+            cardState.vx = (cardState.vx + (cardState.tx - cardState.rx) * 0.16) * 0.76;
+            cardState.vy = (cardState.vy + (cardState.ty - cardState.ry) * 0.16) * 0.76;
+            cardState.rx += cardState.vx;
+            cardState.ry += cardState.vy;
+
+            el.style.setProperty('--motion-rx', `${cardState.rx.toFixed(2)}deg`);
+            el.style.setProperty('--motion-ry', `${cardState.ry.toFixed(2)}deg`);
+
+            const settled =
+              Math.abs(cardState.tx - cardState.rx) < 0.02 &&
+              Math.abs(cardState.ty - cardState.ry) < 0.02 &&
+              Math.abs(cardState.vx) < 0.02 &&
+              Math.abs(cardState.vy) < 0.02 &&
+              !cardState.hovered;
+
+            if (!settled) {
+              nextActive.push(el);
+            } else {
+              el.style.setProperty('--motion-rx', '0deg');
+              el.style.setProperty('--motion-ry', '0deg');
+              el.style.setProperty('--glare-alpha', '0');
+            }
+          }
+
+          const magState = magneticStates.get(el);
+          if (magState) {
+            magState.vx = (magState.vx + (magState.tx - magState.x) * 0.18) * 0.74;
+            magState.vy = (magState.vy + (magState.ty - magState.y) * 0.18) * 0.74;
+            magState.x += magState.vx;
+            magState.y += magState.vy;
+
+            el.style.setProperty('--magnetic-x', `${magState.x.toFixed(2)}px`);
+            el.style.setProperty('--magnetic-y', `${magState.y.toFixed(2)}px`);
+
+            const magSettled =
+              Math.abs(magState.tx - magState.x) < 0.04 &&
+              Math.abs(magState.ty - magState.y) < 0.04 &&
+              Math.abs(magState.vx) < 0.04 &&
+              Math.abs(magState.vy) < 0.04 &&
+              !magState.hovered;
+
+            if (!magSettled) {
+              nextActive.push(el);
+            } else {
+              el.style.setProperty('--magnetic-x', '0px');
+              el.style.setProperty('--magnetic-y', '0px');
+            }
+          }
+        });
+
+        activeElements.clear();
+        nextActive.forEach((el) => activeElements.add(el));
+        if (activeElements.size > 0 && !document.hidden) {
+          rafId = window.requestAnimationFrame(tick);
+        }
+      };
+
+      rafId = window.requestAnimationFrame(tick);
+    }
+
+    document.addEventListener('pointermove', (event) => {
+      if (prefersReducedMotion()) return;
+      const target = event.target;
+      if (!target || typeof target.closest !== 'function') return;
+
+      const card = target.closest(CARD_SELECTOR);
+      if (card) {
+        card.setAttribute('data-motion-card', 'true');
+        const rect = card.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const nx = Math.max(-0.5, Math.min(0.5, (event.clientX - rect.left) / rect.width - 0.5));
+          const ny = Math.max(-0.5, Math.min(0.5, (event.clientY - rect.top) / rect.height - 0.5));
+          let state = cardStates.get(card);
+          if (!state) {
+            state = { rx: 0, ry: 0, vx: 0, vy: 0, tx: 0, ty: 0, hovered: true };
+            cardStates.set(card, state);
+          }
+          state.hovered = true;
+          state.tx = -ny * 7;
+          state.ty = nx * 7;
+          card.style.setProperty('--glare-x', `${((nx + 0.5) * 100).toFixed(1)}%`);
+          card.style.setProperty('--glare-y', `${((ny + 0.5) * 100).toFixed(1)}%`);
+          card.style.setProperty('--glare-alpha', '1');
+          activeElements.add(card);
+          ensureSpringLoop();
+        }
+      }
+
+      const btn = target.closest(MAGNETIC_SELECTOR);
+      if (btn && !btn.disabled) {
+        btn.setAttribute('data-motion-magnetic', 'true');
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const nx = Math.max(-0.5, Math.min(0.5, (event.clientX - rect.left) / rect.width - 0.5));
+          const ny = Math.max(-0.5, Math.min(0.5, (event.clientY - rect.top) / rect.height - 0.5));
+          let state = magneticStates.get(btn);
+          if (!state) {
+            state = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, hovered: true };
+            magneticStates.set(btn, state);
+          }
+          state.hovered = true;
+          state.tx = nx * 9;
+          state.ty = ny * 9;
+          activeElements.add(btn);
+          ensureSpringLoop();
+        }
+      }
+    }, { passive: true });
+
+    document.addEventListener('pointerout', (event) => {
+      const target = event.target;
+      if (!target || typeof target.closest !== 'function') return;
+
+      const card = target.closest(CARD_SELECTOR);
+      if (card && (!event.relatedTarget || !card.contains(event.relatedTarget))) {
+        const state = cardStates.get(card);
+        if (state) {
+          state.hovered = false;
+          state.tx = 0;
+          state.ty = 0;
+          card.style.setProperty('--glare-alpha', '0');
+          activeElements.add(card);
+          ensureSpringLoop();
+        }
+      }
+
+      const btn = target.closest(MAGNETIC_SELECTOR);
+      if (btn && (!event.relatedTarget || !btn.contains(event.relatedTarget))) {
+        const state = magneticStates.get(btn);
+        if (state) {
+          state.hovered = false;
+          state.tx = 0;
+          state.ty = 0;
+          activeElements.add(btn);
+          ensureSpringLoop();
+        }
+      }
+    }, { passive: true });
+
+    tagTargets();
+    document.addEventListener('portfolio:content-ready', tagTargets);
+  }
+
   async function loadSiteChrome() {
     const [background, navbar, footer] = await Promise.all([
       fetchComponent(BACKGROUND_COMPONENT),
@@ -835,6 +1260,7 @@
     initializeNavbarBrand();
     initializeNavbarSectionHighlight();
     initializeNavbarScrollState();
+    initializeExternalMotionEffects();
   }
 
   document.addEventListener('DOMContentLoaded', loadSiteChrome);

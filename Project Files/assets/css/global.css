@@ -92,6 +92,16 @@ body {
     transition: opacity 0.35s ease;
 }
 
+.hero-bg__webgl {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .hero-bg__canvas {
         transition: none;
@@ -324,5 +334,62 @@ h3 {
 
     section {
         padding: 56px var(--page-gutter);
+    }
+}
+
+/* Spring-physics external motion effects (3D card tilt + glare & magnetic controls) */
+[data-motion-card]:not(.work-card--next):not(.work-card--prev):not(.work-card--hidden):not(.ab-trait__card) {
+    --motion-rx: 0deg;
+    --motion-ry: 0deg;
+    --glare-x: 50%;
+    --glare-y: 50%;
+    --glare-alpha: 0;
+    position: relative;
+    transform: perspective(900px) rotateX(var(--motion-rx)) rotateY(var(--motion-ry));
+    will-change: transform;
+}
+
+.ab-trait__card[data-motion-card]:not(.is-swapping) {
+    --motion-rx: 0deg;
+    --motion-ry: 0deg;
+    --glare-x: 50%;
+    --glare-y: 50%;
+    --glare-alpha: 0;
+    transform: perspective(900px) rotateX(var(--motion-rx)) rotateY(var(--motion-ry));
+    will-change: transform;
+}
+
+[data-motion-card]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(
+        320px circle at var(--glare-x) var(--glare-y),
+        rgba(56, 189, 248, 0.14),
+        rgba(37, 99, 235, 0.05) 45%,
+        transparent 70%
+    );
+    opacity: var(--glare-alpha);
+    transition: opacity 0.25s ease;
+}
+
+[data-motion-magnetic] {
+    --magnetic-x: 0px;
+    --magnetic-y: 0px;
+    translate: var(--magnetic-x) var(--magnetic-y);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-motion-card] {
+        transform: none !important;
+    }
+    [data-motion-card]::before {
+        display: none;
+    }
+    [data-motion-magnetic] {
+        translate: none !important;
     }
 }
