@@ -29,7 +29,7 @@
 }
 
 .ab-section {
-    padding: 130px 0;
+    padding: clamp(72px, 8vw, 120px) 0;
     scroll-margin-top: 120px;
 }
 
@@ -229,14 +229,34 @@
 }
 
 .ab-skill-icon {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 6px 12px;
     border: 1px solid var(--ab-hairline);
-    border-radius: 10px;
+    border-radius: 999px;
     background-color: var(--ab-elevated);
-    transition: transform 0.3s ease, border-color 0.3s ease;
+    transition: transform 0.25s var(--ease-out-expo), border-color 0.25s ease;
+}
+
+.ab-skill-icon:hover {
+    transform: translateY(-2px);
+    border-color: var(--card-hover-border);
+}
+
+.ab-skill-icon img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.ab-skill-icon__label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ab-heading);
+    white-space: nowrap;
 }
 
 .ab-skill-icon:hover { transform: translateY(-4px); border-color: var(--primary); }
@@ -261,7 +281,7 @@
 /* auto-fit keeps the tool cards flowing for any number of entries. */
 .ab-skills__cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
 }
 
@@ -271,11 +291,11 @@
     display: flex;
     flex-direction: column;
     padding: 22px;
-    min-height: 340px;
+    min-height: 280px;
     border: 1px solid var(--ab-hairline);
     border-radius: 12px;
     background-color: var(--ab-surface-2);
-    transition: transform 0.3s ease, border-color 0.3s ease;
+    transition: transform 0.3s var(--ease-out-expo), border-color 0.3s ease;
 }
 
 .ab-skill-card:hover { transform: translateY(-3px); border-color: var(--primary); }
@@ -524,9 +544,25 @@
     place-items: center;
     aspect-ratio: 5 / 3;
     border: 1px solid var(--ab-hairline);
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(135deg, var(--ab-surface), var(--bg) 65%);
+}
+
+.ab-train__step {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    font-family: var(--ab-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.ab-trait__deck {
+    cursor: pointer;
 }
 
 .ab-train__year {
@@ -651,11 +687,12 @@
 }
 
 .ab-cta__display {
-    font-size: clamp(3rem, 8.3vw, 7.8rem);
+    font-size: clamp(2.6rem, 8.3vw, 7.8rem);
     font-weight: 800;
     line-height: 0.88;
     letter-spacing: -0.02em;
     text-transform: uppercase;
+    text-wrap: balance;
     color: var(--ab-heading);
     margin: 16px 0 42px;
 }
@@ -780,17 +817,24 @@
 @media (max-width: 1100px) {
     .ab-cta__grid { grid-template-columns: 1fr 320px; gap: 52px; }
     .ab-skills__grid { grid-template-columns: 260px 1fr; gap: 44px; }
-    .ab-profile__grid { grid-template-columns: 260px 1fr; gap: 52px; }
-    .ab-trait { grid-column: 1 / -1; }
-    .ab-trait__deck { margin-left: 0; }
+    .ab-profile__grid { grid-template-columns: 220px minmax(0, 1fr) 190px; gap: 36px; }
     .ab-outro__inner { padding-right: 180px; }
 }
 
 @media (max-width: 960px) {
     .ab-section { padding: 96px 0; }
 
-    .ab-skills__grid,
-    .ab-profile__grid { grid-template-columns: 1fr; gap: 44px; }
+    .ab-skills__grid { grid-template-columns: 1fr; gap: 44px; }
+
+    .ab-profile__grid {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 36px 32px;
+        align-items: center;
+    }
+    .ab-profile__aside { grid-column: 1; grid-row: 1; }
+    .ab-trait { grid-column: 2; grid-row: 1; align-self: center; }
+    .ab-trait__deck { width: 208px; margin-left: auto; }
+    .ab-profile__body { grid-column: 1 / -1; grid-row: 2; }
 
     .ab-cta__grid { grid-template-columns: 1fr; gap: 60px; }
     .ab-cta__sub,
@@ -804,11 +848,29 @@
 }
 
 @media (max-width: 720px) {
-    .ab-section { padding: 76px 0; }
-    .ab-hero { padding: 130px 0 70px; }
+    .ab-section { padding: 64px 0; }
+    .ab-hero { padding: 112px 0 60px; }
 
-    .ab-hero__word { font-size: 27vw; -webkit-text-stroke-width: 1.5px; }
+    .ab-hero__word { font-size: clamp(4.2rem, 24vw, 8rem); -webkit-text-stroke-width: 1.5px; }
     .ab-hero__scroll { display: none; }
+
+    .ab-profile__grid { grid-template-columns: 1fr; gap: 28px; }
+    .ab-profile__aside { grid-column: 1; grid-row: auto; order: 1; }
+    .ab-trait { grid-column: 1; grid-row: auto; order: 2; min-height: 0; }
+    .ab-profile__body { grid-column: 1; grid-row: auto; order: 3; }
+
+    .ab-trait__deck { width: 100%; max-width: 100%; height: auto; margin: 0; }
+    .ab-trait__ghost { display: none; }
+    .ab-trait__card {
+        position: relative;
+        inset: auto;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 20px;
+    }
+    .ab-trait__card.is-swapping { transform: translateY(-4px); opacity: 0; }
 
     .ab-skills__cards { grid-template-columns: 1fr; }
     .ab-skill-card { min-height: 0; }

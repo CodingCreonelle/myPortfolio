@@ -8,8 +8,8 @@
 
   // Configuration
   const CONFIG = {
-    rootMargin: '0px 0px -10% 0px', // Trigger when element is 10% into viewport
-    threshold: 0.1,
+    rootMargin: '0px 0px -10% 0px', // Trigger as soon as element enters viewport
+    threshold: 0.02,
   };
 
   // Replay configuration - opt-in per element via [data-animate-replay].
@@ -17,14 +17,14 @@
     selector: '[data-animate-replay]',
     exitClass: 'is-exiting',
     resetClass: 'animate-reset',
-    // Must match the 300ms fade-out duration of .is-exiting in animations.css.
+    // Must match the 300ms exit duration of .is-exiting in animations.css.
     exitDuration: 300,
     // Safety buffer for the setTimeout fallback that completes an exit.
     exitBuffer: 100,
     // Reset the section once its visible ratio drops to this value or below.
-    resetRatio: 0.15,
+    resetRatio: 0.02,
     // Multi-threshold list so a callback fires at the reset boundary.
-    thresholds: [0, 0.15, 0.5, 1],
+    thresholds: [0, 0.02, 0.05, 0.1, 0.25, 0.5, 1],
   };
 
   // Animation attribute selectors
@@ -33,6 +33,8 @@
     stagger: '[data-animate-stagger]',
   };
 
+  const AUTO_SECTION_SELECTOR = 'main > section, main > header, .contact-workspace > section, .doc-section, #project-detail .project-view__section';
+
   // Default animation classes
   const DEFAULT_ANIMATION = 'animate-entrance';
   const STAGGER_CHILD_SELECTOR = ':scope > *';
@@ -40,12 +42,21 @@
   // Descendants of a replay section that own an entry animation, so they must
   // be reset and replayed together with the section itself.
   const REPLAY_DESCENDANT_SELECTOR = [
+    '[data-animate]',
+    '[data-animate-stagger]',
+    '[data-animate-stagger] > *',
     '.animate-on-scroll',
     '.card-entrance',
     '.animate-stagger > *',
     '.animate-stagger-reverse > *',
     '.list-animate > li',
     '.section-header-animate > *',
+    '.hero-animate-title',
+    '.hero-animate-subtitle',
+    '.hero-animate-description',
+    '.hero-animate-actions',
+    '.hero-animate-visual',
+    '.hero-animate-avatar',
   ].join(', ');
 
   // Per-section replay state (status: 'idle' | 'shown' | 'exiting').
@@ -115,10 +126,8 @@
   function applyAnimation(element, config) {
     configureEntryAnimation(element, config);
 
-    // Mark as visible to trigger animation
-    requestAnimationFrame(() => {
-      element.classList.add('is-visible');
-    });
+    // Mark as visible synchronously so elements never get stranded hidden
+    element.classList.add('is-visible');
   }
 
   /**
@@ -130,6 +139,7 @@
     children.forEach((child, index) => {
       child.classList.add('animate-on-scroll');
       child.classList.add(config.animation || DEFAULT_ANIMATION);
+      child.classList.add('is-visible');
       
       const delay = config.delay + (index * config.staggerDelay);
       child.style.animationDelay = `${delay}ms`;
@@ -143,10 +153,8 @@
       }
     });
 
-    // Mark container as visible to trigger children animations
-    requestAnimationFrame(() => {
-      container.classList.add('is-visible');
-    });
+    // Mark container as visible synchronously to trigger children animations
+    container.classList.add('is-visible');
   }
 
   /**
@@ -184,7 +192,10 @@
   function visibleRatio(element) {
     const rect = element.getBoundingClientRect();
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-    if (rect.height <= 0 || viewportHeight <= 0) return 0;
+    if (viewportHeight <= 0) return 0;
+    if (rect.height <= 0) {
+      return (rect.top >= 0 && rect.top < viewportHeight) ? 1 : 0;
+    }
 
     const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
     if (visibleHeight <= 0) return 0;
@@ -232,15 +243,53 @@
   }
 
   /**
+   * Automatically opts every section across all pages into scroll entry/exit
+   * unless explicitly marked with data-animate-once="true".
+   */
+  function enrollPageSections() {
+    document.querySelectorAll(AUTO_SECTION_SELECTOR).forEach(section => {
+      if (section.dataset.animateOnce === 'true') return;
+      if (!section.hasAttribute('data-animate')) {
+        section.setAttribute('data-animate', DEFAULT_ANIMATION);
+      }
+      if (!section.hasAttribute('data-animate-replay')) {
+        section.setAttribute('data-animate-replay', 'true');
+      }
+    });
+  }
+
+  /**
    * Play the entrance animation for a replay section (and its descendants).
    */
   function enterReplaySection(section) {
     const state = getReplayState(section);
-    const generation = ++state.generation;
+    state.generation += 1;
     cancelReplayPending(section, state);
 
     const config = getAnimationConfig(section);
     configureEntryAnimation(section, config);
+
+    section.querySelectorAll(SELECTORS.animate).forEach(child => {
+      configureEntryAnimation(child, getAnimationConfig(child));
+    });
+
+    const staggerContainers = [];
+    if (section.hasAttribute('data-animate-stagger')) {
+      staggerContainers.push(section);
+    }
+    section.querySelectorAll(SELECTORS.stagger).forEach(container => {
+      staggerContainers.push(container);
+    });
+    staggerContainers.forEach(container => {
+      const containerConfig = getAnimationConfig(container);
+      container.querySelectorAll(STAGGER_CHILD_SELECTOR).forEach((child, index) => {
+        child.classList.add('animate-on-scroll');
+        child.classList.add(containerConfig.animation || DEFAULT_ANIMATION);
+        if (!child.style.animationDelay) {
+          child.style.animationDelay = `${containerConfig.delay + (index * containerConfig.staggerDelay)}ms`;
+        }
+      });
+    });
 
     const targets = replayTargets(section);
 
@@ -257,10 +306,12 @@
     targets.forEach(element => element.classList.remove(REPLAY.resetClass));
     void section.offsetWidth;
 
-    requestAnimationFrame(() => {
-      if (state.generation !== generation) return;
-      targets.forEach(element => element.classList.add('is-visible'));
-    });
+    if (section.dataset.hasShownOnce === 'true' && window.Typewriter && typeof window.Typewriter.replayWithin === 'function') {
+      window.Typewriter.replayWithin(section);
+    }
+    section.dataset.hasShownOnce = 'true';
+
+    targets.forEach(element => element.classList.add('is-visible'));
 
     state.status = 'shown';
   }
@@ -301,8 +352,8 @@
     };
 
     const onAnimationEnd = (event) => {
-      // Child fade-outs bubble here too, but they share the same timing.
-      if (event.animationName !== 'fade-out') return;
+      // Child exits bubble here too, but they share the same timing.
+      if (event.animationName !== 'fade-out' && event.animationName !== 'section-exit') return;
       finish();
     };
 
@@ -356,10 +407,33 @@
     });
   }
 
+  function registerObservedElements() {
+    document.querySelectorAll(SELECTORS.animate).forEach(element => {
+      if (element.matches(REPLAY.selector) && element.dataset.animateOnce !== 'true') {
+        if (!replaySections.includes(element)) {
+          replaySections.push(element);
+          getReplayState(element);
+          if (replayObserver) replayObserver.observe(element);
+        }
+      } else if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
+        if (observer) observer.observe(element);
+      }
+    });
+
+    // Observe stagger containers (replay sections manage their own children).
+    document.querySelectorAll(SELECTORS.stagger).forEach(element => {
+      if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
+        if (observer) observer.observe(element);
+      }
+    });
+  }
+
   /**
    * Initialize animation observer
    */
   function initAnimationObserver() {
+    enrollPageSections();
+
     // Skip if reduced motion is preferred
     if (prefersReducedMotion()) {
       // Make all elements visible immediately
@@ -382,33 +456,13 @@
     });
 
     // Replay sections need a multi-threshold observer so a callback fires at
-    // the reset boundary (0.15) and not only on first entry.
+    // the reset boundary (0.12) and not only on first entry.
     replayObserver = new IntersectionObserver(handleReplayIntersections, {
       rootMargin: CONFIG.rootMargin,
       threshold: REPLAY.thresholds,
     });
 
-    // Observe elements with data-animate attribute. Replay sections (unless an
-    // explicit data-animate-once="true" override is present) are handled by the
-    // replay observer and are never unobserved so they can replay.
-    document.querySelectorAll(SELECTORS.animate).forEach(element => {
-      if (element.matches(REPLAY.selector) && element.dataset.animateOnce !== 'true') {
-        if (!replaySections.includes(element)) {
-          replaySections.push(element);
-        }
-        getReplayState(element);
-        replayObserver.observe(element);
-      } else if (!element.closest(REPLAY.selector)) {
-        observer.observe(element);
-      }
-    });
-
-    // Observe stagger containers (replay sections manage their own children).
-    document.querySelectorAll(SELECTORS.stagger).forEach(element => {
-      if (!element.closest(REPLAY.selector)) {
-        observer.observe(element);
-      }
-    });
+    registerObservedElements();
 
     // Threshold callbacks alone miss part of the tall-section reset boundary,
     // so also recompute ratios while scrolling/resizing (rAF-throttled).
@@ -437,6 +491,7 @@
     // Clear any lingering exit/reset state so a dynamically re-rendered grid is
     // never left faded out or with its animations suppressed.
     container.classList.remove(REPLAY.exitClass, REPLAY.resetClass);
+    container.classList.add('is-visible');
 
     const children = container.querySelectorAll(STAGGER_CHILD_SELECTOR);
 
@@ -444,32 +499,30 @@
       child.classList.remove(REPLAY.exitClass, REPLAY.resetClass);
       child.classList.add('animate-on-scroll');
       child.classList.add(animationClass);
+      child.classList.add('is-visible');
       child.style.animationDelay = `${index * staggerDelay}ms`;
     });
 
-    requestAnimationFrame(() => {
-      container.classList.add('is-visible');
-    });
+    const replayHost = container.matches(REPLAY.selector) ? container : container.closest(REPLAY.selector);
+    if (replayHost) {
+      evaluateReplaySection(replayHost);
+    }
   }
 
   /**
    * Refresh observer (useful after dynamic content loads)
    */
   function refreshObserver() {
-    if (observer) {
-      // Re-observe all elements (replay sections are handled separately).
-      document.querySelectorAll(SELECTORS.animate).forEach(element => {
-        if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
-          observer.observe(element);
-        }
-      });
+    enrollPageSections();
 
-      document.querySelectorAll(SELECTORS.stagger).forEach(element => {
-        if (!element.closest(REPLAY.selector) && !element.classList.contains('is-visible')) {
-          observer.observe(element);
-        }
+    if (prefersReducedMotion()) {
+      document.querySelectorAll(SELECTORS.animate).forEach(el => {
+        el.classList.add('force-visible');
       });
+      return;
     }
+
+    registerObservedElements();
 
     // Keep replay sections observed and re-evaluate their current state.
     if (replayObserver) {

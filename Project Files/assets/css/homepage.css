@@ -1,224 +1,167 @@
 .homepage-layout {
     max-width: var(--max-width);
     margin: 0 auto;
-    padding: 0 24px 80px;
-    transition: padding 0.25s ease;
-}
-
-section[id] {
-    scroll-margin-top: 96px;
+    padding: 0 var(--page-gutter) 0;
 }
 
 .hero {
-    position: relative;
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 48px;
+    grid-template-columns: minmax(0, 1.25fr) auto;
+    justify-content: space-between;
+    gap: clamp(28px, 5vw, 56px);
     align-items: center;
-    padding-top: 88px;
-    transition: all 0.3s ease;
-    overflow: hidden;
     min-height: 100vh;
-}
-
-.hero-copy,
-.hero-visual {
-    position: relative;
-    z-index: 1;
-}
-
-.hero-copy {
-    max-width: 640px;
+    padding: 112px 0 72px;
 }
 
 .hero-copy h1 {
-    font-size: clamp(3rem, 2.4rem + 2vw, 5rem);
-    line-height: 1;
     margin-bottom: 24px;
 }
 
 .hero-description {
-    color: var(--text);
-    max-width: 64ch;
+    color: var(--muted);
     margin-bottom: 32px;
-    text-align: justify;
-    /* the copy comes from JSON and uses blank lines between paragraphs */
+    max-width: 60ch;
     white-space: pre-line;
+    text-align: left;
+    text-wrap: pretty;
 }
 
 .hero-actions {
     display: flex;
-    flex-wrap: wrap;
     gap: 16px;
-}
-
-.hero-visual {
-    display: grid;
-    place-items: center;
+    flex-wrap: wrap;
 }
 
 .hero-avatar {
-    width: min(360px, 100%);
-    aspect-ratio: 1 / 1;
-    border-radius: var(--radius);
-    background: linear-gradient(180deg, rgba(37, 99, 235, 0.18), rgba(191, 219, 254, 0.24));
-    display: grid;
-    place-items: center;
-    color: var(--primary);
-    font-weight: 700;
-    text-align: center;
-    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    gap: 16px;
 }
 
 .hero-avatar img {
-    width: 100%;
-    height: 100%;   
+    width: clamp(200px, 25vw, 320px);
+    height: clamp(200px, 25vw, 320px);
+    border-radius: 36px;
     object-fit: cover;
-    border-radius: var(--radius);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow);
+    transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s ease, border-color 0.3s ease;
+}
+
+.hero-avatar img:hover {
+    transform: translateY(-4px) scale(1.015);
+    border-color: var(--card-hover-border);
+    box-shadow: var(--shadow-hover);
 }
 
 .about-section,
-.experience-section,
-.contact-preview,
-.contact-form-section {
-    padding-top: 0;
+.skills-section,
+.contact-section {
+    max-width: var(--max-width);
+    margin: 0 auto;
 }
 
-.contact-preview {
+.about-copy {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);  /* 60% text / 40% buttons */
-    align-items: center;
-    gap: 48px;
+    gap: 20px;
+    max-width: 720px;
 }
 
-.contact-preview .section-header {
-    margin-bottom: 0;
-}
-
-.section-header p,
-.section-header h2,
-.section-header .section-label {
-    margin-bottom: 0.8rem;
-}
-
-.about-grid,
-.contact-cards {
+.skills-grid {
     display: grid;
-    gap: 24px;
-    transition: all 0.3s ease;
-}
-
-.about-grid,
-.contact-cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
 }
 
-.about-card,
-.skill-card,
-.contact-card {
+.skill-card {
     padding: 28px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     box-shadow: var(--shadow);
-    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.about-card h3,
-.skill-card h3,
-.contact-card h2 {
-    margin-bottom: 16px;
-}
-
-.goals-list {
+.skill-list {
     display: grid;
     gap: 12px;
-    padding-left: 1.4rem;
 }
 
-.contact-actions {
-    display: grid;
-    gap: 16px;
-    align-content: center;
+.skill-list li {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-accent);
+    color: var(--text);
+    font-weight: 600;
 }
 
 .contact-form {
-    max-width: 640px;
+    max-width: 720px;
     display: grid;
     gap: 20px;
 }
 
-.contact-form label {
+.form-row {
     display: grid;
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 900px) {
+    .skills-grid,
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .hero {
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: auto;
+        padding: 116px 0 56px;
+        gap: 28px;
+    }
+
+    .hero-avatar {
+        justify-self: end;
+    }
+
+    .hero-avatar img {
+        width: clamp(168px, 22vw, 220px);
+        height: clamp(168px, 22vw, 220px);
+        border-radius: 28px;
+    }
+}
+
+@media (max-width: 720px) {
     .hero {
         grid-template-columns: 1fr;
-        gap: 32px;
+        padding: 100px 0 44px;
+        gap: 24px;
     }
 
-    /*
-     * One column from here down, which would drop the portrait below the copy
-     * where it reads as an afterthought. Hidden rather than stacked, so the
-     * breakpoint that changes the layout is also the one that removes it.
-     */
     .hero-avatar {
-        display: none;
+        order: -1;
+        justify-self: start;
     }
 
-    .about-grid,
-    .contact-cards {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 820px) {
-    .section-header {
-        margin-bottom: 32px;
-    }
-
-    .hero-copy h1 {
-        font-size: clamp(2.5rem, 2rem + 2vw, 4rem);
-    }
-
-    .hero-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .contact-actions {
-        margin-inline-start: 0;
-        max-width: none;
+    .hero-avatar img {
+        width: clamp(112px, 28vw, 144px);
+        height: clamp(112px, 28vw, 144px);
+        border-radius: 24px;
     }
 }
 
 @media (max-width: 640px) {
-    .homepage-layout {
-        padding: 0 16px 64px;
-    }
-
-    .hero {
-        gap: 24px;
-    }
-
-    .about-card {
-        padding: 22px;
-    }
-}
-
-@media (max-width: 480px) {
-    section {
-        padding: 55px 16px;
-    }
-
-    .button {
-        width: 100%;
-    }
-
-    .footer-inner {
+    .hero-actions {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .hero-actions .button {
+        width: 100%;
     }
 }

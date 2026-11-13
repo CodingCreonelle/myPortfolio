@@ -115,14 +115,19 @@
 
     function renderLanguages(languages) {
         var list = document.getElementById('ab-skill-icons');
-        if (!list || !languages.length) { return; }
+        if (!list) { return; }
+        if (!languages || !languages.length) {
+            list.innerHTML = '';
+            return;
+        }
 
         list.innerHTML = languages.map(function (item) {
             var name = item.name || '';
             var title = name + (item.level ? ' \u2014 ' + item.level : '');
             return '<li class="ab-skill-icon" title="' + esc(title) + '">' +
                 '<img src="' + iconPath(item) + '" alt="' + esc(name) + '" ' +
-                'data-monogram="' + esc(monogram(name)) + '" loading="lazy"></li>';
+                'data-monogram="' + esc(monogram(name)) + '" loading="lazy">' +
+                '<span class="ab-skill-icon__label">' + esc(name) + '</span></li>';
         }).join('');
 
         addIconFallbacks(list);
@@ -130,7 +135,11 @@
 
     function renderTools(tools) {
         var wrap = document.getElementById('ab-skill-cards');
-        if (!wrap || !tools.length) { return; }
+        if (!wrap) { return; }
+        if (!tools || !tools.length) {
+            wrap.innerHTML = '';
+            return;
+        }
 
         wrap.innerHTML = tools.map(function (item, index) {
             return '' +
@@ -158,16 +167,22 @@
     /* ------------------------------------------------------------ trainings */
     function renderTrainings(items) {
         var list = document.getElementById('ab-trainings-list');
-        if (!list || !items.length) { return; }
+        if (!list) { return; }
+        if (!items || !items.length) {
+            list.innerHTML = '';
+            return;
+        }
 
-        list.innerHTML = items.map(function (item) {
+        list.innerHTML = items.map(function (item, index) {
             var tags = (item.tags || []).map(function (tag) {
                 return '<span class="ab-tag">' + esc(tag) + '</span>';
             }).join('');
+            var step = String(index + 1).padStart(2, '0');
 
             return '' +
                 '<li class="ab-train">' +
                     '<div class="ab-train__visual" aria-hidden="true">' +
+                        '<span class="ab-train__step">' + esc(step) + '</span>' +
                         '<span class="ab-train__year">' + esc(item.year) + '</span>' +
                     '</div>' +
                     '<div class="ab-train__body">' +
@@ -194,6 +209,22 @@
             { label: 'LinkedIn', value: socials.linkedin, href: socials.linkedin, icon: 'linkedin', external: true },
             { label: 'Discord', value: socials.discord, href: null, icon: 'discord' }
         ].filter(function (entry) { return entry.value; });
+
+        var coreKeys = ['email', 'github', 'linkedin', 'discord'];
+        Object.keys(socials).forEach(function (key) {
+            if (coreKeys.indexOf(key) !== -1) { return; }
+            var rawVal = String(socials[key] || '').trim();
+            if (!rawVal) { return; }
+            var isHttp = /^https?:\/\//i.test(rawVal);
+            var isMailto = /^mailto:/i.test(rawVal);
+            entries.push({
+                label: key,
+                value: isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal,
+                href: (isHttp || isMailto) ? rawVal : null,
+                icon: 'ext',
+                external: isHttp
+            });
+        });
 
         list.innerHTML = entries.map(function (entry, index) {
             var shown = String(entry.value).replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -249,19 +280,49 @@
         function rotate(traits) {
             if (!traits || !traits.length) { return; }
 
-            value.textContent = traits[0];
-            var index = 0;
+            if (deck._traitTimer) {
+                window.clearInterval(deck._traitTimer);
+                deck._traitTimer = null;
+            }
 
-            window.setInterval(function () {
-                index = (index + 1) % traits.length;
+            value.textContent = traits[0];
+            deck._traitIndex = 0;
+
+            function advance() {
+                var activeTraits = deck._traitList || traits;
+                if (!activeTraits || !activeTraits.length) { return; }
+                deck._traitIndex = (deck._traitIndex + 1) % activeTraits.length;
                 var card = deck.querySelector('.ab-trait__card');
                 if (!card) { return; }
                 card.classList.add('is-swapping');
                 window.setTimeout(function () {
-                    value.textContent = traits[index];
+                    value.textContent = activeTraits[deck._traitIndex];
                     card.classList.remove('is-swapping');
                 }, 260);
-            }, 2200);
+            }
+
+            deck._traitList = traits;
+            deck._traitTimer = window.setInterval(advance, 2600);
+            deck.setAttribute('tabindex', '0');
+            deck.setAttribute('role', 'button');
+            deck.setAttribute('aria-label', 'Cycle personal trait');
+
+            if (!deck.dataset.traitBound) {
+                deck.dataset.traitBound = 'true';
+                deck.addEventListener('click', function () {
+                    if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
+                    advance();
+                    deck._traitTimer = window.setInterval(advance, 2600);
+                });
+                deck.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
+                        advance();
+                        deck._traitTimer = window.setInterval(advance, 2600);
+                    }
+                });
+            }
         }
 
         if (window.SiteContent && window.SiteContent.ready) {
@@ -317,6 +378,9 @@
                         if (el) { window.AnimationObserver.triggerStagger(el, 'card-entrance', 90); }
                     });
             }
+            if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+                window.AnimationObserver.refresh();
+            }
         });
     }
 
@@ -325,4 +389,6 @@
     } else {
         init();
     }
+
+    document.addEventListener('portfolio:data-updated', init);
 })();

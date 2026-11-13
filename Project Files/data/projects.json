@@ -1,65 +1,133 @@
 [
-    {
-        "id": "project1",
-        "title": "Portfolio Website",
-        "summary": "A custom portfolio site built with a clean structure and responsive layout.",
-        "image": "",
-        "status": "Published",
-        "tags": ["HTML", "CSS", "JavaScript"],
-        "technologies": ["HTML", "CSS", "JavaScript"],
-        "demo": { "label": "Project walkthrough", "videoId": "" },
-        "detail": "<p>This project page is a template for a portfolio item with a title, description, features, and links to additional resources.</p><h2>Project details</h2><p>Use this page to describe the project goals, tools, and impact. Replace placeholder text with project-specific details.</p>",
-        "links": [
-            {
-                "label": "Source code",
-                "url": "https://github.com/CodingCreonelle/myPortfolio"
-            }
-        ],
-        "docs": [
-            {
-                "slug": "overview",
-                "title": "Overview",
-                "body": "<p>A reference guide for the portfolio project, including installation, API, architecture, and changelog.</p><p>This project demonstrates the folder and content structure used for individual project documentation, making it easy to add or update project-specific information.</p>"
-            },
-            {
-                "slug": "installation",
-                "title": "Installation",
-                "body": "<p>Follow these steps to get the project running locally.</p><h3>Requirements</h3><ul><li>Modern browser</li><li>Text editor</li><li>Optional local web server for faster development</li></ul><h3>Steps</h3><ol><li>Clone or download the project folder.</li><li>Open the folder in your preferred editor.</li><li>Open <code>index.html</code> in a browser or serve the folder using a local server.</li></ol>"
-            },
-            {
-                "slug": "api",
-                "title": "API",
-                "body": "<p>This section describes how the project is structured and which files or components are available for extension.</p><h3>Files</h3><ul><li><code>index.html</code> &mdash; main entry point for the demo or project.</li><li><code>assets/css/</code> &mdash; styling files for layout and presentation.</li><li><code>assets/js/</code> &mdash; interactive scripts and behavior logic.</li></ul><h3>Usage</h3><p>This project is designed to be easy to copy and customize. Update the HTML, swap assets, and extend JavaScript behavior as needed.</p>"
-            },
-            {
-                "slug": "architecture",
-                "title": "Architecture",
-                "body": "<p>This section covers how the project is organized and how the main parts are connected.</p><h3>Project layout</h3><ul><li><code>index.html</code> &mdash; entry point for the project.</li><li><code>assets/css/</code> &mdash; primary styling files for pages, navigation, and components.</li><li><code>assets/js/</code> &mdash; interactive scripts and behavior logic.</li></ul><h3>Design approach</h3><p>Keep content separate from styling and behavior so the project remains easy to maintain. Reuse shared assets, keep sections modular, and rely on simple HTML structure for flexibility.</p>"
-            },
-            {
-                "slug": "changelog",
-                "title": "Changelog",
-                "body": "<p>Track updates and improvements made to the project.</p><h3>Version 1.0.0</h3><ul><li>Initial project structure created.</li><li>Homepage, documentation, and project page templates added.</li><li>Global styling and responsive layout implemented.</li></ul>"
-            }
-        ]
+  {
+    "id": "1",
+    "title": "Zero-Dependency Portfolio Architecture",
+    "summary": "A data-driven, multi-page web platform engineered with semantic HTML5, modular CSS token systems, and vanilla ES5/ES6 JavaScript—delivering sub-second loads with zero client framework overhead.",
+    "description": "Designed and built from scratch to prove that expressive interfaces do not require megabytes of client-side JavaScript bundles. Every page hydrates from structured JSON schemas through a custom declarative data-binding kernel (`data-bind`, `data-list`, and shared HTML partials) while maintaining complete accessibility and progressive enhancement.",
+    "tech": ["HTML", "CSS", "JavaScript", "Git", "GitHub"],
+    "tags": ["Data-Driven Hydration", "Design Tokens", "Zero Dependencies", "Docker & Nginx"],
+    "highlights": [
+      "Declarative DOM hydration engine (`content.js` + `data-loader.js`) binding nested JSON paths and `<template>` lists without virtual-DOM overhead",
+      "Synchronized dual-palette token architecture (`variables.css`) with instant pre-paint theme resolution and zero flash of unstyled content",
+      "Dual-runtime deployment pipeline supporting Express development serving and hardened Nginx production containers with SHA-versioned assets"
+    ],
+    "metrics": [
+      { "label": "Runtime Deps", "value": "0 KB", "note": "Pure browser standards" },
+      { "label": "Theme Parity", "value": "Dark + Light", "note": "WCAG AA contrast tokens" },
+      { "label": "Asset Pipeline", "value": "SHA-8", "note": "Immutable cache busting" }
+    ],
+    "image": "assets/images/projects/portfolio-architecture.jpg",
+    "imageAlt": "Architectural diagram and dark-mode UI specimen of the zero-dependency portfolio system",
+    "status": "Production",
+    "featured": true,
+    "demo": {
+      "url": "",
+      "caption": ""
     },
-    {
-        "id": "project2",
-        "title": "Interactive Demo",
-        "summary": "A small app demo that demonstrates animation, interaction, and polished UI.",
-        "image": "",
-        "status": "Draft",
-        "tags": ["JavaScript", "UX", "Animation"],
-        "technologies": ["HTML", "CSS", "JavaScript"],
-        "demo": { "label": "Demo walkthrough", "videoId": "" },
-        "detail": "<p>This portfolio item is a placeholder for a second project. Use this page to describe the project concept, the challenge solved, and the outcome.</p><h2>What this project includes</h2><ul><li>Project summary and goals</li><li>Technology stack overview</li><li>Links to live demos, documentation, or source code</li></ul>",
-        "links": [],
-        "docs": [
-            {
-                "slug": "overview",
-                "title": "Overview",
-                "body": "<p>This placeholder documentation page can be expanded with project-specific details, installation steps, architecture notes, and release updates.</p>"
-            }
-        ]
-    }
+    "links": {
+      "live": "index.html",
+      "repo": "https://github.com/charlesdavidlopez",
+      "docs": "docs/doc.html?id=1"
+    },
+    "documentation": [
+      {
+        "heading": "Architectural Overview",
+        "body": "Modern web portfolios frequently over-engineer simple document delivery with heavy single-page application frameworks. This project takes the opposite stance: treat the browser's native platform as the framework.\n\nShared chrome (`navbar.html`, `footer.html`, `background.html`) is injected asynchronously by `app-loader.js`, while page copy and collections are stored in structured JSON files under `data/`. This separation allows copy, projects, and timeline milestones to evolve without touching layout markup."
+      },
+      {
+        "heading": "Declarative Data-Binding Kernel",
+        "body": "The `content.js` module traverses the DOM for `data-bind`, `data-bind-html`, `data-bind-src`, and `data-list` attributes, resolving dot-delimited paths against `pages.json`:\n\n- **Text & Attribute Binding**: Safely assigns `textContent` and attributes (`src`, `alt`, `href`) without XSS surface area.\n- **Template Cloning**: Clones native `<template>` fragments for action buttons, timeline milestones, and skill matrices.\n- **Graceful Degradation**: Every HTML file includes meaningful default copy in its static markup so the page remains readable even before scripts finish executing."
+      },
+      {
+        "heading": "Production Hardening & CI Pipeline",
+        "body": "In production, `scripts/version-assets.sh` computes an 8-character SHA-256 digest for every CSS and JS file, rewrites all HTML references, and packages the output into an Alpine Nginx image with strict `Content-Security-Policy`, `X-Frame-Options`, and `nosniff` headers."
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Mathematical Orb Timeline & Motion Engine",
+    "summary": "A scroll-pinned horizontal experience timeline powered by pure-function slope geometry, CSS custom properties, and full screen-reader and keyboard navigation parity.",
+    "description": "An interactive career and learning journey visualization that maps chronological milestones onto a rising geometric trail. A standalone math kernel calculates normalized ascent ratios and Euclidean connector vectors (`--rise`, `--slope-angle`, `--slope-length`), while a scroll-driven runway pins the viewport on desktop and falls back to native snap scrolling on touch devices.",
+    "tech": ["JavaScript", "CSS", "HTML", "VS Code"],
+    "tags": ["Computational Layout", "Scroll Physics", "WCAG Accessibility", "Unit Tested"],
+    "highlights": [
+      "Pure-function geometry kernel (`timeline-math.js`) decoupled from the DOM so date parsing, rise normalization, and trigonometry run in Node unit tests",
+      "Zero-jitter height reservation pass (`is-measuring`) that measures all expanded detail rows in a single frame before painting",
+      "Full keyboard (`ArrowLeft`, `ArrowRight`, `Home`, `End`), dot-button, and `aria-live=\"polite\"` screen-reader announcement support"
+    ],
+    "metrics": [
+      { "label": "Layout Shift", "value": "0.00 CLS", "note": "Single-frame pre-measure" },
+      { "label": "A11y Controls", "value": "100%", "note": "Keyboard + ARIA live" },
+      { "label": "Motion Policy", "value": "Adaptive", "note": "Respects reduced-motion" }
+    ],
+    "image": "assets/images/projects/timeline-engine.jpg",
+    "imageAlt": "Visualization of the mathematical orb timeline showing glowing cobalt nodes and diagonal slope vectors",
+    "status": "Production",
+    "featured": true,
+    "demo": {
+      "url": "",
+      "caption": ""
+    },
+    "links": {
+      "live": "index.html#experience",
+      "repo": "https://github.com/charlesdavidlopez",
+      "docs": "docs/doc.html?id=2"
+    },
+    "documentation": [
+      {
+        "heading": "Separating Pure Math from DOM Rendering",
+        "body": "To guarantee deterministic layout across screen sizes, the timeline splits into two files:\n\n1. **`timeline-math.js`**: Pure functions (`parseDate`, `computeRises`, `computeSlopes`, `formatAnnouncement`) with zero DOM references, exported to both `window.TimelineMath` and CommonJS `module.exports`.\n2. **`timeline.js`**: Reads the computed values and applies them as CSS custom properties (`--rise`, `--slope-angle`, `--slope-length`) on each `.timeline-entry`."
+      },
+      {
+        "heading": "Single-Frame Height Reservation",
+        "body": "Collapsing and expanding detail cards inside a horizontal track normally causes the section height to jump as the user scrolls. The renderer solves this by applying `.is-measuring` (which forces `grid-template-rows: 1fr` with `transition: none`), reading the tallest detail block via `getBoundingClientRect().height`, storing `--timeline-detail-height` on the track, and removing `.is-measuring` within the same paint frame."
+      },
+      {
+        "heading": "Scroll-Pinned Runway & Reduced Motion",
+        "body": "On fine-pointer desktop viewports (`min-width: 960px` and `prefers-reduced-motion: no-preference`), `.timeline-pin` becomes `position: sticky` inside a calculated vertical runway so vertical wheel scrolling smoothly advances the horizontal track. On touch screens or when `prefers-reduced-motion: reduce` is active, the runway collapses and native horizontal scroll-snapping takes over automatically."
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Client-Side MVC Contact & Opportunity Engine",
+    "summary": "A pure-model contact and opportunity scoping system with real-time validation, deep-linked brief hydration, clipboard synthesis, and RFC-compliant mailto dispatch.",
+    "description": "Built to eliminate conversion friction between reviewing a developer portfolio and initiating a concrete technical conversation. Combines an interactive Opportunity & Capability Matcher on the homepage with a full MVC contact workspace that validates payloads, formats structured briefs, and supports instant clipboard or email client handoff without requiring a backend database.",
+    "tech": ["JavaScript", "HTML", "CSS", "Git"],
+    "tags": ["Client-Side MVC", "Conversion UX", "Pure Validation", "Deep-Link State"],
+    "highlights": [
+      "Strict separation between pure validation/formatting logic (`contact-model.js` & `opportunity-studio.js`) and DOM event wiring (`contact-form.js`)",
+      "Interactive Opportunity & Scope Studio that maps role/project intent and technical stack priorities to verified codebase proof points",
+      "Seamless URL state handoff (`?topic=...&subject=...&message=...`) from homepage brief composer directly into the full contact workspace"
+    ],
+    "metrics": [
+      { "label": "Architecture", "value": "MVC", "note": "Pure model + view controller" },
+      { "label": "Brief Handoff", "value": "1-Click", "note": "URL state + clipboard + mailto" },
+      { "label": "Test Coverage", "value": "Node Test", "note": "Automated pure-logic suite" }
+    ],
+    "image": "assets/images/projects/mvc-contact-engine.jpg",
+    "imageAlt": "UI system diagram of the client-side MVC contact workspace and interactive opportunity studio",
+    "status": "Production",
+    "featured": true,
+    "demo": {
+      "url": "",
+      "caption": ""
+    },
+    "links": {
+      "live": "contact.html",
+      "repo": "https://github.com/charlesdavidlopez",
+      "docs": "docs/doc.html?id=3"
+    },
+    "documentation": [
+      {
+        "heading": "Why Client-Side MVC for Static & Hybrid Hosting",
+        "body": "Static and container-hosted portfolios often fail at the final conversion step: either they rely on third-party form endpoints that break or rate-limit, or they drop a raw `mailto:` link with zero context.\n\nBy structuring the contact flow as a client-side MVC system (`contact-model.js` + `opportunity-studio.js` + `contact-form.js`), visitors get guided topic presets, character-counted validation, formatted plain-text brief synthesis, and one-click clipboard or email dispatch."
+      },
+      {
+        "heading": "Interactive Opportunity Studio Integration",
+        "body": "The Opportunity Studio lets recruiters and collaborators select their intent (`Frontend / Full-Stack Role`, `Project Collaboration`, or `Architecture Walkthrough`) and toggle specific engineering capabilities. It immediately surfaces matching proof points from the portfolio and generates a tailored inquiry brief that can be sent immediately or opened in `contact.html` via URL query hydration."
+      }
+    ]
+  }
 ]

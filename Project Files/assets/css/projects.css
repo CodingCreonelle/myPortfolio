@@ -1,15 +1,15 @@
 .projects-page {
     max-width: var(--max-width);
     margin: 0 auto;
-    padding: 0 24px 80px;
+    padding: 0 var(--page-gutter) 80px;
 }
 
 .page-hero {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 24px;
-    padding-top: 88px;
+    padding: 116px 0 24px;
 }
 
 .page-title h1 {
@@ -19,22 +19,209 @@
 
 .page-actions {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /*
- * Archive list.
- *
- * One numbered row per project: the index sits in its own gutter, the title,
- * summary, tech stack and tech icons stack in a single column, and the open
- * icon is pinned to the right. Rows are separated by a hairline instead of card
- * chrome, and the index and open icon centre themselves against the row body.
+ * Sort & Filter toolbar (follows modern-web-guidance toolbar conventions).
+ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.project-filters.project-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.project-toolbar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.project-toolbar__count {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.project-toolbar__reset {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 24px;
+    min-block-size: 30px;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--on-surface);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.project-toolbar__reset[aria-disabled="true"] {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.project-toolbar__reset:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.project-toolbar__group {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem 0.85rem;
+}
+
+.project-toolbar__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.project-toolbar__pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.project-toolbar__sep[role="separator"] {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-block-start: 1px solid var(--card-border);
+    margin: 0;
+}
+
+.project-sort-pill,
+.project-filter-pill {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 24px;
+    min-block-size: 32px;
+    padding: 0.35rem 0.82rem;
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--on-surface);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.project-sort-pill:focus-visible,
+.project-filter-pill:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.project-sort-pill[aria-pressed="true"],
+.project-filter-pill[aria-pressed="true"] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+@media (hover: hover) {
+    .project-sort-pill:hover,
+    .project-filter-pill:hover,
+    .project-toolbar__reset:not([aria-disabled="true"]):hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .project-sort-pill[aria-pressed="true"]:hover,
+    .project-filter-pill[aria-pressed="true"]:hover {
+        color: #ffffff;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .project-sort-pill,
+    .project-filter-pill,
+    .project-toolbar__reset {
+        transition:
+            background-color 0.2s ease,
+            color 0.2s ease,
+            border-color 0.2s ease;
+    }
+}
+
+@media (pointer: coarse) {
+    .project-sort-pill,
+    .project-filter-pill,
+    .project-toolbar__reset {
+        min-inline-size: 44px;
+        min-block-size: 44px;
+    }
+}
+
+@media (forced-colors: active) {
+    .project-sort-pill[aria-pressed="true"],
+    .project-filter-pill[aria-pressed="true"] {
+        background: Highlight;
+        color: HighlightText;
+        border-color: ButtonText;
+    }
+}
+
+@media (max-width: 600px) {
+    .project-toolbar__group {
+        grid-template-columns: 1fr;
+    }
+}
+
+/*
+ * Archive list — numbered engineering case study rows with 16:9 visual
+ * thumbnails, inline verification metrics, and unboxed stack metadata.
  */
 .project-list {
-    --archive-index: #808085;
-    --archive-stack: #8b8f95;
-    --archive-line: rgba(255, 255, 255, 0.09);
+    --archive-index: var(--muted);
+    --archive-stack: var(--muted);
+    --archive-line: var(--border);
 
     display: grid;
     padding: 0;
@@ -43,61 +230,86 @@
 .archive-entry {
     position: relative;
     display: grid;
-    grid-template-columns: clamp(36px, 5%, 68px) minmax(0, 1fr) auto;
+    grid-template-columns: clamp(32px, 4%, 52px) 220px minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: clamp(12px, 1.8vw, 20px);
-    padding: 1.15rem 0;
+    column-gap: clamp(16px, 2.2vw, 28px);
+    padding: 1.65rem 0;
+    transition: background-color 0.2s ease;
 }
 
-/* The rule sits between rows only, so the list opens straight off the header. */
 .archive-entry + .archive-entry {
     border-top: 1px solid var(--archive-line);
 }
 
 .archive-entry__index {
     margin: 0;
-    color: var(--archive-index);
-    font-size: 0.875rem;
+    color: var(--primary);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.85rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
+}
+
+.archive-entry__thumb {
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #070b14;
+}
+
+.archive-entry__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.archive-entry:hover .archive-entry__thumb img {
+    transform: scale(1.04);
+}
+
+.archive-entry__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.45rem;
 }
 
 .archive-entry__title {
-    margin: 0 0 0.4rem;
-    font-size: 1.0625rem;
+    margin: 0;
+    font-size: 1.25rem;
     line-height: 1.25;
 }
 
 .archive-entry__title a {
-    color: var(--text);
+    color: var(--on-surface);
+    transition: color 0.2s ease;
 }
 
-/*
- * The title carries the link and stretches it over the whole row, so the row is
- * the click target while the icon on the right stays a plain affordance.
- */
 .archive-entry__title a::after {
     content: '';
     position: absolute;
     inset: 0;
 }
 
-.archive-entry__summary {
-    max-width: 90ch;
-    margin: 0 0 0.6rem;
-    color: var(--muted);
-    font-size: 0.9375rem;
-    line-height: 1.5;
+.archive-entry__status {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
 }
 
-.archive-entry__stack {
-    margin: 0;
-    color: var(--archive-stack);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    line-height: 1.3;
-    text-transform: uppercase;
+.archive-entry__summary {
+    max-width: 78ch;
+    margin: 0 0 0.65rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.55;
 }
 
 .archive-entry__icons {
@@ -105,7 +317,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.85rem;
-    margin-top: 0.6rem;
+    margin-top: 0.65rem;
 }
 
 .archive-entry__icons img {
@@ -116,23 +328,74 @@
 .archive-entry__open {
     display: grid;
     place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
     color: var(--archive-index);
-    transition: color 0.25s ease, transform 0.25s ease;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
 .archive-entry:hover .archive-entry__open,
 .archive-entry:focus-within .archive-entry__open {
-    color: var(--text);
+    color: var(--primary);
+    border-color: var(--primary);
     transform: translate(2px, -2px);
 }
 
 .archive-entry:hover .archive-entry__title a,
 .archive-entry:focus-within .archive-entry__title a {
-    color: var(--primary-soft);
+    color: var(--primary);
 }
 
-@media (max-width: 840px) {
+@media (max-width: 860px) {
     .page-hero {
-        flex-direction: column;
+        padding: 104px 0 20px;
+    }
+
+    .archive-entry {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+    }
+
+    .archive-entry__thumb {
+        grid-column: 2 / -1;
+        max-width: 320px;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-hero {
+        padding: 96px 0 16px;
+        gap: 18px;
+    }
+
+    .page-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .page-actions .button {
+        width: 100%;
+    }
+
+    .archive-entry {
+        grid-template-columns: 1fr;
+        row-gap: 12px;
+        padding: 1.4rem 0;
+    }
+
+    .archive-entry__thumb {
+        grid-column: 1;
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .page-actions {
+        grid-template-columns: 1fr;
     }
 }

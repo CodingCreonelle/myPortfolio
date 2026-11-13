@@ -33,6 +33,15 @@
     --glass-line: rgba(255, 255, 255, 0.1);
     --bg-video-filter: blur(8px) brightness(0.5);
     --bg-scrim: rgba(0, 17, 52, 0.3);
+    --nav-bg: rgba(12, 18, 34, 0.65);
+    --nav-bg-scrolled: rgba(10, 15, 30, 0.88);
+    --nav-border: rgba(255, 255, 255, 0.12);
+    --nav-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-hover-border: rgba(59, 130, 246, 0.45);
+    --shadow-hover: 0 22px 48px rgba(0, 0, 0, 0.36);
+    --page-gutter: clamp(16px, 4vw, 32px);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* ---- metrics + type ---- */
     --radius: 24px;
@@ -44,7 +53,7 @@
 
     /* ---- about-page component aliases ---- */
     --ab-content: 1090px;
-    --ab-gutter: 24px;
+    --ab-gutter: var(--page-gutter);
     --ab-mono: var(--font-mono);
     --ab-heading: var(--text);
     --ab-text: var(--text);
@@ -53,8 +62,8 @@
     --ab-surface: var(--surface);
     --ab-surface-2: var(--surface);
     --ab-elevated: var(--surface-strong);
-    --ab-hairline: var(--border);
-    --ab-line: var(--border);
+    --ab-hairline: var(--card-border);
+    --ab-line: var(--card-border);
     --ab-btn-fill: var(--text);
     --ab-btn-text: var(--bg);
     --ab-pill-bg: var(--bg);
@@ -92,6 +101,13 @@
     --bg-video-filter: blur(14px) brightness(1.45) saturate(0.45);
     --bg-scrim: rgba(238, 242, 249, 0.86);
 
+    --nav-bg: rgba(255, 255, 255, 0.72);
+    --nav-bg-scrolled: rgba(255, 255, 255, 0.92);
+    --nav-border: rgba(15, 23, 42, 0.1);
+    --nav-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    --card-border: rgba(15, 23, 42, 0.1);
+    --card-hover-border: rgba(37, 99, 235, 0.4);
+    --shadow-hover: 0 20px 44px rgba(15, 23, 42, 0.12);
     --ab-outline: rgba(10, 23, 48, 0.22);
     --ab-ghost-num: rgba(10, 23, 48, 0.1);
     --ab-ghost-line: rgba(10, 23, 48, 0.45);

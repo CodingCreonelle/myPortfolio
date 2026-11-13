@@ -16,6 +16,7 @@
     var KEY = 'portfolio-theme';
     var DARK = 'dark';
     var LIGHT = 'light';
+    var fallbackTimer = 0;
 
     function stored() {
         try { return window.localStorage.getItem(KEY); } catch (e) { return null; }
@@ -40,6 +41,13 @@
         return resolved;
     }
 
+    function prefersReducedMotion() {
+        if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
+            return window.PortfolioUtils.reduceMotion();
+        }
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
     /* Keeps the palette and the toggle's accessible state in step. Only
        attributes are written here, never innerHTML — the icon is CSS-driven —
        so the MutationObserver below cannot feed back into itself. */
@@ -58,17 +66,80 @@
         );
     }
 
-    function toggle() {
+    function setRevealOrigin(button, event) {
+        var root = document.documentElement;
+        var vw = Math.max(1, window.innerWidth || 1280);
+        var vh = Math.max(1, window.innerHeight || 720);
+        var x = vw * 0.5;
+        var y = vh * 0.5;
+
+        if (button && typeof button.getBoundingClientRect === 'function') {
+            var rect = button.getBoundingClientRect();
+            if (rect.width > 0 || rect.height > 0) {
+                x = rect.left + rect.width * 0.5;
+                y = rect.top + rect.height * 0.5;
+            }
+        } else if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
+            x = event.clientX;
+            y = event.clientY;
+        }
+
+        var maxRadius = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y));
+        root.style.setProperty('--theme-x', Math.round(x) + 'px');
+        root.style.setProperty('--theme-y', Math.round(y) + 'px');
+        root.style.setProperty('--theme-r', Math.ceil(maxRadius) + 'px');
+    }
+
+    function clearTransitionState() {
+        if (fallbackTimer) {
+            window.clearTimeout(fallbackTimer);
+            fallbackTimer = 0;
+        }
+        document.documentElement.removeAttribute('data-theme-transition');
+    }
+
+    function toggle(button, event) {
         var next = current() === LIGHT ? DARK : LIGHT;
         try { window.localStorage.setItem(KEY, next); } catch (e) { /* ignore */ }
+
+        if (prefersReducedMotion()) {
+            clearTransitionState();
+            apply(next);
+            return;
+        }
+
+        setRevealOrigin(button, event);
+
+        if (typeof document.startViewTransition === 'function') {
+            clearTransitionState();
+            document.documentElement.setAttribute('data-theme-transition', 'view');
+            try {
+                var transition = document.startViewTransition(function () {
+                    apply(next);
+                });
+                if (transition && transition.finished && typeof transition.finished.then === 'function') {
+                    transition.finished.then(clearTransitionState, clearTransitionState);
+                } else {
+                    clearTransitionState();
+                }
+                return;
+            } catch (e) {
+                clearTransitionState();
+            }
+        }
+
+        clearTransitionState();
+        document.documentElement.setAttribute('data-theme-transition', 'css');
         apply(next);
+        fallbackTimer = window.setTimeout(clearTransitionState, 420);
     }
 
     document.addEventListener('click', function (event) {
         var target = event.target;
         if (!target || typeof target.closest !== 'function') { return; }
-        if (!target.closest('[data-theme-toggle]')) { return; }
-        toggle();
+        var button = target.closest('[data-theme-toggle]');
+        if (!button) { return; }
+        toggle(button, event);
     });
 
     // Apply the saved palette as early as possible.

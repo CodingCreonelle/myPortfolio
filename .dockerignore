@@ -91,3 +91,6 @@ metadata.json
 
 # AI Agents
 .agents/
+scripts/*.mjs
+scripts/*.cjs
+scripts/*.json

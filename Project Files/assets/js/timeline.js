@@ -442,7 +442,36 @@
       }
 
       const dot = event.target.closest('[data-timeline-goto]');
-      if (dot) goToEntry(Number(dot.dataset.timelineGoto));
+      if (dot) {
+        goToEntry(Number(dot.dataset.timelineGoto));
+        return;
+      }
+
+      const entry = event.target.closest('.timeline-entry');
+      if (entry && activeTrack) {
+        const entries = Array.from(activeTrack.querySelectorAll('.timeline-entry'));
+        const idx = entries.indexOf(entry);
+        if (idx >= 0) goToEntry(idx);
+      }
+    });
+
+    if (!mount.hasAttribute('tabindex')) mount.setAttribute('tabindex', '0');
+    mount.addEventListener('keydown', (event) => {
+      if (!activeTrack) return;
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goToEntry(activeIndexOf(activeTrack) + 1);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goToEntry(activeIndexOf(activeTrack) - 1);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        goToEntry(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        const total = activeTrack.querySelectorAll('.timeline-entry').length;
+        if (total > 0) goToEntry(total - 1);
+      }
     });
   }
 

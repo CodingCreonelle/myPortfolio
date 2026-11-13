@@ -1,15 +1,11 @@
-/*
- * The data addresses everything from the site root, and the project cards link to
- * the one project page, so both are resolved from this script's own URL. That
- * keeps them correct whether the page loading this sits at the root or in a
- * folder of its own.
- */
-
-/*
- * Every value that comes from the JSON goes through here before it is
- * interpolated into a template string. escapeHtml from utils.js is the shared
- * implementation; the local copy keeps this file safe on a page that has not
- * loaded utils.js (or loaded it after this script).
+/**
+ * Central data loader for `projects.json`, `experience.json`, and `socials.json`.
+ *
+ * Connects the JSON data files to:
+ *  - `window.initWorkGallery(projects)` on `index.html`
+ *  - `renderProjectList(projects)` on `projects.html`
+ *  - `window.initTimeline(entries)` on `index.html`
+ *  - `renderContactCards(socials)` on `contact.html`
  */
 function esc(value) {
   if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
@@ -18,9 +14,10 @@ function esc(value) {
   return String(value == null ? '' : value);
 }
 
-const SITE_ROOT = (window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
+const SITE_ROOT = (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
   ? window.PortfolioUtils.getSiteRoot()
   : (function () {
+      if (typeof document === 'undefined') return '';
       const script = document.currentScript || document.querySelector('script[src*="data-loader.js"]');
       return script && script.src ? new URL('../../', script.src).href : '';
     })();
@@ -30,10 +27,10 @@ function projectHref(project) {
 }
 
 async function fetchJSON(path) {
-  const fullUrl = SITE_ROOT + path;
   if (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function') {
-    return window.PortfolioUtils.fetchJSON(fullUrl);
+    return window.PortfolioUtils.fetchJSON(path);
   }
+  const fullUrl = SITE_ROOT + path;
   try {
     const response = await fetch(fullUrl);
     if (!response.ok) {
@@ -52,68 +49,32 @@ function createCard(html) {
   return template.content.firstElementChild;
 }
 
-/*
- * A project's screenshot is optional: the gallery renders the frame either way
- * and falls back to a styled placeholder so the composition survives until an
- * image is supplied. Relative paths are resolved from the site root, matching
- * the data files' own convention.
- */
 function projectImageSrc(project) {
   const image = typeof project.image === 'string' ? project.image.trim() : '';
   if (!image) return '';
-  // Protocol-relative, root-relative and plain relative addresses are kept;
-  // http(s) is allowed through; anything else carrying a scheme (javascript:,
-  // data:, vbscript:, ...) is refused so the card falls back to its placeholder.
   if (/^(?:https?:)?\/\//i.test(image) || image.startsWith('/')) return image;
   if (/^[a-z][a-z0-9+.-]*:/i.test(image)) return '';
   return SITE_ROOT + image.replace(/^\.\//, '');
 }
 
 function renderFeaturedProjects(projects) {
-  const container = document.querySelector('#featured-projects');
-  if (!container || !Array.isArray(projects)) return;
-  container.innerHTML = '';
-
-  projects.forEach((project, index) => {
-    const src = projectImageSrc(project);
-    const visual = src
-      ? `<img class="work-card__image" src="${esc(src)}" alt="" loading="lazy" decoding="async">`
-      : `<div class="work-card__placeholder" data-index="${String(index + 1).padStart(2, '0')}" aria-hidden="true"></div>`;
-
-    const card = createCard(`
-      <article class="work-card">
-        <div class="work-card__visual">${visual}</div>
-        <div class="work-card__copy">
-          <h3 class="work-card__title">${esc(project.title)}</h3>
-          <p class="work-card__summary">${esc(project.summary)}</p>
-          <a href="${esc(projectHref(project))}" class="work-card__link">
-            View project
-            <span class="work-card__arrow" aria-hidden="true">&#8594;</span>
-          </a>
-        </div>
-      </article>
-    `);
-    container.appendChild(card);
-  });
-
-  if (window.PortfolioWorkGallery && window.PortfolioWorkGallery.init) {
-    window.PortfolioWorkGallery.init();
+  if (typeof window.initWorkGallery === 'function') {
+    window.initWorkGallery(projects);
+    return;
   }
 }
 
-/*
- * Technologies are shown as their skill logo where the site already ships one.
- * Anything without an icon still appears in the stack line, so the row never
- * misrepresents what a project used.
- */
 const SKILL_ICONS = {
   html: 'html',
+  html5: 'html',
   css: 'css',
+  css3: 'css',
   javascript: 'javascript',
   js: 'javascript',
   git: 'git',
   github: 'github',
   vscode: 'vscode',
+  'vs code': 'vscode',
 };
 
 const EXTERNAL_ICON = `
@@ -125,8 +86,200 @@ const EXTERNAL_ICON = `
   </svg>
 `;
 
+function getProjectTechList(project) {
+  if (!project || typeof project !== 'object') return [];
+  if (Array.isArray(project.tech) && project.tech.length > 0) return project.tech;
+  if (Array.isArray(project.technologies) && project.technologies.length > 0) return project.technologies;
+  if (Array.isArray(project.stack) && project.stack.length > 0) return project.stack;
+  return [];
+}
+
+function getLanguageNames(projects, experience) {
+  const seen = new Set();
+  const list = [];
+
+  function pushName(raw) {
+    const label = String(raw || '').trim();
+    if (!label) return;
+    const key = label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    list.push(label);
+  }
+
+  if (experience && Array.isArray(experience.languages)) {
+    experience.languages.forEach((lang) => {
+      if (lang && typeof lang === 'object') pushName(lang.name);
+      else pushName(lang);
+    });
+  }
+
+  if (Array.isArray(projects)) {
+    projects.forEach((project) => {
+      getProjectTechList(project).forEach(pushName);
+    });
+  }
+
+  return list;
+}
+
+function getCustomSortOptions(experience) {
+  if (!experience || !Array.isArray(experience.projectSortOptions)) return [];
+  return experience.projectSortOptions
+    .filter((opt) => opt && (opt.label || opt.id))
+    .map((opt, idx) => ({
+      id: String(opt.id || `custom-${idx + 1}`),
+      label: String(opt.label || opt.id || `Custom Sort ${idx + 1}`).trim(),
+      by: String(opt.by || 'language').trim(),
+      target: String(opt.target || '').trim(),
+    }));
+}
+
+function projectLanguageRank(project, targetLower) {
+  const tech = getProjectTechList(project).map((t) => String(t).trim().toLowerCase());
+  const tags = Array.isArray(project && project.tags)
+    ? project.tags.map((t) => String(t).trim().toLowerCase())
+    : [];
+  const techIdx = tech.indexOf(targetLower);
+  if (techIdx !== -1) return techIdx;
+  if (tags.includes(targetLower)) return tech.length;
+  return Number.POSITIVE_INFINITY;
+}
+
+function sortProjects(projects, sortSpec, languages) {
+  if (!Array.isArray(projects)) return [];
+  const spec = sortSpec && typeof sortSpec === 'object' ? sortSpec : { by: 'default', target: '' };
+  const by = String(spec.by || 'default').toLowerCase();
+  const targetLower = String(spec.target || '').trim().toLowerCase();
+  const skillOrder = Array.isArray(languages)
+    ? languages.map((l) => String(l).trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  const decorated = projects.map((item, idx) => ({ item, idx }));
+
+  if (by === 'default') {
+    return decorated.map((d) => d.item);
+  }
+
+  if (by === 'reverse') {
+    return decorated.reverse().map((d) => d.item);
+  }
+
+  decorated.sort((a, b) => {
+    const pa = a.item || {};
+    const pb = b.item || {};
+
+    if (by === 'title-asc') {
+      const cmp = String(pa.title || '').localeCompare(String(pb.title || ''));
+      return cmp !== 0 ? cmp : a.idx - b.idx;
+    }
+
+    if (by === 'title-desc') {
+      const cmp = String(pb.title || '').localeCompare(String(pa.title || ''));
+      return cmp !== 0 ? cmp : a.idx - b.idx;
+    }
+
+    if (by === 'featured') {
+      const fa = pa.featured ? 0 : 1;
+      const fb = pb.featured ? 0 : 1;
+      return fa !== fb ? fa - fb : a.idx - b.idx;
+    }
+
+    if (by === 'tech-count') {
+      const diff = getProjectTechList(pb).length - getProjectTechList(pa).length;
+      return diff !== 0 ? diff : a.idx - b.idx;
+    }
+
+    if (by === 'status') {
+      const wanted = targetLower || 'live';
+      const sa = String(pa.status || '').trim().toLowerCase() === wanted ? 0 : 1;
+      const sb = String(pb.status || '').trim().toLowerCase() === wanted ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      const cmp = String(pa.status || '').localeCompare(String(pb.status || ''));
+      return cmp !== 0 ? cmp : a.idx - b.idx;
+    }
+
+    if (by === 'language') {
+      if (targetLower) {
+        const ra = projectLanguageRank(pa, targetLower);
+        const rb = projectLanguageRank(pb, targetLower);
+        if (ra !== rb) return ra - rb;
+        return a.idx - b.idx;
+      }
+
+      const techA = getProjectTechList(pa).map((t) => String(t).trim().toLowerCase());
+      const techB = getProjectTechList(pb).map((t) => String(t).trim().toLowerCase());
+
+      let bestA = Number.POSITIVE_INFINITY;
+      let matchesA = 0;
+      skillOrder.forEach((lang, i) => {
+        if (techA.includes(lang)) {
+          if (i < bestA) bestA = i;
+          matchesA += 1;
+        }
+      });
+
+      let bestB = Number.POSITIVE_INFINITY;
+      let matchesB = 0;
+      skillOrder.forEach((lang, i) => {
+        if (techB.includes(lang)) {
+          if (i < bestB) bestB = i;
+          matchesB += 1;
+        }
+      });
+
+      if (bestA !== bestB) return bestA - bestB;
+      if (matchesA !== matchesB) return matchesB - matchesA;
+      return a.idx - b.idx;
+    }
+
+    return a.idx - b.idx;
+  });
+
+  return decorated.map((d) => d.item);
+}
+
+const projectToolbarState = {
+  filterTech: 'All',
+  sortId: 'default',
+  experience: null,
+};
+
+function attachToolbarFocusFallback(toolbar) {
+  if (!toolbar || (typeof HTMLElement !== 'undefined' && 'focusGroup' in HTMLElement.prototype)) {
+    return;
+  }
+  const items = Array.from(toolbar.querySelectorAll('button'));
+  if (!items.length) return;
+  items.forEach((btn, i) => {
+    btn.tabIndex = i === 0 ? 0 : -1;
+  });
+  toolbar.addEventListener('focusin', (event) => {
+    const target = event.target;
+    if (items.includes(target)) {
+      items.forEach((btn) => {
+        btn.tabIndex = btn === target ? 0 : -1;
+      });
+    }
+  });
+  toolbar.addEventListener('keydown', (event) => {
+    const current = items.indexOf(document.activeElement);
+    if (current === -1) return;
+    const rtl = typeof getComputedStyle === 'function' && getComputedStyle(toolbar).direction === 'rtl';
+    let next = -1;
+    if (event.key === 'ArrowRight') next = (current + (rtl ? -1 : 1) + items.length) % items.length;
+    else if (event.key === 'ArrowLeft') next = (current + (rtl ? 1 : -1) + items.length) % items.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = items.length - 1;
+    if (next !== -1) {
+      event.preventDefault();
+      items[next].focus();
+    }
+  });
+}
+
 function projectStackIcons(project) {
-  const technologies = Array.isArray(project.technologies) ? project.technologies : [];
+  const technologies = getProjectTechList(project);
   const used = new Set();
 
   return technologies
@@ -138,27 +291,251 @@ function projectStackIcons(project) {
     })
     .map((icon) => `
         <li>
-          <img src="${SITE_ROOT}assets/icons/skills/${icon}.svg" alt="" width="22" height="22" loading="lazy" decoding="async">
+          <img src="${SITE_ROOT}assets/icons/skills/${icon}.svg" alt="${esc(icon)}" width="20" height="20" loading="lazy" decoding="async">
         </li>`)
     .join('');
 }
 
-function renderProjectList(projects) {
+function buildSortOptionsList(languages, customOptions) {
+  const options = [
+    { id: 'default', label: 'Default Order', by: 'default', target: '' },
+  ];
+  const seenKeys = new Set(options.map((o) => `${o.by}|${o.target}`));
+
+  customOptions.forEach((opt, idx) => {
+    const by = opt.by || 'language';
+    const target = opt.target || '';
+    const key = `${by}|${target}`;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    options.push({
+      id: `custom:${opt.id || idx}`,
+      label: opt.label,
+      by,
+      target,
+    });
+  });
+
+  return options;
+}
+
+function renderProjectList(projects, resetFilters, experience) {
   const container = document.querySelector('#project-list');
   if (!container || !Array.isArray(projects)) return;
+
+  if (experience !== undefined) {
+    projectToolbarState.experience = experience;
+  }
+  const activeExp = projectToolbarState.experience;
+  const languages = getLanguageNames(projects, activeExp);
+  const customOptions = getCustomSortOptions(activeExp);
+  const sortOptions = buildSortOptionsList(languages, customOptions);
+
+  if (!sortOptions.some((opt) => opt.id === projectToolbarState.sortId)) {
+    projectToolbarState.sortId = 'default';
+  }
+  if (
+    projectToolbarState.filterTech !== 'All' &&
+    !languages.some((l) => l.toLowerCase() === projectToolbarState.filterTech.toLowerCase())
+  ) {
+    projectToolbarState.filterTech = 'All';
+  }
+
+  if (resetFilters) {
+    const existingToolbar = document.getElementById('project-filters');
+    if (existingToolbar && existingToolbar.parentNode) {
+      existingToolbar.parentNode.removeChild(existingToolbar);
+    }
+    const existingStatus = document.getElementById('project-toolbar-status');
+    if (existingStatus && existingStatus.parentNode) {
+      existingStatus.parentNode.removeChild(existingStatus);
+    }
+    delete container.dataset.filtersBuilt;
+  }
+
+  if (!container.dataset.filtersBuilt && container.parentNode) {
+    const allProjects = projects.slice();
+    const toolbar = document.createElement('div');
+    toolbar.id = 'project-filters';
+    toolbar.className = 'project-filters project-toolbar';
+    toolbar.setAttribute('role', 'toolbar');
+    toolbar.setAttribute('focusgroup', 'toolbar wrap');
+    toolbar.setAttribute('aria-label', 'Sort and filter projects');
+    toolbar.setAttribute('aria-controls', 'project-list');
+
+    const statusNode = document.createElement('p');
+    statusNode.id = 'project-toolbar-status';
+    statusNode.className = 'sr-only';
+    statusNode.setAttribute('role', 'status');
+    statusNode.setAttribute('aria-live', 'polite');
+
+    const headerBar = document.createElement('div');
+    headerBar.className = 'project-toolbar__header';
+
+    const countEl = document.createElement('span');
+    countEl.id = 'project-count';
+    countEl.className = 'project-toolbar__count';
+    countEl.textContent = `${allProjects.length} ${allProjects.length === 1 ? 'project' : 'projects'}`;
+
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.id = 'project-toolbar-reset';
+    resetBtn.className = 'project-toolbar__reset';
+    resetBtn.textContent = 'Reset';
+    resetBtn.setAttribute('aria-disabled', 'true');
+
+    headerBar.appendChild(countEl);
+    headerBar.appendChild(resetBtn);
+    toolbar.appendChild(headerBar);
+
+    function syncToolbarMeta(visibleCount) {
+      const total = allProjects.length;
+      countEl.textContent =
+        visibleCount === total
+          ? `${total} ${total === 1 ? 'project' : 'projects'}`
+          : `${visibleCount} of ${total} projects`;
+      const isDefault = projectToolbarState.sortId === 'default' && projectToolbarState.filterTech === 'All';
+      resetBtn.setAttribute('aria-disabled', isDefault ? 'true' : 'false');
+    }
+
+    function applyToolbarView(announceText) {
+      const selectedSort =
+        sortOptions.find((opt) => opt.id === projectToolbarState.sortId) || sortOptions[0];
+      const filterLower = projectToolbarState.filterTech.toLowerCase();
+      const filtered =
+        projectToolbarState.filterTech === 'All'
+          ? allProjects
+          : allProjects.filter((item) =>
+              getProjectTechList(item).some((t) => String(t).trim().toLowerCase() === filterLower)
+            );
+      const sorted = sortProjects(filtered, selectedSort, languages);
+      syncToolbarMeta(sorted.length);
+      renderProjectList(sorted, false, activeExp);
+      if (announceText) {
+        statusNode.textContent = announceText;
+      }
+    }
+
+    const sortGroup = document.createElement('div');
+    sortGroup.id = 'project-sort-group';
+    sortGroup.className = 'project-toolbar__group';
+    sortGroup.setAttribute('role', 'group');
+    sortGroup.setAttribute('aria-label', 'Sort projects');
+
+    const sortLabel = document.createElement('span');
+    sortLabel.className = 'project-toolbar__label';
+    sortLabel.innerHTML =
+      '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M5 8h6M7 12h2"/></svg>Sort';
+    sortGroup.appendChild(sortLabel);
+
+    const sortPills = document.createElement('div');
+    sortPills.className = 'project-toolbar__pills';
+
+    sortOptions.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'project-sort-pill';
+      btn.dataset.sortId = opt.id;
+      btn.dataset.sortBy = opt.by;
+      btn.dataset.sortTarget = opt.target;
+      btn.setAttribute('aria-pressed', opt.id === projectToolbarState.sortId ? 'true' : 'false');
+      btn.textContent = opt.label;
+      btn.addEventListener('click', () => {
+        projectToolbarState.sortId = opt.id;
+        sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
+          pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
+        });
+        applyToolbarView(`Sorted projects by ${opt.label}`);
+      });
+      sortPills.appendChild(btn);
+    });
+
+    sortGroup.appendChild(sortPills);
+    toolbar.appendChild(sortGroup);
+
+    const sep = document.createElement('span');
+    sep.className = 'project-toolbar__sep';
+    sep.setAttribute('role', 'separator');
+    sep.setAttribute('aria-orientation', 'horizontal');
+    toolbar.appendChild(sep);
+
+    const filterGroup = document.createElement('div');
+    filterGroup.id = 'project-filter-group';
+    filterGroup.className = 'project-toolbar__group';
+    filterGroup.setAttribute('role', 'group');
+    filterGroup.setAttribute('aria-label', 'Filter projects by language');
+
+    const filterLabel = document.createElement('span');
+    filterLabel.className = 'project-toolbar__label';
+    filterLabel.innerHTML =
+      '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h12l-4.5 5.2v4.3l-3 1.5V8.2z"/></svg>Language';
+    filterGroup.appendChild(filterLabel);
+
+    const filterPills = document.createElement('div');
+    filterPills.className = 'project-toolbar__pills';
+
+    ['All'].concat(languages).forEach((label) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'project-filter-pill';
+      btn.dataset.tech = label;
+      const isActive = label.toLowerCase() === projectToolbarState.filterTech.toLowerCase();
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        projectToolbarState.filterTech = label;
+        filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
+          pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
+        });
+        applyToolbarView(label === 'All' ? 'Showing all projects' : `Filtered projects by ${label}`);
+      });
+      filterPills.appendChild(btn);
+    });
+
+    filterGroup.appendChild(filterPills);
+    toolbar.appendChild(filterGroup);
+
+    resetBtn.addEventListener('click', () => {
+      if (resetBtn.getAttribute('aria-disabled') === 'true') return;
+      projectToolbarState.sortId = 'default';
+      projectToolbarState.filterTech = 'All';
+      sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
+        pill.setAttribute('aria-pressed', pill.dataset.sortId === 'default' ? 'true' : 'false');
+      });
+      filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
+        pill.setAttribute('aria-pressed', pill.dataset.tech === 'All' ? 'true' : 'false');
+      });
+      applyToolbarView('Reset sort and language filters');
+    });
+
+    container.parentNode.insertBefore(toolbar, container);
+    container.parentNode.insertBefore(statusNode, container);
+    attachToolbarFocusFallback(toolbar);
+    syncToolbarMeta(allProjects.length);
+    container.dataset.filtersBuilt = 'true';
+
+    if (projectToolbarState.sortId !== 'default' || projectToolbarState.filterTech !== 'All') {
+      applyToolbarView('');
+      return;
+    }
+  }
+
   container.innerHTML = '';
 
   projects.forEach((project, index) => {
-    const stack = Array.isArray(project.technologies) ? project.technologies.join(' ') : '';
     const icons = projectStackIcons(project);
+    const thumbSrc = projectImageSrc(project);
 
     const card = createCard(`
       <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
         <p class="archive-entry__index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>
+        ${thumbSrc ? `<div class="archive-entry__thumb"><img src="${esc(thumbSrc)}" alt="${esc(project.imageAlt || project.title)}" loading="lazy" decoding="async"></div>` : ''}
         <div class="archive-entry__body">
-          <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+          <div class="archive-entry__title-row">
+            <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+            ${project.status ? `<span class="archive-entry__status">${esc(project.status)}</span>` : ''}
+          </div>
           <p class="archive-entry__summary">${esc(project.summary)}</p>
-          ${stack ? `<p class="archive-entry__stack">${esc(stack)}</p>` : ''}
           ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
         </div>
         <span class="archive-entry__open" aria-hidden="true">${EXTERNAL_ICON}</span>
@@ -167,7 +544,6 @@ function renderProjectList(projects) {
     container.appendChild(card);
   });
 
-  // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
   }
@@ -234,6 +610,29 @@ function renderContactCards(socials) {
     },
   ];
 
+  const coreKeys = ['email', 'github', 'linkedin', 'discord'];
+  Object.keys(socials).forEach((key) => {
+    if (coreKeys.indexOf(key) !== -1) return;
+    const rawVal = String(socials[key] || '').trim();
+    if (!rawVal) return;
+    const isHttp = /^https?:\/\//i.test(rawVal);
+    const isMailto = /^mailto:/i.test(rawVal);
+    const displayValue = isHttp
+      ? rawVal.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')
+      : (isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal);
+    items.push({
+      label: key,
+      value: rawVal,
+      displayValue,
+      href: (isHttp || isMailto) ? rawVal : null,
+      icon: 'ext',
+      hint: isHttp ? 'External profile & social channel' : 'Social & contact channel',
+      copyValue: (isHttp || isMailto) ? null : rawVal,
+      copyLabel: `Copy ${key}`,
+      external: isHttp,
+    });
+  });
+
   let validIndex = 0;
   items.forEach((item) => {
     if (!item.value) return;
@@ -263,7 +662,7 @@ function renderContactCards(socials) {
 
     const card = createCard(`
       <article class="contact-card card-entrance" style="animation-delay: ${validIndex * 100}ms;">
-        <span class="contact-card__icon" aria-hidden="true">${CONTACT_ICONS[item.icon] || ''}</span>
+        <span class="contact-card__icon" aria-hidden="true">${CONTACT_ICONS[item.icon] || EXTERNAL_ICON}</span>
         <div class="contact-card__body">
           <div class="contact-card__top">
             <span class="contact-card__index" aria-hidden="true">${indexStr}</span>
@@ -296,7 +695,6 @@ function renderContactCards(socials) {
     });
   });
 
-  // Trigger stagger animation for dynamically added cards
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);
   }
@@ -311,18 +709,43 @@ async function loadDynamicData() {
 
   if (projects) {
     renderFeaturedProjects(projects);
-    renderProjectList(projects);
+    renderProjectList(projects, true, experience);
   }
 
   if (experience) {
-    if (window.PortfolioTimeline && window.PortfolioTimeline.render) {
-      window.PortfolioTimeline.render(experience.timeline);
+    const entries = Array.isArray(experience) ? experience : (experience.timeline || []);
+    if (typeof window.initTimeline === 'function') {
+      window.initTimeline(entries);
+    } else if (window.PortfolioTimeline && typeof window.PortfolioTimeline.render === 'function') {
+      window.PortfolioTimeline.render(entries);
     }
   }
 
   if (socials) {
     renderContactCards(socials);
   }
+
+  if (window.AnimationObserver && typeof window.AnimationObserver.refresh === 'function') {
+    window.AnimationObserver.refresh();
+  }
 }
 
-document.addEventListener('DOMContentLoaded', loadDynamicData);
+const projectSortApi = {
+  sortProjects,
+  getLanguageNames,
+  getCustomSortOptions,
+  buildSortOptionsList,
+};
+
+if (typeof window !== 'undefined') {
+  window.PortfolioProjectSort = projectSortApi;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = projectSortApi;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', loadDynamicData);
+  document.addEventListener('portfolio:data-updated', loadDynamicData);
+}

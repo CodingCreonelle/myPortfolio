@@ -17,7 +17,7 @@
 /* The timeline is one band of the page rather than a full-screen feature, so it
    does not need the full default section padding beneath it. */
 .experience-section {
-    padding-bottom: 24px;
+    padding: clamp(64px, 8vw, 110px) 0 40px;
 }
 
 .timeline-track {
@@ -179,6 +179,19 @@
     transition: transform var(--motion-orb) var(--ease-soft),
                 opacity var(--motion-orb) ease,
                 box-shadow var(--motion-orb) ease;
+}
+
+.timeline-entry {
+    cursor: pointer;
+}
+
+.timeline-entry__orb {
+    transition: transform 0.25s var(--ease-out-expo), opacity 0.25s ease, box-shadow 0.25s ease;
+}
+
+.timeline-entry:hover .timeline-entry__orb {
+    opacity: 0.92;
+    --orb-scale: 0.92;
 }
 
 .timeline-entry.is-active .timeline-entry__orb {
@@ -391,9 +404,15 @@
 
 @media (max-width: 640px) {
     .timeline-track {
-        --entry-width: 320px;
-        --track-gap: 20px;
-        --timeline-lane: 100px;
+        --entry-width: min(300px, calc(100vw - 48px));
+        --track-gap: 18px;
+        --timeline-lane: 92px;
+    }
+
+    .timeline-entry__detail {
+        grid-template-columns: 16px 1px minmax(0, 1fr);
+        padding: 0;
+        border: 0;
     }
 }
 
