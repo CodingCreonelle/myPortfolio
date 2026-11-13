@@ -12,44 +12,6 @@
     padding: 116px 0 24px;
 }
 
-.project-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 8px 0 20px;
-}
-
-.project-filter-pill {
-    appearance: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 40px;
-    padding: 0.45rem 1rem;
-    border-radius: 999px;
-    border: 1px solid var(--card-border);
-    background: var(--surface);
-    color: var(--muted);
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-out-expo);
-}
-
-.project-filter-pill:hover,
-.project-filter-pill:focus-visible {
-    color: var(--text);
-    border-color: var(--card-hover-border);
-    transform: translateY(-1px);
-}
-
-.project-filter-pill.is-active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #ffffff;
-}
-
 .page-title h1 {
     font-size: clamp(2.8rem, 2.2rem + 1vw, 4rem);
     margin-bottom: 16px;
@@ -60,6 +22,196 @@
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+/*
+ * Sort & Filter toolbar (follows modern-web-guidance toolbar conventions).
+ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.project-filters.project-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.project-toolbar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.project-toolbar__count {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.project-toolbar__reset {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 24px;
+    min-block-size: 30px;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--on-surface);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.project-toolbar__reset[aria-disabled="true"] {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.project-toolbar__reset:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.project-toolbar__group {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem 0.85rem;
+}
+
+.project-toolbar__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.project-toolbar__pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.project-toolbar__sep[role="separator"] {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-block-start: 1px solid var(--card-border);
+    margin: 0;
+}
+
+.project-sort-pill,
+.project-filter-pill {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 24px;
+    min-block-size: 32px;
+    padding: 0.35rem 0.82rem;
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--on-surface);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.project-sort-pill:focus-visible,
+.project-filter-pill:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.project-sort-pill[aria-pressed="true"],
+.project-filter-pill[aria-pressed="true"] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+@media (hover: hover) {
+    .project-sort-pill:hover,
+    .project-filter-pill:hover,
+    .project-toolbar__reset:not([aria-disabled="true"]):hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .project-sort-pill[aria-pressed="true"]:hover,
+    .project-filter-pill[aria-pressed="true"]:hover {
+        color: #ffffff;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .project-sort-pill,
+    .project-filter-pill,
+    .project-toolbar__reset {
+        transition:
+            background-color 0.2s ease,
+            color 0.2s ease,
+            border-color 0.2s ease;
+    }
+}
+
+@media (pointer: coarse) {
+    .project-sort-pill,
+    .project-filter-pill,
+    .project-toolbar__reset {
+        min-inline-size: 44px;
+        min-block-size: 44px;
+    }
+}
+
+@media (forced-colors: active) {
+    .project-sort-pill[aria-pressed="true"],
+    .project-filter-pill[aria-pressed="true"] {
+        background: Highlight;
+        color: HighlightText;
+        border-color: ButtonText;
+    }
+}
+
+@media (max-width: 600px) {
+    .project-toolbar__group {
+        grid-template-columns: 1fr;
+    }
 }
 
 /*
@@ -158,29 +310,6 @@
     color: var(--muted);
     font-size: 0.95rem;
     line-height: 1.55;
-}
-
-.archive-entry__metrics {
-    margin: 0 0 0.55rem;
-    color: var(--on-surface);
-    font-size: 0.82rem;
-    font-variant-numeric: tabular-nums;
-}
-
-.archive-entry__metrics strong {
-    color: var(--primary);
-    font-family: var(--ab-mono, monospace);
-}
-
-.archive-entry__stack {
-    margin: 0;
-    color: var(--archive-stack);
-    font-family: var(--ab-mono, monospace);
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    line-height: 1.3;
-    text-transform: uppercase;
 }
 
 .archive-entry__icons {

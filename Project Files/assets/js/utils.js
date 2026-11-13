@@ -47,6 +47,8 @@
     const ALLOWED_ATTRIBUTES = { a: ['href', 'title'], code: ['class'], pre: ['class'] };
 
     const CACHE_KEY = 'requestCache';
+    const ADMIN_STORAGE_PREFIX = 'portfolio-admin-data:';
+    const ADMIN_DATASETS = ['pages', 'projects', 'experience', 'socials'];
 
     /* ------------------------------------------------------------- Script URL & Site Root */
     /**
@@ -249,7 +251,116 @@
         return Promise.resolve(fallbackCopy(textToCopy));
     }
 
-    /* ------------------------------------------------------------- Fetch & Request Caching */
+    /* ------------------------------------------------------------- Admin Overrides & Request Caching */
+    /**
+     * Extracts the portfolio dataset name ('pages', 'projects', 'experience', 'socials')
+     * from a JSON endpoint URL or path.
+     * @param {string} url - Endpoint URL.
+     * @returns {string|null} Lowercase dataset name or null.
+     */
+    function extractDatasetName(url) {
+        const clean = String(url || '').split('#')[0];
+        const match = /(?:^|\/)data\/(pages|projects|experience|socials)\.json(?:\?.*)?$/i.exec(clean);
+        return match ? match[1].toLowerCase() : null;
+    }
+
+    function cloneJsonValue(value) {
+        if (value === null || value === undefined) return value;
+        try {
+            return JSON.parse(JSON.stringify(value));
+        } catch (err) {
+            return value;
+        }
+    }
+
+    /**
+     * Reads an admin-customized JSON override from localStorage if present.
+     * @param {string} dataset - Dataset name ('pages'|'projects'|'experience'|'socials').
+     * @returns {any|null} Parsed override object/array, or null if none stored.
+     */
+    function getAdminOverride(dataset) {
+        const name = String(dataset || '').toLowerCase();
+        if (ADMIN_DATASETS.indexOf(name) === -1) return null;
+        const storage = global.localStorage;
+        if (!storage || typeof storage.getItem !== 'function') return null;
+        try {
+            const raw = storage.getItem(ADMIN_STORAGE_PREFIX + name);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (err) {
+            return null;
+        }
+    }
+
+    /**
+     * Clears the in-memory JSON request cache so subsequent fetches read fresh data.
+     */
+    function clearRequestCache() {
+        const cache = requestCache();
+        if (cache && typeof cache.clear === 'function') {
+            cache.clear();
+        }
+    }
+
+    function dispatchDataUpdated(dataset) {
+        if (typeof document !== 'undefined' && typeof CustomEvent === 'function') {
+            try {
+                document.dispatchEvent(new CustomEvent('portfolio:data-updated', {
+                    detail: { dataset: dataset, source: 'admin' }
+                }));
+            } catch (err) {
+                /* Ignore in headless environments without CustomEvent */
+            }
+        }
+    }
+
+    /**
+     * Saves an admin-customized dataset into localStorage, clears the request cache,
+     * and dispatches 'portfolio:data-updated' so live page views re-hydrate immediately.
+     * @param {string} dataset - Dataset name ('pages'|'projects'|'experience'|'socials').
+     * @param {any} value - JSON-serializable dataset payload.
+     * @param {{ silent?: boolean }} [options] - Optional settings.
+     * @returns {any} Deep clone of stored value.
+     */
+    function setAdminOverride(dataset, value, options) {
+        const name = String(dataset || '').toLowerCase();
+        if (ADMIN_DATASETS.indexOf(name) === -1) {
+            throw new Error('Unknown portfolio dataset: ' + dataset);
+        }
+        const storage = global.localStorage;
+        if (storage && typeof storage.setItem === 'function') {
+            storage.setItem(ADMIN_STORAGE_PREFIX + name, JSON.stringify(value));
+        }
+        clearRequestCache();
+        if (!options || !options.silent) {
+            dispatchDataUpdated(name);
+        }
+        return cloneJsonValue(value);
+    }
+
+    /**
+     * Removes one or all admin dataset overrides from localStorage, clears the cache,
+     * and dispatches 'portfolio:data-updated'.
+     * @param {string} [dataset='all'] - Dataset name or 'all'.
+     * @param {{ silent?: boolean }} [options] - Optional settings.
+     */
+    function clearAdminOverride(dataset, options) {
+        const target = !dataset || dataset === 'all' ? 'all' : String(dataset).toLowerCase();
+        const names = target === 'all' ? ADMIN_DATASETS : [target];
+        const storage = global.localStorage;
+        if (storage && typeof storage.removeItem === 'function') {
+            names.forEach((name) => {
+                if (ADMIN_DATASETS.indexOf(name) !== -1) {
+                    storage.removeItem(ADMIN_STORAGE_PREFIX + name);
+                }
+            });
+        }
+        clearRequestCache();
+        if (!options || !options.silent) {
+            dispatchDataUpdated(target);
+        }
+    }
+
     /**
      * Retrieves or initializes the shared Promise request cache Map on the global namespace.
      * @returns {Map<string, Promise<any>>} The request cache Map instance.
@@ -260,17 +371,30 @@
     }
 
     /**
-     * Fetches and parses a JSON endpoint with in-memory Promise caching.
+     * Fetches and parses a JSON endpoint with in-memory Promise caching and admin override support.
      * Concurrent requests for the same URL join the existing in-flight request.
      * Network or HTTP errors resolve to null and remain cached to prevent error cascades.
      *
      * @param {string} url - Target URL or path to fetch.
+     * @param {{ bypassAdminOverride?: boolean }} [options] - Optional fetch flags.
      * @returns {Promise<any>} Resolves to parsed JSON object/array, or null on error.
      */
-    function fetchJSON(url) {
+    function fetchJSON(url, options) {
         const key = String(url);
+        const bypass = Boolean(options && options.bypassAdminOverride);
+
+        if (!bypass) {
+            const dataset = extractDatasetName(key);
+            if (dataset) {
+                const override = getAdminOverride(dataset);
+                if (override !== null) {
+                    return Promise.resolve(cloneJsonValue(override));
+                }
+            }
+        }
+
         const cache = requestCache();
-        if (cache.has(key)) return cache.get(key);
+        if (!bypass && cache.has(key)) return cache.get(key);
 
         const fetchFn = typeof global.__nativeFetch === 'function' ? global.__nativeFetch : fetch;
         const request = fetchFn(key)
@@ -283,7 +407,9 @@
                 return null;
             });
 
-        cache.set(key, request);
+        if (!bypass) {
+            cache.set(key, request);
+        }
         return request;
     }
 
@@ -297,6 +423,10 @@
         copyToClipboard: copyToClipboard,
         fetchJSON: fetchJSON,
         getSiteRoot: getSiteRoot,
+        getAdminOverride: getAdminOverride,
+        setAdminOverride: setAdminOverride,
+        clearAdminOverride: clearAdminOverride,
+        clearRequestCache: clearRequestCache,
     };
 
     // Publish to global namespace by merging, preserving existing namespace properties (e.g. requestCache)

@@ -118,6 +118,48 @@
     border-radius: 50%;
 }
 
+/* Hidden Admin Studio hold-gesture visual feedback */
+.brand {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.brand.is-holding .brand-icon {
+    transform: scale(0.92);
+    border-color: var(--primary, #2563eb);
+}
+
+.brand.is-holding .brand-icon::after {
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.85), 0 0 18px rgba(37, 99, 235, 0.65);
+    animation: adminHoldPulse 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.brand.is-unlocked .brand-icon {
+    border-color: var(--color-gold, #f59e0b);
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.45);
+}
+
+@keyframes adminHoldPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.45;
+    }
+    100% {
+        transform: scale(1.24);
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .brand.is-holding .brand-icon::after {
+        animation: none;
+        transform: none;
+        opacity: 1;
+    }
+}
+
 .brand-icon__orb {
     position: absolute;
     width: 0.42rem;
@@ -291,6 +333,10 @@
     }
 
     .brand {
+        display: inline-flex;
+    }
+
+    .brand-text {
         display: none;
     }
 }
@@ -307,6 +353,7 @@
    light-dark switch works site-wide. Behaviour lives in theme.js.
    ------------------------------------------------------------------------- */
 .theme-toggle {
+    position: relative;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
@@ -317,6 +364,7 @@
     border-radius: 11px;
     background: var(--glass);
     color: var(--on-surface);
+    overflow: hidden;
     cursor: pointer;
     transition: background-color 0.25s ease, color 0.25s ease,
                 border-color 0.25s ease;
@@ -329,6 +377,7 @@
 }
 
 .theme-toggle svg {
+    grid-area: 1 / 1;
     width: 16px;
     height: 16px;
     fill: none;
@@ -336,13 +385,42 @@
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transform-origin: center;
 }
 
 /* The icon is chosen in pure CSS from the palette, so the button is always
-   correct even before theme.js runs. */
-.theme-toggle__icon--sun { display: none; }
-:root[data-theme="light"] .theme-toggle__icon--moon { display: none; }
-:root[data-theme="light"] .theme-toggle__icon--sun { display: block; }
+   correct even before theme.js runs. Both icons share grid-area 1 / 1 and
+   cross-rotate smoothly when the theme switches. */
+.theme-toggle__icon--moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle__icon--sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+    pointer-events: none;
+}
+
+:root[data-theme="light"] .theme-toggle__icon--moon {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+    pointer-events: none;
+}
+
+:root[data-theme="light"] .theme-toggle__icon--sun {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+    pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .theme-toggle svg {
+        transition:
+            transform 0.45s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+            opacity 0.3s ease;
+    }
+}
 
 @media (max-width: 720px) {
     .theme-toggle { align-self: center; }

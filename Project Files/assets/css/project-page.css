@@ -6,12 +6,16 @@
     margin-bottom: 1.5rem;
 }
 
+.project-view__section + .project-view__section {
+    margin-top: 2rem;
+}
+
 .project-view__meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .project-view__status {
@@ -23,6 +27,21 @@
     text-transform: uppercase;
 }
 
+.project-view__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: var(--glass);
+    color: var(--text);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 .project-view__tags {
     color: var(--muted);
     font-size: 0.85rem;
@@ -30,8 +49,98 @@
 
 .project-view__summary {
     color: var(--on-surface);
-    font-size: 1.08rem;
-    line-height: 1.65;
+    font-size: 1.05rem;
+    line-height: 1.68;
+}
+
+/* Documentation Switcher Bar */
+.doc-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.doc-switcher__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 36px;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: var(--glass);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, transform 0.2s var(--ease-out-expo);
+}
+
+.doc-switcher__pill:hover,
+.doc-switcher__pill:focus-visible {
+    color: var(--text);
+    border-color: var(--card-hover-border);
+    transform: translateY(-1px);
+}
+
+.doc-switcher__pill.is-active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.doc-switcher__num {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+/* Documentation Hero */
+.doc-hero {
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 1.75rem;
+}
+
+.doc-hero h1 {
+    margin-top: 0.35rem;
+    margin-bottom: 0.45rem;
+}
+
+.doc-hero__subtitle {
+    margin: 0 0 1.15rem;
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.doc-hero .project-view__metrics {
+    margin-top: 1.35rem;
+}
+
+.doc-tech-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.doc-tech-list li {
+    margin: 0;
+    padding: 0.24rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: var(--glass);
+    color: var(--text);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.74rem;
+    font-weight: 600;
 }
 
 .project-view__visual {
@@ -106,18 +215,109 @@
     gap: 12px;
 }
 
-.doc-section {
-    scroll-margin-top: 110px;
+.markdown-body .doc-section {
+    scroll-margin-top: 112px;
+    padding: clamp(1.15rem, 2.5vw, 1.65rem);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--card-border);
+    background: var(--glass);
+    outline: none;
+    transition: border-color 0.25s ease;
 }
 
-.doc-section + .doc-section {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
+.markdown-body .doc-section:focus-visible,
+.markdown-body .doc-section:target {
+    border-color: var(--card-hover-border);
+}
+
+.markdown-body .doc-section + .doc-section {
+    margin-top: 1.35rem;
+}
+
+.doc-section__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.doc-section__header h2 {
+    margin: 0;
+}
+
+.doc-section__index {
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.45rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-hover-border);
+    background: rgba(37, 99, 235, 0.14);
+    color: var(--primary-soft);
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.76rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+:root[data-theme="light"] .doc-section__index {
+    background: var(--primary-soft);
+    color: var(--primary-dark);
 }
 
 .doc-section > .doc-section__body > :first-child {
     margin-top: 0;
+}
+
+/* Prev / Next Spec Pagination */
+.doc-pagination {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--card-border);
+}
+
+.doc-pagination__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1rem 1.15rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--card-border);
+    background: var(--glass);
+    transition: border-color 0.2s ease, transform 0.2s var(--ease-out-expo), background-color 0.2s ease;
+}
+
+.doc-pagination__card--next {
+    text-align: right;
+}
+
+.doc-pagination__card:hover,
+.doc-pagination__card:focus-visible {
+    border-color: var(--card-hover-border);
+    transform: translateY(-2px);
+}
+
+.doc-pagination__dir {
+    font-family: var(--ab-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.doc-pagination__title {
+    color: var(--text);
+    font-size: 0.96rem;
+    font-weight: 700;
+    line-height: 1.35;
 }
 
 .project-view__empty {
@@ -133,6 +333,14 @@
 @media (max-width: 640px) {
     .project-view__metrics {
         grid-template-columns: 1fr;
+    }
+
+    .doc-pagination {
+        grid-template-columns: 1fr;
+    }
+
+    .doc-pagination__card--next {
+        text-align: left;
     }
 
     .project-view__action {

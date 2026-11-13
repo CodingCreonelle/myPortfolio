@@ -115,7 +115,11 @@
 
     function renderLanguages(languages) {
         var list = document.getElementById('ab-skill-icons');
-        if (!list || !languages.length) { return; }
+        if (!list) { return; }
+        if (!languages || !languages.length) {
+            list.innerHTML = '';
+            return;
+        }
 
         list.innerHTML = languages.map(function (item) {
             var name = item.name || '';
@@ -131,7 +135,11 @@
 
     function renderTools(tools) {
         var wrap = document.getElementById('ab-skill-cards');
-        if (!wrap || !tools.length) { return; }
+        if (!wrap) { return; }
+        if (!tools || !tools.length) {
+            wrap.innerHTML = '';
+            return;
+        }
 
         wrap.innerHTML = tools.map(function (item, index) {
             return '' +
@@ -159,7 +167,11 @@
     /* ------------------------------------------------------------ trainings */
     function renderTrainings(items) {
         var list = document.getElementById('ab-trainings-list');
-        if (!list || !items.length) { return; }
+        if (!list) { return; }
+        if (!items || !items.length) {
+            list.innerHTML = '';
+            return;
+        }
 
         list.innerHTML = items.map(function (item, index) {
             var tags = (item.tags || []).map(function (tag) {
@@ -197,6 +209,22 @@
             { label: 'LinkedIn', value: socials.linkedin, href: socials.linkedin, icon: 'linkedin', external: true },
             { label: 'Discord', value: socials.discord, href: null, icon: 'discord' }
         ].filter(function (entry) { return entry.value; });
+
+        var coreKeys = ['email', 'github', 'linkedin', 'discord'];
+        Object.keys(socials).forEach(function (key) {
+            if (coreKeys.indexOf(key) !== -1) { return; }
+            var rawVal = String(socials[key] || '').trim();
+            if (!rawVal) { return; }
+            var isHttp = /^https?:\/\//i.test(rawVal);
+            var isMailto = /^mailto:/i.test(rawVal);
+            entries.push({
+                label: key,
+                value: isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal,
+                href: (isHttp || isMailto) ? rawVal : null,
+                icon: 'ext',
+                external: isHttp
+            });
+        });
 
         list.innerHTML = entries.map(function (entry, index) {
             var shown = String(entry.value).replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -252,37 +280,49 @@
         function rotate(traits) {
             if (!traits || !traits.length) { return; }
 
+            if (deck._traitTimer) {
+                window.clearInterval(deck._traitTimer);
+                deck._traitTimer = null;
+            }
+
             value.textContent = traits[0];
-            var index = 0;
+            deck._traitIndex = 0;
 
             function advance() {
-                index = (index + 1) % traits.length;
+                var activeTraits = deck._traitList || traits;
+                if (!activeTraits || !activeTraits.length) { return; }
+                deck._traitIndex = (deck._traitIndex + 1) % activeTraits.length;
                 var card = deck.querySelector('.ab-trait__card');
                 if (!card) { return; }
                 card.classList.add('is-swapping');
                 window.setTimeout(function () {
-                    value.textContent = traits[index];
+                    value.textContent = activeTraits[deck._traitIndex];
                     card.classList.remove('is-swapping');
                 }, 260);
             }
 
-            var timer = window.setInterval(advance, 2600);
+            deck._traitList = traits;
+            deck._traitTimer = window.setInterval(advance, 2600);
             deck.setAttribute('tabindex', '0');
             deck.setAttribute('role', 'button');
             deck.setAttribute('aria-label', 'Cycle personal trait');
-            deck.addEventListener('click', function () {
-                window.clearInterval(timer);
-                advance();
-                timer = window.setInterval(advance, 2600);
-            });
-            deck.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    window.clearInterval(timer);
+
+            if (!deck.dataset.traitBound) {
+                deck.dataset.traitBound = 'true';
+                deck.addEventListener('click', function () {
+                    if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
                     advance();
-                    timer = window.setInterval(advance, 2600);
-                }
-            });
+                    deck._traitTimer = window.setInterval(advance, 2600);
+                });
+                deck.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
+                        advance();
+                        deck._traitTimer = window.setInterval(advance, 2600);
+                    }
+                });
+            }
         }
 
         if (window.SiteContent && window.SiteContent.ready) {
@@ -349,4 +389,6 @@
     } else {
         init();
     }
+
+    document.addEventListener('portfolio:data-updated', init);
 })();

@@ -85,17 +85,26 @@
         return resolve(path, pageKey ? data[pageKey] : data);
     }
 
-    function applyBindings(el, scope) {
+    function applyBindings(el, scope, isRefresh) {
         /* work-gallery.js rebuilds this heading into per-character spans for its
            typing animation; overwriting it afterwards would destroy that. */
-        if (el.hasAttribute('data-bind-ignore') || (el.hasAttribute('data-work-typewriter') && el.dataset.typewriterBuilt === 'true')) {
+        if (el.hasAttribute('data-bind-ignore') || (!isRefresh && el.hasAttribute('data-work-typewriter') && el.dataset.typewriterBuilt === 'true')) {
             return;
         }
 
         var text = el.getAttribute('data-bind');
         if (text) {
             var value = resolve(text, scope);
-            if (value !== undefined && value !== null) { el.textContent = value; }
+            if (value !== undefined && value !== null) {
+                el.textContent = value;
+                if (isRefresh && el.hasAttribute('data-typewriter')) {
+                    el.dataset.typewriter = String(value);
+                }
+                if (isRefresh && el.hasAttribute('data-work-typewriter')) {
+                    el.dataset.workTypewriter = String(value);
+                    delete el.dataset.typewriterBuilt;
+                }
+            }
         }
 
         ['src', 'alt', 'href', 'class', 'title', 'placeholder'].forEach(function (attr) {
@@ -108,7 +117,7 @@
         });
     }
 
-    function renderList(container, scope) {
+    function renderList(container, scope, isRefresh) {
         var items = resolve(container.getAttribute('data-list'), scope);
         if (!Array.isArray(items)) { return; }
 
@@ -121,7 +130,7 @@
             if (template) {
                 var host = document.createElement('div');
                 host.appendChild(template.content.cloneNode(true));
-                bindWithin(host, item);
+                bindWithin(host, item, isRefresh);
                 return host.innerHTML;
             }
             if (item !== null && typeof item === 'object') {
@@ -131,15 +140,15 @@
         }).join('');
     }
 
-    function bindWithin(root, scope) {
+    function bindWithin(root, scope, isRefresh) {
         var nodes = [root].concat(Array.prototype.slice.call(root.querySelectorAll('*')));
 
         /* Lists first: they inject the children the bindings then fill. */
         nodes.forEach(function (el) {
-            if (el.hasAttribute && el.hasAttribute('data-list')) { renderList(el, scope); }
+            if (el.hasAttribute && el.hasAttribute('data-list')) { renderList(el, scope, isRefresh); }
         });
         nodes.forEach(function (el) {
-            if (el.hasAttribute) { applyBindings(el, scope); }
+            if (el.hasAttribute) { applyBindings(el, scope, isRefresh); }
         });
     }
 
@@ -164,9 +173,8 @@
         }
     }
 
-    var ready = Promise.resolve();
-
-    if (pageKey) {
+    function loadPageContent(isRefresh) {
+        if (!pageKey) { return Promise.resolve(); }
         var pagesUrl = SITE_ROOT + 'data/pages.json';
         var fetchPromise = (window.PortfolioUtils && typeof window.PortfolioUtils.fetchJSON === 'function')
             ? window.PortfolioUtils.fetchJSON(pagesUrl)
@@ -175,10 +183,10 @@
                 return response.json();
             });
 
-        ready = fetchPromise
+        return fetchPromise
             .then(function (json) {
                 data = json;
-                bindWithin(document, undefined);
+                bindWithin(document, undefined, Boolean(isRefresh));
                 afterContent();
                 dispatchContentReady(pageKey, data);
                 return json;
@@ -190,5 +198,17 @@
             });
     }
 
-    window.SiteContent = { ready: ready, get: get, page: pageKey };
+    var ready = loadPageContent(false);
+
+    window.SiteContent = { ready: ready, get: get, page: pageKey, refresh: function () { return loadPageContent(true); } };
+
+    if (typeof document !== 'undefined') {
+        document.addEventListener('portfolio:data-updated', function (event) {
+            var ds = event && event.detail && event.detail.dataset;
+            if (!ds || ds === 'pages' || ds === 'all') {
+                ready = loadPageContent(true);
+                window.SiteContent.ready = ready;
+            }
+        });
+    }
 })();
