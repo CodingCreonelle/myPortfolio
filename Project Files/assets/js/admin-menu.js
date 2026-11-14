@@ -1579,6 +1579,33 @@
         '</div>';
     }
 
+    function socialEntryValue(entry) {
+        if (entry && typeof entry === 'object') {
+            return String(entry.value || entry.url || entry.href || '').trim();
+        }
+        return String(entry || '').trim();
+    }
+
+    function socialEntryIcon(entry, fallbackIcon) {
+        if (entry && typeof entry === 'object' && entry.icon) {
+            return String(entry.icon).trim();
+        }
+        return fallbackIcon || '';
+    }
+
+    function socialEntryAction(entry, fallbackAction) {
+        if (entry && typeof entry === 'object' && entry.action) {
+            var a = String(entry.action).trim().toLowerCase();
+            if (a === 'copy' || a === 'link') return a;
+        }
+        return fallbackAction || 'link';
+    }
+
+    function renderSocialActionOptions(selected) {
+        return '<option value="copy"' + (selected === 'copy' ? ' selected' : '') + '>copy</option>' +
+            '<option value="link"' + (selected === 'link' ? ' selected' : '') + '>link</option>';
+    }
+
     function renderPagesSocialsPanel() {
         var socials = state.data.socials || {};
         var pages = state.data.pages || {};
@@ -1598,9 +1625,15 @@
         var bioArr = Array.isArray(aboutProfile.bio) ? aboutProfile.bio : [];
         var customSocialKeys = getCustomSocialKeys(socials);
         var customSocialRows = customSocialKeys.map(function (key, idx) {
+            var entry = socials[key];
+            var val = socialEntryValue(entry);
+            var iconPath = socialEntryIcon(entry, '');
+            var actionVal = socialEntryAction(entry, /^https?:\/\//i.test(val) ? 'link' : 'copy');
             return '<div class="admin-row-group admin-social-custom-row" data-social-custom-row="' + idx + '">' +
                 '<input name="customSocialKey_' + idx + '" value="' + esc(key) + '" placeholder="Platform (e.g. X / Twitter, YouTube)">' +
-                '<input name="customSocialValue_' + idx + '" value="' + esc(socials[key] || '') + '" placeholder="URL or handle">' +
+                '<input name="customSocialValue_' + idx + '" value="' + esc(val) + '" placeholder="URL or handle">' +
+                '<input name="customSocialIcon_' + idx + '" value="' + esc(iconPath) + '" placeholder="assets/icons/contacts/..."> ' +
+                '<select name="customSocialAction_' + idx + '" aria-label="Action for ' + esc(key) + '">' + renderSocialActionOptions(actionVal) + '</select>' +
                 '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-social-channel" data-social-key="' + esc(key) + '" aria-label="Remove social channel ' + esc(key) + '">\u00d7</button>' +
             '</div>';
         }).join('');
@@ -1612,10 +1645,18 @@
                     '<button type="button" class="admin-btn admin-btn--primary" data-admin-action="add-social-channel">+ Add Social</button>' +
                 '</div>' +
                 '<div class="admin-form__grid">' +
-                    '<label class="admin-field"><span>Email</span><input name="email" value="' + esc(socials.email || '') + '"></label>' +
-                    '<label class="admin-field"><span>GitHub URL</span><input name="github" value="' + esc(socials.github || '') + '"></label>' +
-                    '<label class="admin-field"><span>LinkedIn URL</span><input name="linkedin" value="' + esc(socials.linkedin || '') + '"></label>' +
-                    '<label class="admin-field"><span>Discord Handle</span><input name="discord" value="' + esc(socials.discord || '') + '"></label>' +
+                    '<label class="admin-field"><span>Email</span><input name="email" value="' + esc(socialEntryValue(socials.email)) + '"></label>' +
+                    '<label class="admin-field"><span>Email SVG Icon</span><input name="emailIcon" value="' + esc(socialEntryIcon(socials.email, 'assets/icons/contacts/email.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>Email Action</span><select name="emailAction">' + renderSocialActionOptions(socialEntryAction(socials.email, 'copy')) + '</select></label>' +
+                    '<label class="admin-field"><span>GitHub URL</span><input name="github" value="' + esc(socialEntryValue(socials.github)) + '"></label>' +
+                    '<label class="admin-field"><span>GitHub SVG Icon</span><input name="githubIcon" value="' + esc(socialEntryIcon(socials.github, 'assets/icons/contacts/github.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>GitHub Action</span><select name="githubAction">' + renderSocialActionOptions(socialEntryAction(socials.github, 'link')) + '</select></label>' +
+                    '<label class="admin-field"><span>LinkedIn URL</span><input name="linkedin" value="' + esc(socialEntryValue(socials.linkedin)) + '"></label>' +
+                    '<label class="admin-field"><span>LinkedIn SVG Icon</span><input name="linkedinIcon" value="' + esc(socialEntryIcon(socials.linkedin, 'assets/icons/contacts/linkedin.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>LinkedIn Action</span><select name="linkedinAction">' + renderSocialActionOptions(socialEntryAction(socials.linkedin, 'link')) + '</select></label>' +
+                    '<label class="admin-field"><span>Discord Handle</span><input name="discord" value="' + esc(socialEntryValue(socials.discord)) + '"></label>' +
+                    '<label class="admin-field"><span>Discord SVG Icon</span><input name="discordIcon" value="' + esc(socialEntryIcon(socials.discord, 'assets/icons/contacts/discord.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>Discord Action</span><select name="discordAction">' + renderSocialActionOptions(socialEntryAction(socials.discord, 'copy')) + '</select></label>' +
                 '</div>' +
                 '<div class="admin-subtoolbar"><span>Additional Social Channels (' + customSocialKeys.length + ')</span></div>' +
                 '<div class="admin-rows" data-admin-custom-socials>' + (customSocialRows || '<p class="admin-empty">No additional social channels yet. Click + Add Social to add more.</p>') + '</div>' +
@@ -1666,11 +1707,24 @@
     function collectSocialsFromForm(form) {
         if (!form) return clone(state.data.socials || {});
         var fd = new FormData(form);
+        function buildEntry(val, iconPath, actionVal, defaultAction) {
+            var cleanVal = String(val || '').trim();
+            var cleanIcon = String(iconPath || '').trim();
+            var cleanAction = String(actionVal || defaultAction || '').trim().toLowerCase();
+            if (cleanAction !== 'copy' && cleanAction !== 'link') {
+                cleanAction = defaultAction || 'link';
+            }
+            return {
+                value: cleanVal,
+                icon: cleanIcon,
+                action: cleanAction
+            };
+        }
         var nextSocials = {
-            email: String(fd.get('email') || '').trim(),
-            github: String(fd.get('github') || '').trim(),
-            linkedin: String(fd.get('linkedin') || '').trim(),
-            discord: String(fd.get('discord') || '').trim()
+            email: buildEntry(fd.get('email'), fd.get('emailIcon'), fd.get('emailAction'), 'copy'),
+            github: buildEntry(fd.get('github'), fd.get('githubIcon'), fd.get('githubAction'), 'link'),
+            linkedin: buildEntry(fd.get('linkedin'), fd.get('linkedinIcon'), fd.get('linkedinAction'), 'link'),
+            discord: buildEntry(fd.get('discord'), fd.get('discordIcon'), fd.get('discordAction'), 'copy')
         };
         var keyInputs = form.querySelectorAll('input[name^="customSocialKey_"]');
         for (var i = 0; i < keyInputs.length; i++) {
@@ -1679,8 +1733,17 @@
             var customKey = String(keyInputs[i].value || '').trim();
             var valInput = form.querySelector('input[name="customSocialValue_' + rowIdx + '"]');
             var customVal = String(valInput ? valInput.value : (fd.get('customSocialValue_' + rowIdx) || '')).trim();
+            var iconInput = form.querySelector('input[name="customSocialIcon_' + rowIdx + '"]');
+            var customIcon = String(iconInput ? iconInput.value : (fd.get('customSocialIcon_' + rowIdx) || '')).trim();
+            var actionSelect = form.querySelector('select[name="customSocialAction_' + rowIdx + '"]');
+            var customAction = String(actionSelect ? actionSelect.value : (fd.get('customSocialAction_' + rowIdx) || '')).trim();
             if (customKey && CORE_SOCIAL_KEYS.indexOf(customKey.toLowerCase()) === -1) {
-                nextSocials[customKey] = customVal;
+                nextSocials[customKey] = buildEntry(
+                    customVal,
+                    customIcon,
+                    customAction,
+                    /^https?:\/\//i.test(customVal) ? 'link' : 'copy'
+                );
             }
         }
         return nextSocials;

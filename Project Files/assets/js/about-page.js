@@ -93,17 +93,41 @@
         return (month >= 1 && month <= 12) ? months[month - 1] + ' ' + parts[0] : String(value);
     }
 
+    var CONTACT_ICON_FILES = {
+        email: 'email.svg',
+        mail: 'email.svg',
+        github: 'github.svg',
+        linkedin: 'linkedin.svg',
+        discord: 'discord.svg'
+    };
+
     function icon(name) {
         var paths = {
-            mail: '<path d="M3 6.5h18v11H3z"/><path d="M3 7l9 6 9-6"/>',
-            github: '<path d="M9 19c-4 1.2-4-2.2-6-2.8m12 5.3v-3.6a3 3 0 0 0-.9-2.4c3-.3 5-1.9 5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.3s-1.4-.4-4.6 1.7a11 11 0 0 0-6 0C3.9 2.6 2.5 3 2.5 3a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 1 9.5c0 4.1 2 5.7 5 6a3 3 0 0 0-.9 2.3V21"/>',
-            linkedin: '<path d="M5 9v10M5 5.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19"/><path d="M10 9v10"/>',
-            discord: '<path d="M8.5 17.5S7 19 5.5 19.5c0 0-2.5-3.5-2.5-8a13 13 0 0 1 4-3l1 1.5a11 11 0 0 1 4 0L13 8.5a13 13 0 0 1 4 3c0 4.5-2.5 8-2.5 8-1.5-.5-3-2-3-2"/><path d="M9.5 13v.01M14.5 13v.01"/>',
             ext: '<path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
             copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
             check: '<path d="M20 6 9 17l-5-5"/>'
         };
         return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (paths[name] || '') + '</svg>';
+    }
+
+    function resolveContactIconSrc(iconValue) {
+        var raw = String(iconValue || '').trim();
+        if (!raw) { return ''; }
+        if (/^(?:https?:\/\/|data:|\/)/i.test(raw)) { return raw; }
+        if (raw.indexOf('/') !== -1) { return SITE_ROOT + raw.replace(/^\/+/, ''); }
+        if (/\.(?:svg|png|webp|jpe?g)$/i.test(raw)) {
+            return SITE_ROOT + 'assets/icons/contacts/' + raw;
+        }
+        var file = CONTACT_ICON_FILES[raw.toLowerCase()];
+        return file ? (SITE_ROOT + 'assets/icons/contacts/' + file) : '';
+    }
+
+    function contactIcon(iconValue, fallbackKey) {
+        var src = resolveContactIconSrc(iconValue) || resolveContactIconSrc(fallbackKey);
+        if (!src) { return icon('ext'); }
+        var isEmail = /(?:^|\/)email\.svg(?:$|\?)/i.test(src) || fallbackKey === 'email' || fallbackKey === 'mail';
+        var keyAttr = isEmail ? 'email' : String(fallbackKey || 'custom');
+        return '<img class="ab-contact__svg" src="' + esc(src) + '" data-contact-icon="' + esc(keyAttr) + '" alt="" width="22" height="22" loading="lazy" decoding="async">';
     }
 
     /* -------------------------------------------------------- capabilities */
@@ -323,33 +347,58 @@
         });
     }
 
+    function normalizeSocialEntry(key, rawEntry, defaults) {
+        var isObj = rawEntry && typeof rawEntry === 'object';
+        var rawVal = isObj
+            ? String(rawEntry.value || rawEntry.url || rawEntry.href || '').trim()
+            : String(rawEntry || '').trim();
+        if (!rawVal) { return null; }
+
+        var isHttp = /^https?:\/\//i.test(rawVal);
+        var isMailto = /^mailto:/i.test(rawVal);
+        var cleanVal = isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal;
+        var defaultHref = (defaults && defaults.isEmail)
+            ? ('mailto:' + cleanVal)
+            : ((isHttp || isMailto) ? rawVal : null);
+        var href = (isObj && rawEntry.href) ? String(rawEntry.href).trim() : defaultHref;
+        var defaultAction = (defaults && defaults.action) || (isHttp ? 'link' : 'copy');
+        var action = (isObj && rawEntry.action) ? String(rawEntry.action).trim().toLowerCase() : defaultAction;
+        var isCopy = action === 'copy';
+        var isLink = action === 'link';
+
+        return {
+            key: String(key || '').toLowerCase(),
+            label: (isObj && rawEntry.label) ? String(rawEntry.label).trim() : ((defaults && defaults.label) || key),
+            value: cleanVal,
+            href: href,
+            icon: (isObj && rawEntry.icon) ? String(rawEntry.icon).trim() : ((defaults && defaults.icon) || key),
+            external: Boolean(href) && (isLink || (!isCopy && isHttp)),
+            copyable: isCopy || (!isLink && !href)
+        };
+    }
+
     function renderContacts(socials) {
         var list = document.getElementById('ab-contact-cards');
         if (!list || !socials) { return; }
 
-        var entries = [
-            { key: 'email', label: 'Email', value: socials.email, href: 'mailto:' + socials.email, icon: 'mail', copyable: true },
-            { key: 'github', label: 'GitHub', value: socials.github, href: socials.github, icon: 'github', external: true },
-            { key: 'linkedin', label: 'LinkedIn', value: socials.linkedin, href: socials.linkedin, icon: 'linkedin', external: true },
-            { key: 'discord', label: 'Discord', value: socials.discord, href: null, icon: 'discord', copyable: true }
-        ].filter(function (entry) { return entry.value; });
-
+        var coreDefaults = {
+            email: { label: 'Email', icon: 'email', action: 'copy', isEmail: true },
+            github: { label: 'GitHub', icon: 'github', action: 'link' },
+            linkedin: { label: 'LinkedIn', icon: 'linkedin', action: 'link' },
+            discord: { label: 'Discord', icon: 'discord', action: 'copy' }
+        };
         var coreKeys = ['email', 'github', 'linkedin', 'discord'];
+        var entries = [];
+
+        coreKeys.forEach(function (key) {
+            var item = normalizeSocialEntry(key, socials[key], coreDefaults[key]);
+            if (item) { entries.push(item); }
+        });
+
         Object.keys(socials).forEach(function (key) {
             if (coreKeys.indexOf(key) !== -1) { return; }
-            var rawVal = String(socials[key] || '').trim();
-            if (!rawVal) { return; }
-            var isHttp = /^https?:\/\//i.test(rawVal);
-            var isMailto = /^mailto:/i.test(rawVal);
-            entries.push({
-                key: key.toLowerCase(),
-                label: key,
-                value: isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal,
-                href: (isHttp || isMailto) ? rawVal : null,
-                icon: 'ext',
-                external: isHttp,
-                copyable: !isHttp || isMailto
-            });
+            var item = normalizeSocialEntry(key, socials[key], null);
+            if (item) { entries.push(item); }
         });
 
         list.innerHTML = entries.map(function (entry, index) {
@@ -377,14 +426,14 @@
                         '</button>' +
                         '<span class="ab-contact__tip" role="status"></span>' +
                     '</span>';
-            } else if (entry.external) {
+            } else if (entry.external || entry.href) {
                 trailing = '<span class="ab-contact__ext" aria-hidden="true">' + icon('ext') + '</span>';
             }
 
             return '' +
                 '<li class="ab-contact__item">' +
                     '<article class="' + cardClass + '" style="--contact-accent:' + accent + '">' +
-                        '<span class="ab-contact__icon" aria-hidden="true">' + icon(entry.icon) + '</span>' +
+                        '<span class="ab-contact__icon" aria-hidden="true">' + contactIcon(entry.icon, entry.key) + '</span>' +
                         '<span class="ab-contact__text">' +
                             '<span class="ab-contact__meta">' +
                                 '<span class="ab-contact__label">' + esc(entry.label) + '</span>' +

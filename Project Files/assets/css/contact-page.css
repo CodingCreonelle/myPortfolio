@@ -208,14 +208,31 @@
     border: 1px solid rgba(59, 130, 246, 0.28);
     color: var(--primary);
     flex-shrink: 0;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .contact-card:hover .contact-card__icon,
 .contact-card:focus-within .contact-card__icon {
-    background: var(--primary);
+    background: rgba(37, 99, 235, 0.22);
     border-color: var(--primary);
-    color: #ffffff;
+    transform: scale(1.04);
+}
+
+.contact-card__icon img,
+.contact-card__svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 5px;
+}
+
+.contact-card__icon img[data-contact-icon="email"] {
+    filter: brightness(0) invert(1);
+}
+
+:root[data-theme="light"] .contact-card__icon img[data-contact-icon="email"] {
+    filter: none;
 }
 
 .contact-card__icon svg {

@@ -569,13 +569,37 @@ function renderProjectList(projects, resetFilters, experience) {
 }
 
 const CONTACT_ICONS = {
-  mail: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6.5h18v11H3z"></path><path d="M3 7l9 6 9-6"></path></svg>',
-  github: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 19c-4 1.2-4-2.2-6-2.8m12 5.3v-3.6a3 3 0 0 0-.9-2.4c3-.3 5-1.9 5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.3s-1.4-.4-4.6 1.7a11 11 0 0 0-6 0C3.9 2.6 2.5 3 2.5 3a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 1 9.5c0 4.1 2 5.7 5 6a3 3 0 0 0-.9 2.3V21"></path></svg>',
-  linkedin: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 9v10M5 5.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19"></path><path d="M10 9v10"></path></svg>',
-  discord: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.5 17.5S7 19 5.5 19.5c0 0-2.5-3.5-2.5-8a13 13 0 0 1 4-3l1 1.5a11 11 0 0 1 4 0L13 8.5a13 13 0 0 1 4 3c0 4.5-2.5 8-2.5 8-1.5-.5-3-2-3-2"></path><path d="M9.5 13v.01M14.5 13v.01"></path></svg>',
   copy: '<svg class="contact-copy-icon contact-copy-icon--copy" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
   check: '<svg class="contact-copy-icon contact-copy-icon--check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6L9 17l-5-5"></path></svg>',
 };
+
+const CONTACT_ICON_FILES = {
+  email: 'email.svg',
+  mail: 'email.svg',
+  github: 'github.svg',
+  linkedin: 'linkedin.svg',
+  discord: 'discord.svg',
+};
+
+function resolveContactIconSrc(iconValue) {
+  const raw = String(iconValue || '').trim();
+  if (!raw) return '';
+  if (/^(?:https?:\/\/|data:|\/)/i.test(raw)) return raw;
+  if (raw.includes('/')) return `${SITE_ROOT}${raw.replace(/^\/+/, '')}`;
+  if (/\.(?:svg|png|webp|jpe?g)$/i.test(raw)) {
+    return `${SITE_ROOT}assets/icons/contacts/${raw}`;
+  }
+  const file = CONTACT_ICON_FILES[raw.toLowerCase()];
+  return file ? `${SITE_ROOT}assets/icons/contacts/${file}` : '';
+}
+
+function buildContactIconMarkup(iconValue, fallbackKey) {
+  const src = resolveContactIconSrc(iconValue) || resolveContactIconSrc(fallbackKey);
+  if (!src) return EXTERNAL_ICON;
+  const isEmail = /(?:^|\/)email\.svg(?:$|\?)/i.test(src) || fallbackKey === 'email' || fallbackKey === 'mail';
+  const normalizedKey = isEmail ? 'email' : String(fallbackKey || 'custom');
+  return `<img class="contact-card__svg" src="${esc(src)}" data-contact-icon="${esc(normalizedKey)}" alt="" width="24" height="24" loading="lazy" decoding="async">`;
+}
 
 let contactCopyCommandsBound = false;
 
@@ -634,72 +658,91 @@ function copyTextToClipboard(text) {
   return Promise.resolve(false);
 }
 
+function normalizeContactSocialEntry(key, rawEntry, defaults) {
+  const isObj = rawEntry && typeof rawEntry === 'object';
+  const rawVal = isObj
+    ? String(rawEntry.value || rawEntry.url || rawEntry.href || '').trim()
+    : String(rawEntry || '').trim();
+  if (!rawVal) return null;
+
+  const isHttp = /^https?:\/\//i.test(rawVal);
+  const isMailto = /^mailto:/i.test(rawVal);
+  const cleanVal = isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal;
+  const displayValue = isHttp
+    ? rawVal.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')
+    : cleanVal;
+  const defaultHref = (defaults && defaults.isEmail)
+    ? `mailto:${cleanVal}`
+    : ((isHttp || isMailto) ? rawVal : null);
+  const href = (isObj && rawEntry.href) ? String(rawEntry.href).trim() : defaultHref;
+  const defaultAction = (defaults && defaults.action) || (isHttp ? 'link' : 'copy');
+  const action = (isObj && rawEntry.action) ? String(rawEntry.action).trim().toLowerCase() : defaultAction;
+  const label = (isObj && rawEntry.label) ? String(rawEntry.label).trim() : ((defaults && defaults.label) || key);
+  const isCopy = action === 'copy';
+  const isLink = action === 'link';
+
+  return {
+    key: String(key || '').toLowerCase(),
+    label,
+    value: rawVal,
+    displayValue,
+    href,
+    icon: (isObj && rawEntry.icon) ? String(rawEntry.icon).trim() : ((defaults && defaults.icon) || key),
+    hint: (isObj && rawEntry.hint)
+      ? String(rawEntry.hint).trim()
+      : ((defaults && defaults.hint) || (isHttp ? 'External profile & social channel' : 'Social & contact channel')),
+    copyValue: (isCopy || (!isLink && !href)) ? cleanVal : null,
+    copyLabel: (defaults && defaults.copyLabel) || `Copy ${label}`,
+    external: Boolean(href) && (isLink || (!isCopy && isHttp)),
+  };
+}
+
 function buildContactCardItems(socials) {
-  const items = [
-    {
+  const coreDefaults = {
+    email: {
       label: 'Email',
-      value: socials.email,
-      displayValue: socials.email,
-      href: socials.email ? `mailto:${socials.email}` : null,
-      icon: 'mail',
+      icon: 'email',
+      action: 'copy',
       hint: 'Direct inbox for project inquiries & roles',
-      copyValue: socials.email,
       copyLabel: 'Copy email',
+      isEmail: true,
     },
-    {
+    github: {
       label: 'GitHub',
-      value: socials.github,
-      displayValue: String(socials.github || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''),
-      href: socials.github,
       icon: 'github',
+      action: 'link',
       hint: 'Source code, repositories & commit history',
-      external: true,
     },
-    {
+    linkedin: {
       label: 'LinkedIn',
-      value: socials.linkedin,
-      displayValue: String(socials.linkedin || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''),
-      href: socials.linkedin,
       icon: 'linkedin',
+      action: 'link',
       hint: 'Professional background & network',
-      external: true,
     },
-    {
+    discord: {
       label: 'Discord',
-      value: socials.discord,
-      displayValue: socials.discord,
-      href: null,
       icon: 'discord',
+      action: 'copy',
       hint: 'Quick developer chat & community handle',
-      copyValue: socials.discord,
       copyLabel: 'Copy handle',
     },
-  ];
+  };
 
   const coreKeys = ['email', 'github', 'linkedin', 'discord'];
-  Object.keys(socials).forEach((key) => {
-    if (coreKeys.indexOf(key) !== -1) return;
-    const rawVal = String(socials[key] || '').trim();
-    if (!rawVal) return;
-    const isHttp = /^https?:\/\//i.test(rawVal);
-    const isMailto = /^mailto:/i.test(rawVal);
-    const displayValue = isHttp
-      ? rawVal.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')
-      : (isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal);
-    items.push({
-      label: key,
-      value: rawVal,
-      displayValue,
-      href: (isHttp || isMailto) ? rawVal : null,
-      icon: 'ext',
-      hint: isHttp ? 'External profile & social channel' : 'Social & contact channel',
-      copyValue: (isHttp || isMailto) ? null : rawVal,
-      copyLabel: `Copy ${key}`,
-      external: isHttp,
-    });
+  const items = [];
+
+  coreKeys.forEach((key) => {
+    const item = normalizeContactSocialEntry(key, socials[key], coreDefaults[key]);
+    if (item) items.push(item);
   });
 
-  return items.filter((item) => Boolean(item.value));
+  Object.keys(socials).forEach((key) => {
+    if (coreKeys.indexOf(key) !== -1) return;
+    const item = normalizeContactSocialEntry(key, socials[key], null);
+    if (item) items.push(item);
+  });
+
+  return items;
 }
 
 function buildContactCardMarkup(item, validIndex) {
@@ -734,7 +777,7 @@ function buildContactCardMarkup(item, validIndex) {
 
   return `
       <article class="contact-card card-entrance" style="animation-delay: ${validIndex * 100}ms;">
-        <span class="contact-card__icon" aria-hidden="true">${CONTACT_ICONS[item.icon] || EXTERNAL_ICON}</span>
+        <span class="contact-card__icon" aria-hidden="true">${buildContactIconMarkup(item.icon, item.key)}</span>
         <div class="contact-card__body">
           <div class="contact-card__top">
             <span class="contact-card__index" aria-hidden="true">${indexStr}</span>

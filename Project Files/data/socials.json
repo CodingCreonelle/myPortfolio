@@ -1,6 +1,22 @@
 {
-  "email": "charlesdavidlopez741@gmail.com",
-  "github": "https://github.com/CodingCreonelle",
-  "linkedin": "https://linkedin.com/in/charles-david-lopez",
-  "discord": "creonist."
+  "email": {
+    "value": "charlesdavidlopez741@gmail.com",
+    "icon": "assets/icons/contacts/email.svg",
+    "action": "copy"
+  },
+  "github": {
+    "value": "https://github.com/CodingCreonelle",
+    "icon": "assets/icons/contacts/github.svg",
+    "action": "link"
+  },
+  "linkedin": {
+    "value": "https://linkedin.com/in/charles-david-lopez",
+    "icon": "assets/icons/contacts/linkedin.svg",
+    "action": "link"
+  },
+  "discord": {
+    "value": "creonist.",
+    "icon": "assets/icons/contacts/discord.svg",
+    "action": "copy"
+  }
 }
