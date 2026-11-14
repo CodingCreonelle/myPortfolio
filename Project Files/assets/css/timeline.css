@@ -98,6 +98,7 @@
     position: relative;
     flex: 0 0 auto;
     width: var(--entry-width);
+    cursor: pointer;
 
     /*
      * An ascent is a decrease in y, because screen y grows downward. --rise is 0
@@ -176,16 +177,6 @@
     background: var(--primary);
     opacity: 0.7;
     transform: translateY(-50%) scale(var(--orb-scale));
-    transition: transform var(--motion-orb) var(--ease-soft),
-                opacity var(--motion-orb) ease,
-                box-shadow var(--motion-orb) ease;
-}
-
-.timeline-entry {
-    cursor: pointer;
-}
-
-.timeline-entry__orb {
     transition: transform 0.25s var(--ease-out-expo), opacity 0.25s ease, box-shadow 0.25s ease;
 }
 

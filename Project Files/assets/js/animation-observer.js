@@ -8,7 +8,7 @@
 
   // Configuration
   const CONFIG = {
-    rootMargin: '0px 0px -10% 0px', // Trigger as soon as element enters viewport
+    rootMargin: '0px 0px 100% 0px', // Trigger as soon as element enters viewport
     threshold: 0.02,
   };
 
@@ -51,12 +51,6 @@
     '.animate-stagger-reverse > *',
     '.list-animate > li',
     '.section-header-animate > *',
-    '.hero-animate-title',
-    '.hero-animate-subtitle',
-    '.hero-animate-description',
-    '.hero-animate-actions',
-    '.hero-animate-visual',
-    '.hero-animate-avatar',
   ].join(', ');
 
   // Per-section replay state (status: 'idle' | 'shown' | 'exiting').
@@ -529,6 +523,481 @@
       replaySections.forEach(section => replayObserver.observe(section));
     }
     evaluateReplaySections();
+    if (typeof refreshPinnedScenes === 'function') {
+      refreshPinnedScenes();
+    }
+  }
+
+  /* ==========================================================================
+     SCROLL PROGRESS BAR, SECTION RAIL & PINNED VIEWS (Home & About Pages)
+     ========================================================================== */
+  const PIN_SCENE_MEDIA = '(hover: hover) and (pointer: fine) and (min-width: 960px) and (prefers-reduced-motion: no-preference)';
+  const pinnedSections = [];
+  let scrollProgressBarEl = null;
+  let sectionRailEl = null;
+  let sceneScrollFrame = 0;
+  let sceneListenersBound = false;
+  let sceneAriaTimer = 0;
+  const supportsNativeScrollTimeline = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline', 'scroll()');
+  const supportsScrollTargetGroup = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('scroll-target-group', 'auto');
+  const supportsScrollStateQuery = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('container-type', 'scroll-state');
+
+  function isPinnedSceneMode() {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(PIN_SCENE_MEDIA).matches;
+  }
+
+  function ensureScrollProgressBar() {
+    if (scrollProgressBarEl || typeof document === 'undefined' || !document.body) return scrollProgressBarEl;
+    let bar = document.getElementById('scroll-progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'scroll-progress-bar';
+      bar.className = 'scroll-progress-bar';
+      bar.setAttribute('aria-hidden', 'true');
+      bar.innerHTML = '<span class="scroll-progress-bar__fill"></span>';
+      document.body.prepend(bar);
+    }
+    scrollProgressBarEl = bar;
+    return bar;
+  }
+
+  function buildSectionRail(sections) {
+    if (typeof document === 'undefined' || !document.body || sections.length === 0) return null;
+    if (sectionRailEl) sectionRailEl.remove();
+
+    const nav = document.createElement('nav');
+    nav.className = 'section-progress-rail';
+    nav.setAttribute('aria-label', 'Page section progress');
+
+    const itemsHtml = sections.map((section, idx) => {
+      const id = section.id || `section-${idx + 1}`;
+      if (!section.id) section.id = id;
+      const label = section.getAttribute('data-section-label') || `Section ${idx + 1}`;
+      return `
+        <li class="section-progress-rail__item">
+          <a class="section-progress-rail__link" href="#${id}" data-rail-target="${id}" aria-label="${label}" title="${label}" aria-current="${idx === 0 ? 'true' : 'false'}">
+            <span class="section-progress-rail__orb" aria-hidden="true">
+              <span class="section-progress-rail__orb-halo"></span>
+              <span class="section-progress-rail__orb-core"></span>
+            </span>
+          </a>
+        </li>`;
+    }).join('');
+
+    nav.innerHTML = `
+      <div class="section-progress-rail__track" aria-hidden="true">
+        <span class="section-progress-rail__track-fill"></span>
+      </div>
+      <ol class="section-progress-rail__list">${itemsHtml}</ol>`;
+
+    nav.addEventListener('click', (event) => {
+      const link = event.target.closest('.section-progress-rail__link');
+      if (!link) return;
+      const targetId = link.getAttribute('data-rail-target');
+      const targetEl = targetId ? document.getElementById(targetId) : null;
+      if (!targetEl) return;
+      event.preventDefault();
+      targetEl.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+      try {
+        targetEl.focus({ preventScroll: true });
+      } catch (_e) {}
+    });
+
+    document.body.appendChild(nav);
+    sectionRailEl = nav;
+    return nav;
+  }
+
+  function wrapPinnedSection(section) {
+    if (section.dataset.pinnedInitialized === 'true') return;
+    section.dataset.pinnedInitialized = 'true';
+    section.classList.add('is-pinned-ready');
+
+    if (!section.hasAttribute('tabindex')) {
+      section.setAttribute('tabindex', '-1');
+    }
+
+    const existingTimelineRunway = section.querySelector('.timeline-runway');
+    const existingTimelinePin = existingTimelineRunway && existingTimelineRunway.querySelector('.timeline-pin');
+    if (existingTimelineRunway && existingTimelinePin) {
+      return;
+    }
+
+    const runway = document.createElement('div');
+    runway.className = 'pinned-section__runway';
+    const pin = document.createElement('div');
+    pin.className = 'pinned-section__pin';
+    const stage = document.createElement('div');
+    stage.className = 'pinned-section__stage';
+
+    while (section.firstChild) {
+      stage.appendChild(section.firstChild);
+    }
+
+    pin.appendChild(stage);
+    runway.appendChild(pin);
+    section.appendChild(runway);
+  }
+
+  const trainingsDeckState = new WeakMap();
+
+  function getTrainingsState(section) {
+    let state = trainingsDeckState.get(section);
+    if (!state) {
+      state = { activeIdx: 0, lastScrollIdx: -1, itemCount: 0, controlsEl: null };
+      trainingsDeckState.set(section, state);
+    }
+    return state;
+  }
+
+  function setTrainingsActiveIndex(section, index) {
+    const list = section.querySelector('#ab-trainings-list');
+    if (!list) return;
+    const items = Array.from(list.children);
+    const total = items.length;
+    if (total === 0) return;
+
+    const clamped = Math.max(0, Math.min(total - 1, index));
+    const state = getTrainingsState(section);
+    state.activeIdx = clamped;
+
+    items.forEach((item, i) => {
+      const isActive = i === clamped;
+      item.classList.toggle('is-train-active', isActive);
+      item.setAttribute('aria-hidden', isPinnedSceneMode() && !isActive ? 'true' : 'false');
+    });
+
+    const formatIndex = (n) => (
+      typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function'
+        ? window.PortfolioUtils.pad2(n)
+        : String(n).padStart(2, '0')
+    );
+
+    if (state.controlsEl) {
+      const counter = state.controlsEl.querySelector('.ab-trainings__counter');
+      if (counter) {
+        counter.textContent = `${formatIndex(clamped + 1)} / ${formatIndex(total)}`;
+      }
+      const prevBtn = state.controlsEl.querySelector('[data-train-dir="-1"]');
+      const nextBtn = state.controlsEl.querySelector('[data-train-dir="1"]');
+      if (prevBtn) prevBtn.disabled = clamped <= 0;
+      if (nextBtn) nextBtn.disabled = clamped >= total - 1;
+      state.controlsEl.querySelectorAll('.ab-trainings__dot').forEach((dot, i) => {
+        const isCurrent = i === clamped;
+        dot.classList.toggle('is-active', isCurrent);
+        dot.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+      });
+    }
+  }
+
+  function syncTrainingsDeck(section) {
+    if (!section || section.id !== 'trainings') return;
+    const list = section.querySelector('#ab-trainings-list');
+    if (!list) return;
+
+    const items = Array.from(list.children);
+    const pinned = isPinnedSceneMode();
+    const state = getTrainingsState(section);
+
+    if (!pinned || items.length <= 1) {
+      list.classList.remove('ab-trainings__list--paged');
+      items.forEach((item) => {
+        item.classList.remove('is-train-active');
+        item.removeAttribute('aria-hidden');
+      });
+      if (state.controlsEl) {
+        state.controlsEl.hidden = true;
+      }
+      return;
+    }
+
+    list.classList.add('ab-trainings__list--paged');
+
+    if (!state.controlsEl || !section.contains(state.controlsEl) || state.itemCount !== items.length) {
+      if (state.controlsEl) state.controlsEl.remove();
+
+      const controls = document.createElement('div');
+      controls.className = 'ab-trainings__controls';
+      controls.setAttribute('aria-label', 'Training milestone navigation');
+      const dotsHtml = items.map((_, i) => (
+        `<button type="button" class="ab-trainings__dot" data-train-dot="${i}" role="tab" aria-label="Milestone ${i + 1}" aria-selected="false"></button>`
+      )).join('');
+
+      const formatIndex = (n) => (
+        typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function'
+          ? window.PortfolioUtils.pad2(n)
+          : String(n).padStart(2, '0')
+      );
+      controls.innerHTML = `
+        <button type="button" class="ab-trainings__ctrl-btn" data-train-dir="-1" aria-label="Previous milestone">&#8592;</button>
+        <div class="ab-trainings__dots" role="tablist" aria-label="Select milestone">${dotsHtml}</div>
+        <span class="ab-trainings__counter">01 / ${formatIndex(items.length)}</span>
+        <button type="button" class="ab-trainings__ctrl-btn" data-train-dir="1" aria-label="Next milestone">&#8594;</button>`;
+
+      controls.addEventListener('click', (event) => {
+        const dirBtn = event.target.closest('[data-train-dir]');
+        if (dirBtn) {
+          const dir = parseInt(dirBtn.getAttribute('data-train-dir'), 10) || 0;
+          setTrainingsActiveIndex(section, state.activeIdx + dir);
+          return;
+        }
+        const dotBtn = event.target.closest('[data-train-dot]');
+        if (dotBtn) {
+          const idx = parseInt(dotBtn.getAttribute('data-train-dot'), 10);
+          if (!isNaN(idx)) setTrainingsActiveIndex(section, idx);
+        }
+      });
+
+      list.insertAdjacentElement('afterend', controls);
+      state.controlsEl = controls;
+      state.itemCount = items.length;
+    }
+
+    state.controlsEl.hidden = false;
+    setTrainingsActiveIndex(section, Math.min(state.activeIdx, items.length - 1));
+  }
+
+  function measureSectionTravel(section) {
+    const id = section.id || '';
+    if (id === 'projects') {
+      const count = section.querySelectorAll('.work-card').length || 3;
+      return Math.min(540, Math.max(260, count * 110));
+    }
+    if (id === 'skills') {
+      const cardCount = section.querySelectorAll('.ab-skill-card').length || 3;
+      return Math.min(420, Math.max(220, cardCount * 75));
+    }
+    if (id === 'trainings') {
+      const stepCount = section.querySelectorAll('.ab-train').length || 3;
+      return Math.min(540, Math.max(260, stepCount * 80));
+    }
+    if (id === 'about') {
+      return 260;
+    }
+    return 180;
+  }
+
+  function sizePinnedRunways() {
+    const pinned = isPinnedSceneMode();
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+
+    pinnedSections.forEach((section) => {
+      if (section.querySelector('.timeline-runway')) return;
+      const runway = section.querySelector('.pinned-section__runway');
+      const pin = section.querySelector('.pinned-section__pin');
+      if (!runway || !pin) return;
+
+      if (section.id === 'trainings') {
+        syncTrainingsDeck(section);
+      }
+
+      if (!pinned) {
+        runway.style.height = '';
+        pin.style.removeProperty('--pin-top');
+        return;
+      }
+
+      runway.style.height = '';
+      const pinHeight = pin.offsetHeight || 0;
+      const travel = measureSectionTravel(section);
+      const navClearance = 84;
+      const bottomClearance = 36;
+      const availableHeight = Math.max(320, vh - navClearance - bottomClearance);
+      const centeredTop = Math.round(navClearance + (availableHeight - pinHeight) / 2);
+      const stickyTop = Math.max(navClearance, centeredTop);
+      pin.style.setProperty('--pin-top', `${stickyTop}px`);
+      runway.style.height = `${pinHeight + travel}px`;
+    });
+  }
+
+  function updateSectionInternalProgression(section, progress) {
+    const id = section.id || '';
+
+    if (id === 'projects' && window.WorkGallery && typeof window.WorkGallery.getCount === 'function') {
+      const total = window.WorkGallery.getCount();
+      if (total > 1 && progress > 0 && progress < 1) {
+        const targetIdx = Math.min(total - 1, Math.floor(progress * total));
+        if (window.WorkGallery.getActive() !== targetIdx) {
+          window.WorkGallery.goTo(targetIdx, false);
+        }
+      }
+      return;
+    }
+
+    if (id === 'skills') {
+      const cards = section.querySelectorAll('.ab-skill-card');
+      if (cards.length > 0) {
+        const activeIdx = progress > 0 && progress < 1
+          ? Math.min(cards.length - 1, Math.floor(progress * cards.length))
+          : -1;
+        cards.forEach((card, i) => card.classList.toggle('is-pin-focus', i === activeIdx));
+      }
+      return;
+    }
+
+    if (id === 'trainings') {
+      const items = section.querySelectorAll('.ab-train');
+      if (items.length > 1) {
+        const state = getTrainingsState(section);
+        const scrollIdx = progress >= 1
+          ? items.length - 1
+          : (progress <= 0 ? 0 : Math.min(items.length - 1, Math.floor(progress * items.length)));
+        if (scrollIdx !== state.lastScrollIdx) {
+          state.lastScrollIdx = scrollIdx;
+          setTrainingsActiveIndex(section, scrollIdx);
+        }
+      }
+      return;
+    }
+
+    if (id === 'about') {
+      const goals = section.querySelectorAll('.ab-profile__goals li');
+      if (goals.length > 0) {
+        const activeIdx = progress > 0 && progress < 1
+          ? Math.min(goals.length - 1, Math.floor(progress * goals.length))
+          : -1;
+        goals.forEach((goal, i) => goal.classList.toggle('is-pin-focus', i === activeIdx));
+      }
+    }
+  }
+
+  function syncRailAriaFromTargetCurrent() {
+    if (!sectionRailEl || !supportsScrollTargetGroup) return;
+    const current = sectionRailEl.querySelector('.section-progress-rail__link:target-current');
+    sectionRailEl.querySelectorAll('.section-progress-rail__link').forEach((link) => {
+      link.setAttribute('aria-current', link === current ? 'true' : 'false');
+    });
+  }
+
+  function updatePinnedScenesOnScroll() {
+    if (pinnedSections.length === 0) return;
+
+    const docEl = document.documentElement;
+    const vh = window.innerHeight || docEl.clientHeight || 1;
+    const scrollable = Math.max(1, docEl.scrollHeight - vh);
+    const rootProgress = Math.min(1, Math.max(0, window.scrollY / scrollable));
+
+    if (scrollProgressBarEl && (!supportsNativeScrollTimeline || prefersReducedMotion())) {
+      const topFill = scrollProgressBarEl.querySelector('.scroll-progress-bar__fill');
+      if (topFill) topFill.style.transform = `scaleX(${rootProgress.toFixed(4)})`;
+    }
+
+    if (sectionRailEl) {
+      const railFill = sectionRailEl.querySelector('.section-progress-rail__track-fill');
+      if (railFill) railFill.style.transform = `scaleY(${rootProgress.toFixed(4)})`;
+    }
+
+    let bestActiveIndex = 0;
+    let bestScore = -1;
+    const pinnedActive = isPinnedSceneMode();
+
+    pinnedSections.forEach((section, idx) => {
+      const runway = section.querySelector('.pinned-section__runway') || section.querySelector('.timeline-runway');
+      const pin = section.querySelector('.pinned-section__pin') || section.querySelector('.timeline-pin');
+      const measureEl = runway || section;
+      const rect = measureEl.getBoundingClientRect();
+
+      let progress = 0;
+      let isStuck = false;
+
+      if (pinnedActive && runway && pin && runway.offsetHeight > pin.offsetHeight + 4) {
+        const pinTopPx = parseFloat(getComputedStyle(pin).top) || 88;
+        const travel = runway.offsetHeight - pin.offsetHeight;
+        progress = travel > 0 ? Math.min(1, Math.max(0, (pinTopPx - rect.top) / travel)) : 0;
+        isStuck = rect.top <= pinTopPx + 1 && rect.bottom >= pinTopPx + pin.offsetHeight - 1;
+      } else {
+        const totalSpan = rect.height + vh;
+        progress = totalSpan > 0 ? Math.min(1, Math.max(0, (vh - rect.top) / totalSpan)) : 0;
+      }
+
+      section.style.setProperty('--section-progress', progress.toFixed(4));
+      section.classList.toggle('is-pin-active', isStuck);
+      if (pin && !supportsScrollStateQuery) {
+        pin.classList.toggle('is-stuck', isStuck);
+      }
+
+      if (pinnedActive) {
+        updateSectionInternalProgression(section, progress);
+      }
+
+      if (sectionRailEl) {
+        const link = sectionRailEl.querySelector(`[data-rail-target="${section.id}"]`);
+        if (link) link.style.setProperty('--orb-progress', progress.toFixed(4));
+      }
+
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(vh, rect.bottom);
+      const visiblePx = Math.max(0, visibleBottom - visibleTop);
+      if (visiblePx > bestScore) {
+        bestScore = visiblePx;
+        bestActiveIndex = idx;
+      }
+    });
+
+    if (sectionRailEl && !supportsScrollTargetGroup) {
+      const links = sectionRailEl.querySelectorAll('.section-progress-rail__link');
+      links.forEach((link, idx) => {
+        const active = idx === bestActiveIndex;
+        link.classList.toggle('target-current', active);
+        link.setAttribute('aria-current', active ? 'true' : 'false');
+      });
+    }
+  }
+
+  function schedulePinnedSceneUpdate() {
+    if (sceneScrollFrame) return;
+    sceneScrollFrame = requestAnimationFrame(() => {
+      sceneScrollFrame = 0;
+      updatePinnedScenesOnScroll();
+    });
+  }
+
+  function bindPinnedSceneListeners() {
+    if (sceneListenersBound || typeof window === 'undefined') return;
+    sceneListenersBound = true;
+
+    window.addEventListener('scroll', schedulePinnedSceneUpdate, { passive: true });
+    window.addEventListener('resize', () => {
+      sizePinnedRunways();
+      schedulePinnedSceneUpdate();
+    }, { passive: true });
+
+    if (supportsScrollTargetGroup && typeof document !== 'undefined') {
+      document.addEventListener('scrollend', () => {
+        syncRailAriaFromTargetCurrent();
+      });
+    } else if (typeof document !== 'undefined') {
+      window.addEventListener('scroll', () => {
+        clearTimeout(sceneAriaTimer);
+        sceneAriaTimer = setTimeout(updatePinnedScenesOnScroll, 90);
+      }, { passive: true });
+    }
+  }
+
+  function initPinnedScenes() {
+    if (typeof document === 'undefined') return;
+    const found = Array.from(document.querySelectorAll('[data-pinned-section]'));
+    if (found.length === 0) return;
+
+    pinnedSections.length = 0;
+    found.forEach((sec) => pinnedSections.push(sec));
+
+    ensureScrollProgressBar();
+    pinnedSections.forEach((sec) => wrapPinnedSection(sec));
+    buildSectionRail(pinnedSections);
+    sizePinnedRunways();
+    bindPinnedSceneListeners();
+    updatePinnedScenesOnScroll();
+    syncRailAriaFromTargetCurrent();
+  }
+
+  function refreshPinnedScenes() {
+    if (pinnedSections.length === 0) {
+      initPinnedScenes();
+      return;
+    }
+    sizePinnedRunways();
+    updatePinnedScenesOnScroll();
   }
 
   if (typeof document !== 'undefined') {
@@ -539,9 +1008,13 @@
 
   // Initialize on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAnimationObserver);
+    document.addEventListener('DOMContentLoaded', () => {
+      initAnimationObserver();
+      initPinnedScenes();
+    });
   } else {
     initAnimationObserver();
+    initPinnedScenes();
   }
 
   // Expose public API
@@ -550,6 +1023,16 @@
     triggerStagger: triggerStaggerAnimation,
     refresh: refreshObserver,
     prefersReducedMotion: prefersReducedMotion,
+  };
+
+  window.PortfolioScrollScene = {
+    init: initPinnedScenes,
+    refresh: refreshPinnedScenes,
+    getSectionProgress: function (id) {
+      const target = id ? document.getElementById(id) : null;
+      if (!target) return 0;
+      return parseFloat(target.style.getPropertyValue('--section-progress')) || 0;
+    },
   };
 
 })();

@@ -23,13 +23,42 @@
         })();
 
     var TRAITS = ['Problem Solver', 'Digital Generalist', 'Detail-Oriented', 'Curious', 'Reliable'];
+    var TRAIT_META = {
+        'problem solver': {
+            kicker: 'Approach',
+            accent: '#5ca8ff',
+            summary: 'Breaks complex bottlenecks into clean, maintainable systems.'
+        },
+        'digital generalist': {
+            kicker: 'Versatility',
+            accent: '#38bdf8',
+            summary: 'Connects UI craft, front-end code, and practical product workflows.'
+        },
+        'detail-oriented': {
+            kicker: 'Precision',
+            accent: '#a78bfa',
+            summary: 'Refines spacing, edge cases, and interactive states until they click.'
+        },
+        'curious': {
+            kicker: 'Mindset',
+            accent: '#ffc470',
+            summary: 'Continuously explores modern web standards and sharper patterns.'
+        },
+        'reliable': {
+            kicker: 'Delivery',
+            accent: '#34d399',
+            summary: 'Follows through with readable structure, accessibility, and steady output.'
+        }
+    };
+    var TRAIT_ACCENTS = ['#5ca8ff', '#38bdf8', '#a78bfa', '#ffc470', '#34d399'];
 
     /* ------------------------------------------------------------- helpers */
     function esc(value) {
         if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
             return window.PortfolioUtils.escapeHtml(value);
         }
-        return String(value == null ? '' : value);
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return map[c]; });
     }
 
     function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -64,15 +93,41 @@
         return (month >= 1 && month <= 12) ? months[month - 1] + ' ' + parts[0] : String(value);
     }
 
+    var CONTACT_ICON_FILES = {
+        email: 'email.svg',
+        mail: 'email.svg',
+        github: 'github.svg',
+        linkedin: 'linkedin.svg',
+        discord: 'discord.svg'
+    };
+
     function icon(name) {
         var paths = {
-            mail: '<path d="M3 6.5h18v11H3z"/><path d="M3 7l9 6 9-6"/>',
-            github: '<path d="M9 19c-4 1.2-4-2.2-6-2.8m12 5.3v-3.6a3 3 0 0 0-.9-2.4c3-.3 5-1.9 5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.3s-1.4-.4-4.6 1.7a11 11 0 0 0-6 0C3.9 2.6 2.5 3 2.5 3a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 1 9.5c0 4.1 2 5.7 5 6a3 3 0 0 0-.9 2.3V21"/>',
-            linkedin: '<path d="M5 9v10M5 5.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19"/><path d="M10 9v10"/>',
-            discord: '<path d="M8.5 17.5S7 19 5.5 19.5c0 0-2.5-3.5-2.5-8a13 13 0 0 1 4-3l1 1.5a11 11 0 0 1 4 0L13 8.5a13 13 0 0 1 4 3c0 4.5-2.5 8-2.5 8-1.5-.5-3-2-3-2"/><path d="M9.5 13v.01M14.5 13v.01"/>',
-            ext: '<path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
+            ext: '<path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+            copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+            check: '<path d="M20 6 9 17l-5-5"/>'
         };
         return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (paths[name] || '') + '</svg>';
+    }
+
+    function resolveContactIconSrc(iconValue) {
+        var raw = String(iconValue || '').trim();
+        if (!raw) { return ''; }
+        if (/^(?:https?:\/\/|data:|\/)/i.test(raw)) { return raw; }
+        if (raw.indexOf('/') !== -1) { return SITE_ROOT + raw.replace(/^\/+/, ''); }
+        if (/\.(?:svg|png|webp|jpe?g)$/i.test(raw)) {
+            return SITE_ROOT + 'assets/icons/contacts/' + raw;
+        }
+        var file = CONTACT_ICON_FILES[raw.toLowerCase()];
+        return file ? (SITE_ROOT + 'assets/icons/contacts/' + file) : '';
+    }
+
+    function contactIcon(iconValue, fallbackKey) {
+        var src = resolveContactIconSrc(iconValue) || resolveContactIconSrc(fallbackKey);
+        if (!src) { return icon('ext'); }
+        var isEmail = /(?:^|\/)email\.svg(?:$|\?)/i.test(src) || fallbackKey === 'email' || fallbackKey === 'mail';
+        var keyAttr = isEmail ? 'email' : String(fallbackKey || 'custom');
+        return '<img class="ab-contact__svg" src="' + esc(src) + '" data-contact-icon="' + esc(keyAttr) + '" alt="" width="22" height="22" loading="lazy" decoding="async">';
     }
 
     /* -------------------------------------------------------- capabilities */
@@ -113,6 +168,25 @@
         });
     }
 
+    function levelScore(level) {
+        var norm = String(level || '').toLowerCase().trim();
+        if (norm.indexOf('confident') !== -1 || norm.indexOf('advanced') !== -1 || norm.indexOf('expert') !== -1) {
+            return 3;
+        }
+        if (norm.indexOf('intermediate') !== -1 || norm.indexOf('proficient') !== -1) {
+            return 2;
+        }
+        return norm ? 1 : 0;
+    }
+
+    function meterBars(score) {
+        var html = '';
+        for (var i = 1; i <= 3; i++) {
+            html += '<span class="ab-skill-meter__bar' + (i <= score ? ' is-filled' : '') + '"></span>';
+        }
+        return html;
+    }
+
     function renderLanguages(languages) {
         var list = document.getElementById('ab-skill-icons');
         if (!list) { return; }
@@ -123,11 +197,19 @@
 
         list.innerHTML = languages.map(function (item) {
             var name = item.name || '';
-            var title = name + (item.level ? ' \u2014 ' + item.level : '');
-            return '<li class="ab-skill-icon" title="' + esc(title) + '">' +
-                '<img src="' + iconPath(item) + '" alt="' + esc(name) + '" ' +
-                'data-monogram="' + esc(monogram(name)) + '" loading="lazy">' +
-                '<span class="ab-skill-icon__label">' + esc(name) + '</span></li>';
+            var level = item.level || '';
+            var score = levelScore(level);
+            return '<li class="ab-skill-icon">' +
+                '<span class="ab-skill-icon__media" aria-hidden="true">' +
+                    '<img src="' + iconPath(item) + '" alt="" width="22" height="22" ' +
+                    'data-monogram="' + esc(monogram(name)) + '" loading="lazy">' +
+                '</span>' +
+                '<span class="ab-skill-icon__body">' +
+                    '<span class="ab-skill-icon__label">' + esc(name) + '</span>' +
+                    (level ? '<span class="ab-skill-icon__level">' + esc(level) + '</span>' : '') +
+                '</span>' +
+                (score > 0 ? '<span class="ab-skill-meter" aria-hidden="true">' + meterBars(score) + '</span>' : '') +
+            '</li>';
         }).join('');
 
         addIconFallbacks(list);
@@ -142,22 +224,31 @@
         }
 
         wrap.innerHTML = tools.map(function (item, index) {
+            var name = item.name || '';
+            var level = item.level || '';
+            var summary = item.summary || '';
+            var desc = item.description || '';
+            var score = levelScore(level);
             return '' +
                 '<article class="ab-skill-card">' +
-                    '<div class="ab-skill-card__top">' +
-                        '<span class="ab-skill-card__num">' + pad(index + 1) + '</span>' +
-                        '<span class="ab-skill-card__label">' + esc(item.level || '') + '</span>' +
-                    '</div>' +
-                    '<span class="ab-skill-card__icon">' +
-                        '<img src="' + iconPath(item) + '" alt="" ' +
-                        'data-monogram="' + esc(monogram(item.name)) + '" loading="lazy">' +
-                    '</span>' +
-                    '<h3 class="ab-skill-card__name">' + esc(item.name) + '</h3>' +
-                    '<p class="ab-skill-card__desc">' + esc(item.description || '') + '</p>' +
-                    '<div class="ab-skill-card__foot">' +
-                        (item.summary ? '<span class="ab-pill">' + esc(item.summary) + '</span>' : '') +
-                        (item.level ? '<span class="ab-pill">' + esc(item.level) + '</span>' : '') +
-                    '</div>' +
+                    '<header class="ab-skill-card__top">' +
+                        '<span class="ab-skill-card__icon" aria-hidden="true">' +
+                            '<img src="' + iconPath(item) + '" alt="" width="24" height="24" ' +
+                            'data-monogram="' + esc(monogram(name)) + '" loading="lazy">' +
+                        '</span>' +
+                        '<div class="ab-skill-card__badges">' +
+                            '<span class="ab-skill-card__num">' + pad(index + 1) + '</span>' +
+                            (level
+                                ? '<span class="ab-skill-card__level"><span class="ab-skill-card__dot" aria-hidden="true"></span>' + esc(level) + '</span>'
+                                : '') +
+                        '</div>' +
+                    '</header>' +
+                    '<h3 class="ab-skill-card__name">' + esc(name) + '</h3>' +
+                    '<p class="ab-skill-card__desc">' + esc(desc) + '</p>' +
+                    '<footer class="ab-skill-card__foot">' +
+                        (summary ? '<span class="ab-pill">' + esc(summary) + '</span>' : '') +
+                        (score > 0 ? '<span class="ab-skill-meter" aria-hidden="true">' + meterBars(score) + '</span>' : '') +
+                    '</footer>' +
                 '</article>';
         }).join('');
 
@@ -177,7 +268,9 @@
             var tags = (item.tags || []).map(function (tag) {
                 return '<span class="ab-tag">' + esc(tag) + '</span>';
             }).join('');
-            var step = String(index + 1).padStart(2, '0');
+            var step = (window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function')
+                ? window.PortfolioUtils.pad2(index + 1)
+                : String(index + 1).padStart(2, '0');
 
             return '' +
                 '<li class="ab-train">' +
@@ -199,53 +292,161 @@
     }
 
     /* ------------------------------------------------------------- contacts */
+    var contactAccents = {
+        email: '#5ca8ff',
+        github: '#a78bfa',
+        linkedin: '#38bdf8',
+        discord: '#818cf8'
+    };
+
+    function bindContactCopy(list) {
+        if (!list || list.dataset.copyBound) { return; }
+        list.dataset.copyBound = '1';
+
+        list.addEventListener('click', function (e) {
+            var btn = e.target.closest('.ab-contact__copy');
+            if (!btn || !list.contains(btn)) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+
+            var value = btn.getAttribute('data-copy-value') || '';
+            var wrap = btn.closest('.ab-contact__copy-wrap');
+            var tip = wrap ? wrap.querySelector('.ab-contact__tip') : null;
+            var glyph = btn.querySelector('.ab-contact__copy-glyph');
+            if (!value) { return; }
+
+            var copyPromise = (window.PortfolioUtils && typeof window.PortfolioUtils.copyToClipboard === 'function')
+                ? window.PortfolioUtils.copyToClipboard(value)
+                : (navigator.clipboard && navigator.clipboard.writeText
+                    ? navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return false; })
+                    : Promise.resolve(false));
+
+            Promise.resolve(copyPromise).then(function (ok) {
+                var text = ok ? 'Copied' : 'Copy failed';
+                btn.removeAttribute('data-copied');
+                btn.removeAttribute('data-failed');
+                btn.setAttribute(ok ? 'data-copied' : 'data-failed', '1');
+                if (glyph) {
+                    glyph.innerHTML = icon(ok ? 'check' : 'copy');
+                }
+                if (tip) {
+                    tip.textContent = tip.textContent === text ? text + '\u00A0' : text;
+                }
+                clearTimeout(btn._copyResetTimer);
+                btn._copyResetTimer = setTimeout(function () {
+                    btn.removeAttribute('data-copied');
+                    btn.removeAttribute('data-failed');
+                    if (glyph) {
+                        glyph.innerHTML = icon('copy');
+                    }
+                    if (tip) {
+                        tip.textContent = '';
+                    }
+                }, 2000);
+            });
+        });
+    }
+
+    function normalizeSocialEntry(key, rawEntry, defaults) {
+        var isObj = rawEntry && typeof rawEntry === 'object';
+        var rawVal = isObj
+            ? String(rawEntry.value || rawEntry.url || rawEntry.href || '').trim()
+            : String(rawEntry || '').trim();
+        if (!rawVal) { return null; }
+
+        var isHttp = /^https?:\/\//i.test(rawVal);
+        var isMailto = /^mailto:/i.test(rawVal);
+        var cleanVal = isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal;
+        var defaultHref = (defaults && defaults.isEmail)
+            ? ('mailto:' + cleanVal)
+            : ((isHttp || isMailto) ? rawVal : null);
+        var href = (isObj && rawEntry.href) ? String(rawEntry.href).trim() : defaultHref;
+        var defaultAction = (defaults && defaults.action) || (isHttp ? 'link' : 'copy');
+        var action = (isObj && rawEntry.action) ? String(rawEntry.action).trim().toLowerCase() : defaultAction;
+        var isCopy = action === 'copy';
+        var isLink = action === 'link';
+
+        return {
+            key: String(key || '').toLowerCase(),
+            label: (isObj && rawEntry.label) ? String(rawEntry.label).trim() : ((defaults && defaults.label) || key),
+            value: cleanVal,
+            href: href,
+            icon: (isObj && rawEntry.icon) ? String(rawEntry.icon).trim() : ((defaults && defaults.icon) || key),
+            external: Boolean(href) && (isLink || (!isCopy && isHttp)),
+            copyable: isCopy || (!isLink && !href)
+        };
+    }
+
     function renderContacts(socials) {
         var list = document.getElementById('ab-contact-cards');
         if (!list || !socials) { return; }
 
-        var entries = [
-            { label: 'Email', value: socials.email, href: 'mailto:' + socials.email, icon: 'mail' },
-            { label: 'GitHub', value: socials.github, href: socials.github, icon: 'github', external: true },
-            { label: 'LinkedIn', value: socials.linkedin, href: socials.linkedin, icon: 'linkedin', external: true },
-            { label: 'Discord', value: socials.discord, href: null, icon: 'discord' }
-        ].filter(function (entry) { return entry.value; });
-
+        var coreDefaults = {
+            email: { label: 'Email', icon: 'email', action: 'copy', isEmail: true },
+            github: { label: 'GitHub', icon: 'github', action: 'link' },
+            linkedin: { label: 'LinkedIn', icon: 'linkedin', action: 'link' },
+            discord: { label: 'Discord', icon: 'discord', action: 'copy' }
+        };
         var coreKeys = ['email', 'github', 'linkedin', 'discord'];
+        var entries = [];
+
+        coreKeys.forEach(function (key) {
+            var item = normalizeSocialEntry(key, socials[key], coreDefaults[key]);
+            if (item) { entries.push(item); }
+        });
+
         Object.keys(socials).forEach(function (key) {
             if (coreKeys.indexOf(key) !== -1) { return; }
-            var rawVal = String(socials[key] || '').trim();
-            if (!rawVal) { return; }
-            var isHttp = /^https?:\/\//i.test(rawVal);
-            var isMailto = /^mailto:/i.test(rawVal);
-            entries.push({
-                label: key,
-                value: isMailto ? rawVal.replace(/^mailto:/i, '') : rawVal,
-                href: (isHttp || isMailto) ? rawVal : null,
-                icon: 'ext',
-                external: isHttp
-            });
+            var item = normalizeSocialEntry(key, socials[key], null);
+            if (item) { entries.push(item); }
         });
 
         list.innerHTML = entries.map(function (entry, index) {
             var shown = String(entry.value).replace(/^https?:\/\//, '').replace(/\/$/, '');
-            var tag = entry.href ? 'a' : 'div';
-            var attrs = entry.href ? ' href="' + esc(entry.href) + '"' : '';
-            if (entry.external) { attrs += ' target="_blank" rel="noreferrer"'; }
+            var accent = contactAccents[entry.key] || '#34d399';
+            var copyOnly = !entry.href && entry.copyable;
+            var cardClass = 'ab-contact__card' + (copyOnly ? ' ab-contact__card--copy-only' : '');
+
+            var valueNode;
+            if (entry.href) {
+                var linkAttrs = ' href="' + esc(entry.href) + '"';
+                if (entry.external) { linkAttrs += ' target="_blank" rel="noreferrer"'; }
+                valueNode = '<a class="ab-contact__link"' + linkAttrs + '>' + esc(shown) + '</a>';
+            } else {
+                valueNode = '<span class="ab-contact__value">' + esc(shown) + '</span>';
+            }
+
+            var trailing = '';
+            if (entry.copyable) {
+                var copyBtnClass = 'ab-contact__copy' + (copyOnly ? ' ab-contact__copy--full' : '');
+                trailing = '' +
+                    '<span class="ab-contact__copy-wrap">' +
+                        '<button type="button" class="' + copyBtnClass + '" data-copy-value="' + esc(shown) + '" aria-label="Copy ' + esc(entry.label) + ' ' + esc(shown) + '">' +
+                            '<span class="ab-contact__copy-glyph" aria-hidden="true">' + icon('copy') + '</span>' +
+                        '</button>' +
+                        '<span class="ab-contact__tip" role="status"></span>' +
+                    '</span>';
+            } else if (entry.external || entry.href) {
+                trailing = '<span class="ab-contact__ext" aria-hidden="true">' + icon('ext') + '</span>';
+            }
 
             return '' +
                 '<li class="ab-contact__item">' +
-                    '<' + tag + ' class="ab-contact__card"' + attrs + '>' +
-                        '<span class="ab-contact__icon" aria-hidden="true">' + icon(entry.icon) + '</span>' +
+                    '<article class="' + cardClass + '" style="--contact-accent:' + accent + '">' +
+                        '<span class="ab-contact__icon" aria-hidden="true">' + contactIcon(entry.icon, entry.key) + '</span>' +
                         '<span class="ab-contact__text">' +
-                            '<span class="ab-contact__label">' + esc(entry.label) + '</span>' +
-                            '<span class="ab-contact__value">' + esc(shown) + '</span>' +
+                            '<span class="ab-contact__meta">' +
+                                '<span class="ab-contact__label">' + esc(entry.label) + '</span>' +
+                                '<span class="ab-contact__index" aria-hidden="true">' + pad(index + 1) + '</span>' +
+                            '</span>' +
+                            valueNode +
                         '</span>' +
-                        '<span class="ab-contact__index" aria-hidden="true">' + pad(index + 1) + '</span>' +
-                        (entry.external ? '<span class="ab-contact__ext" aria-hidden="true">' +
-                            icon('ext') + '</span>' : '') +
-                    '</' + tag + '>' +
+                        '<span class="ab-contact__actions">' + trailing + '</span>' +
+                    '</article>' +
                 '</li>';
         }).join('');
+
+        bindContactCopy(list);
     }
 
     /* -------------------------------------------------------------- profile */
@@ -273,54 +474,180 @@
 
         var deck = document.getElementById('ab-trait-deck');
         var value = document.getElementById('ab-trait-value');
-        if (!deck || !value || reduceMotion()) { return; }
+        var kickerEl = document.getElementById('ab-trait-kicker');
+        var summaryEl = document.getElementById('ab-trait-summary');
+        var countEl = document.getElementById('ab-trait-count');
+        var barsEl = document.getElementById('ab-trait-bars');
+        var triggerEl = document.getElementById('ab-trait-trigger');
+        var traitWrap = deck ? deck.closest('.ab-trait') : null;
+        if (!deck || !value) { return; }
+
+        function normalizeTrait(item, index) {
+            var labelText = '';
+            var customSummary = '';
+            var customKicker = '';
+            if (typeof item === 'string') {
+                labelText = item.trim();
+            } else if (item && typeof item === 'object') {
+                labelText = String(item.title || item.text || item.label || '').trim();
+                customSummary = String(item.summary || (item.title && item.text ? item.text : '') || '').trim();
+                customKicker = String(item.kicker || item.tag || '').trim();
+            }
+            var fallback = TRAIT_META[labelText.toLowerCase()] || {};
+            return {
+                title: labelText || TRAITS[index % TRAITS.length],
+                kicker: customKicker || fallback.kicker || ('Trait ' + pad(index + 1)),
+                accent: fallback.accent || TRAIT_ACCENTS[index % TRAIT_ACCENTS.length],
+                summary: customSummary || fallback.summary || 'Core working principle behind every project build.'
+            };
+        }
 
         /* The trait words live in data/pages.json; wait for it so an edit there
            wins over the built-in fallback list. */
-        function rotate(traits) {
-            if (!traits || !traits.length) { return; }
+        function rotate(rawTraits) {
+            var traits = (Array.isArray(rawTraits) && rawTraits.length ? rawTraits : TRAITS)
+                .map(normalizeTrait);
+            if (!traits.length) { return; }
 
             if (deck._traitTimer) {
                 window.clearInterval(deck._traitTimer);
                 deck._traitTimer = null;
             }
-
-            value.textContent = traits[0];
-            deck._traitIndex = 0;
-
-            function advance() {
-                var activeTraits = deck._traitList || traits;
-                if (!activeTraits || !activeTraits.length) { return; }
-                deck._traitIndex = (deck._traitIndex + 1) % activeTraits.length;
-                var card = deck.querySelector('.ab-trait__card');
-                if (!card) { return; }
-                card.classList.add('is-swapping');
-                window.setTimeout(function () {
-                    value.textContent = activeTraits[deck._traitIndex];
-                    card.classList.remove('is-swapping');
-                }, 260);
+            if (deck._swapTimer) {
+                window.clearTimeout(deck._swapTimer);
+                deck._swapTimer = null;
+            }
+            if (deck._cycleTimer) {
+                window.clearTimeout(deck._cycleTimer);
+                deck._cycleTimer = null;
             }
 
             deck._traitList = traits;
-            deck._traitTimer = window.setInterval(advance, 2600);
-            deck.setAttribute('tabindex', '0');
-            deck.setAttribute('role', 'button');
-            deck.setAttribute('aria-label', 'Cycle personal trait');
+            deck._traitIndex = 0;
+
+            function renderBars(activeIdx) {
+                if (!barsEl) { return; }
+                barsEl.innerHTML = traits.map(function (_item, idx) {
+                    return '<span class="ab-trait__bar' + (idx === activeIdx ? ' is-active' : '') + '"></span>';
+                }).join('');
+            }
+
+            function applyTraitState(idx) {
+                var item = traits[idx];
+                if (!item) { return; }
+                value.textContent = item.title;
+                if (kickerEl) { kickerEl.textContent = item.kicker; }
+                if (summaryEl) { summaryEl.textContent = item.summary; }
+                if (countEl) { countEl.textContent = pad(idx + 1) + ' / ' + pad(traits.length); }
+                if (traitWrap) { traitWrap.style.setProperty('--trait-accent', item.accent); }
+                if (triggerEl) {
+                    triggerEl.setAttribute(
+                        'aria-label',
+                        'Next personal trait (' + item.title + ', ' + (idx + 1) + ' of ' + traits.length + ')'
+                    );
+                }
+                renderBars(idx);
+            }
+
+            function stepTo(nextIdx) {
+                var list = deck._traitList || traits;
+                if (!list.length) { return; }
+                var normalizedIdx = ((nextIdx % list.length) + list.length) % list.length;
+                deck._traitIndex = normalizedIdx;
+
+                var main = deck.querySelector('.ab-trait__main');
+                if (reduceMotion() || !main) {
+                    applyTraitState(normalizedIdx);
+                    return;
+                }
+
+                if (deck._swapTimer) { window.clearTimeout(deck._swapTimer); }
+                if (deck._cycleTimer) { window.clearTimeout(deck._cycleTimer); }
+
+                main.classList.add('is-swapping');
+                deck.classList.add('is-cycling');
+
+                deck._swapTimer = window.setTimeout(function () {
+                    applyTraitState(normalizedIdx);
+                    main.classList.remove('is-swapping');
+                }, 170);
+
+                deck._cycleTimer = window.setTimeout(function () {
+                    deck.classList.remove('is-cycling');
+                }, 260);
+            }
+
+            function startAutoAdvance() {
+                if (deck._traitTimer) {
+                    window.clearInterval(deck._traitTimer);
+                    deck._traitTimer = null;
+                }
+                if (reduceMotion() || deck._traitPaused || traits.length < 2) { return; }
+                deck._traitTimer = window.setInterval(function () {
+                    stepTo(deck._traitIndex + 1);
+                }, 3400);
+            }
+
+            function stepBy(delta) {
+                stepTo(deck._traitIndex + delta);
+                startAutoAdvance();
+            }
+
+            deck._stepBy = stepBy;
+            deck._startAutoAdvance = startAutoAdvance;
+            applyTraitState(0);
+            startAutoAdvance();
 
             if (!deck.dataset.traitBound) {
                 deck.dataset.traitBound = 'true';
-                deck.addEventListener('click', function () {
-                    if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
-                    advance();
-                    deck._traitTimer = window.setInterval(advance, 2600);
-                });
-                deck.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        if (deck._traitTimer) { window.clearInterval(deck._traitTimer); }
-                        advance();
-                        deck._traitTimer = window.setInterval(advance, 2600);
+
+                deck.addEventListener('click', function (event) {
+                    var dirBtn = event.target.closest('[data-trait-dir]');
+                    if (dirBtn) {
+                        var dir = dirBtn.getAttribute('data-trait-dir') === 'prev' ? -1 : 1;
+                        if (typeof deck._stepBy === 'function') { deck._stepBy(dir); }
+                        return;
                     }
+                    if (event.target.closest('.ab-trait__trigger') || event.target.closest('.ab-trait__card')) {
+                        if (typeof deck._stepBy === 'function') { deck._stepBy(1); }
+                    }
+                });
+
+                deck.addEventListener('keydown', function (event) {
+                    if (event.key === 'ArrowLeft') {
+                        event.preventDefault();
+                        if (typeof deck._stepBy === 'function') { deck._stepBy(-1); }
+                    } else if (event.key === 'ArrowRight') {
+                        event.preventDefault();
+                        if (typeof deck._stepBy === 'function') { deck._stepBy(1); }
+                    }
+                });
+
+                deck.addEventListener('mouseenter', function () {
+                    deck._traitPaused = true;
+                    if (deck._traitTimer) {
+                        window.clearInterval(deck._traitTimer);
+                        deck._traitTimer = null;
+                    }
+                });
+
+                deck.addEventListener('mouseleave', function () {
+                    deck._traitPaused = false;
+                    if (typeof deck._startAutoAdvance === 'function') { deck._startAutoAdvance(); }
+                });
+
+                deck.addEventListener('focusin', function () {
+                    deck._traitPaused = true;
+                    if (deck._traitTimer) {
+                        window.clearInterval(deck._traitTimer);
+                        deck._traitTimer = null;
+                    }
+                });
+
+                deck.addEventListener('focusout', function (event) {
+                    if (event.relatedTarget && deck.contains(event.relatedTarget)) { return; }
+                    deck._traitPaused = false;
+                    if (typeof deck._startAutoAdvance === 'function') { deck._startAutoAdvance(); }
                 });
             }
         }

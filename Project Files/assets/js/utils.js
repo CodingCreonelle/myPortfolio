@@ -21,6 +21,12 @@
  * @property {(text: string) => Promise<boolean>} copyToClipboard - Copies text via modern Clipboard API with textarea fallback.
  * @property {(url: string) => Promise<any>} fetchJSON - Fetches and caches JSON, deduplicating concurrent in-flight requests.
  * @property {(customUrl?: string) => string} getSiteRoot - Resolves the canonical site root URL from script location.
+ * @property {(value: number|string) => string} pad2 - Left-pads a number or short string to 2 digits.
+ * @property {(value: any, fallback?: string) => string} slugify - Converts text to a URL-safe slug.
+ * @property {Record<string, { id: string, file: string, label: string }>} SKILL_ICONS - Canonical skill icon metadata map.
+ * @property {(name: string) => ({ id: string, file: string, label: string } | null)} resolveSkillIcon - Looks up skill icon metadata.
+ * @property {(html: string) => Element|null} createFromTemplate - Builds an element from an HTML string via a template element.
+ * @property {(button: Element, ok: boolean, options?: { copiedClass?: string, captureLabel?: boolean, fallbackLabel?: string }) => void} reportCopyFeedback - Announces clipboard copy result on a trigger button.
  */
 
 (function (global) {
@@ -49,6 +55,31 @@
     const CACHE_KEY = 'requestCache';
     const ADMIN_STORAGE_PREFIX = 'portfolio-admin-data:';
     const ADMIN_DATASETS = ['pages', 'projects', 'experience', 'socials'];
+
+    const SKILL_ICON_ENTRIES = {
+        html: { id: 'html', file: 'html.svg', label: 'HTML5' },
+        css: { id: 'css', file: 'css.svg', label: 'CSS3' },
+        javascript: { id: 'javascript', file: 'javascript.svg', label: 'JavaScript' },
+        git: { id: 'git', file: 'git.svg', label: 'Git' },
+        github: { id: 'github', file: 'github.svg', label: 'GitHub' },
+        vscode: { id: 'vscode', file: 'vscode.svg', label: 'VS Code' },
+    };
+
+    const SKILL_ICONS = Object.freeze({
+        html: SKILL_ICON_ENTRIES.html,
+        html5: SKILL_ICON_ENTRIES.html,
+        css: SKILL_ICON_ENTRIES.css,
+        css3: SKILL_ICON_ENTRIES.css,
+        javascript: SKILL_ICON_ENTRIES.javascript,
+        js: SKILL_ICON_ENTRIES.javascript,
+        git: SKILL_ICON_ENTRIES.git,
+        github: SKILL_ICON_ENTRIES.github,
+        vscode: SKILL_ICON_ENTRIES.vscode,
+        'vs code': SKILL_ICON_ENTRIES.vscode,
+    });
+
+    const copyFeedbackTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
+    let lastCopyFeedbackMessage = '';
 
     /* ------------------------------------------------------------- Script URL & Site Root */
     /**
@@ -413,6 +444,130 @@
         return request;
     }
 
+    /* ------------------------------------------------------------- Shared Formatting & DOM Helpers */
+    /**
+     * Left-pads a number or short string to at least 2 characters with '0'.
+     * @param {number|string} value
+     * @returns {string}
+     */
+    function pad2(value) {
+        return String(value == null ? 0 : value).padStart(2, '0');
+    }
+
+    /**
+     * Converts a string into a lowercase URL-safe hyphenated slug.
+     * @param {any} value
+     * @param {string} [fallback='item']
+     * @returns {string}
+     */
+    function slugify(value, fallback) {
+        const slug = String(value == null ? '' : value)
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        if (slug) return slug;
+        return fallback === undefined || fallback === null || fallback === '' ? 'item' : String(fallback);
+    }
+
+    /**
+     * Looks up canonical skill icon metadata by skill/technology name.
+     * @param {any} name
+     * @returns {{ id: string, file: string, label: string }|null}
+     */
+    function resolveSkillIcon(name) {
+        const key = String(name == null ? '' : name).trim().toLowerCase();
+        return SKILL_ICONS[key] || null;
+    }
+
+    /**
+     * Parses an HTML string via an inert <template> element and returns its first child element.
+     * @param {string} html
+     * @returns {Element|null}
+     */
+    function createFromTemplate(html) {
+        if (typeof document === 'undefined') return null;
+        const template = document.createElement('template');
+        template.innerHTML = String(html == null ? '' : html).trim();
+        return template.content.firstElementChild;
+    }
+
+    /**
+     * Updates a copy button's temporary visual & screen-reader live-region feedback.
+     * @param {Element} button
+     * @param {boolean} ok
+     * @param {{ copiedClass?: string, captureLabel?: boolean, fallbackLabel?: string }} [options]
+     */
+    function reportCopyFeedback(button, ok, options) {
+        if (!button) return;
+        const opts = options && typeof options === 'object' ? options : {};
+        const copiedClass = opts.copiedClass || '';
+        const tip = button.nextElementSibling;
+        const labelNode = button.querySelector('[data-copy-text]');
+        const cachedDefault = (button.dataset && button.dataset.copyDefault)
+            || (typeof button.getAttribute === 'function' ? button.getAttribute('data-copy-default') : '')
+            || (opts.captureLabel && labelNode ? labelNode.textContent : '')
+            || '';
+
+        if (opts.captureLabel && button.dataset && !button.dataset.copyDefault && cachedDefault) {
+            button.dataset.copyDefault = cachedDefault;
+        }
+        const defaultLabel = cachedDefault || opts.fallbackLabel || '';
+
+        if (copyFeedbackTimers && copyFeedbackTimers.has(button)) {
+            clearTimeout(copyFeedbackTimers.get(button));
+        }
+
+        button.removeAttribute('data-copied');
+        button.removeAttribute('data-failed');
+        if (copiedClass && button.classList) {
+            button.classList.remove(copiedClass);
+        }
+
+        let message = ok ? 'Copied' : 'Copy failed';
+        if (message === lastCopyFeedbackMessage) message += '\u00A0';
+        lastCopyFeedbackMessage = message;
+
+        if (tip) tip.textContent = '';
+        void button.offsetWidth;
+
+        if (ok) {
+            button.setAttribute('data-copied', '');
+            if (copiedClass && button.classList) {
+                button.classList.add(copiedClass);
+            }
+            if (labelNode) labelNode.textContent = 'Copied';
+        } else {
+            button.setAttribute('data-failed', '');
+        }
+
+        if (tip) {
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => {
+                    tip.textContent = message;
+                });
+            } else {
+                tip.textContent = message;
+            }
+        }
+
+        const timerId = setTimeout(() => {
+            button.removeAttribute('data-copied');
+            button.removeAttribute('data-failed');
+            if (copiedClass && button.classList) {
+                button.classList.remove(copiedClass);
+            }
+            if (labelNode && defaultLabel) {
+                labelNode.textContent = defaultLabel;
+            }
+            if (tip) tip.textContent = '';
+        }, 2000);
+
+        if (copyFeedbackTimers) {
+            copyFeedbackTimers.set(button, timerId);
+        }
+    }
+
     /* ------------------------------------------------------------- Public API Export */
     /** @type {PortfolioUtilsAPI} */
     const api = {
@@ -427,6 +582,12 @@
         setAdminOverride: setAdminOverride,
         clearAdminOverride: clearAdminOverride,
         clearRequestCache: clearRequestCache,
+        pad2: pad2,
+        slugify: slugify,
+        SKILL_ICONS: SKILL_ICONS,
+        resolveSkillIcon: resolveSkillIcon,
+        createFromTemplate: createFromTemplate,
+        reportCopyFeedback: reportCopyFeedback,
     };
 
     // Publish to global namespace by merging, preserving existing namespace properties (e.g. requestCache)

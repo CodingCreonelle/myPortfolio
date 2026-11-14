@@ -14,7 +14,7 @@
     "metrics": [
       { "label": "Runtime Deps", "value": "0 KB", "note": "Pure browser standards" },
       { "label": "Theme Parity", "value": "Dark + Light", "note": "WCAG AA contrast tokens" },
-      { "label": "Asset Pipeline", "value": "SHA-8", "note": "Immutable cache busting" }
+      { "label": "Asset Pipeline", "value": "SHA-10", "note": "Immutable cache busting" }
     ],
     "image": "assets/images/projects/portfolio-architecture.jpg",
     "imageAlt": "Architectural diagram and dark-mode UI specimen of the zero-dependency portfolio system",
@@ -36,11 +36,11 @@
       },
       {
         "heading": "Declarative Data-Binding Kernel",
-        "body": "The `content.js` module traverses the DOM for `data-bind`, `data-bind-html`, `data-bind-src`, and `data-list` attributes, resolving dot-delimited paths against `pages.json`:\n\n- **Text & Attribute Binding**: Safely assigns `textContent` and attributes (`src`, `alt`, `href`) without XSS surface area.\n- **Template Cloning**: Clones native `<template>` fragments for action buttons, timeline milestones, and skill matrices.\n- **Graceful Degradation**: Every HTML file includes meaningful default copy in its static markup so the page remains readable even before scripts finish executing."
+        "body": "The `content.js` module traverses the DOM for `data-bind`, `data-bind-src`, `data-bind-href`, `data-bind-class`, and `data-list` attributes, resolving dot-delimited paths against `pages.json`:\n\n- **Text & Attribute Binding**: Safely assigns `textContent` and attributes (`src`, `alt`, `href`) without XSS surface area.\n- **Template Cloning**: Clones native `<template>` fragments for action buttons, timeline milestones, and skill matrices.\n- **Graceful Degradation**: Every HTML file includes meaningful default copy in its static markup so the page remains readable even before scripts finish executing."
       },
       {
         "heading": "Production Hardening & CI Pipeline",
-        "body": "In production, `scripts/version-assets.sh` computes an 8-character SHA-256 digest for every CSS and JS file, rewrites all HTML references, and packages the output into an Alpine Nginx image with strict `Content-Security-Policy`, `X-Frame-Options`, and `nosniff` headers."
+        "body": "In production, `scripts/version-assets.sh` computes a 10-character SHA-256 digest for every CSS and JS file, rewrites all HTML references, and packages the output into an Alpine Nginx image with `X-Frame-Options`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy` headers."
       }
     ]
   },
@@ -77,7 +77,7 @@
     "documentation": [
       {
         "heading": "Separating Pure Math from DOM Rendering",
-        "body": "To guarantee deterministic layout across screen sizes, the timeline splits into two files:\n\n1. **`timeline-math.js`**: Pure functions (`parseDate`, `computeRises`, `computeSlopes`, `formatAnnouncement`) with zero DOM references, exported to both `window.TimelineMath` and CommonJS `module.exports`.\n2. **`timeline.js`**: Reads the computed values and applies them as CSS custom properties (`--rise`, `--slope-angle`, `--slope-length`) on each `.timeline-entry`."
+        "body": "To guarantee deterministic layout across screen sizes, the timeline splits into two files:\n\n1. **`timeline-math.js`**: Pure functions (`parseMonthYear`, `computeRidgeHeights`, `computeSlope`, `calculateNorms`) with zero DOM references, exported to both `window.PortfolioTimelineMath` and CommonJS `module.exports`.\n2. **`timeline.js`**: Reads the computed values and applies them as CSS custom properties (`--rise`, `--slope-angle`, `--slope-length`) on each `.timeline-entry`."
       },
       {
         "heading": "Single-Frame Height Reservation",
@@ -97,7 +97,7 @@
     "tech": ["JavaScript", "HTML", "CSS", "Git"],
     "tags": ["Client-Side MVC", "Conversion UX", "Pure Validation", "Deep-Link State"],
     "highlights": [
-      "Strict separation between pure validation/formatting logic (`contact-model.js` & `opportunity-studio.js`) and DOM event wiring (`contact-form.js`)",
+      "Strict separation between pure validation/formatting logic (`contact-model.js`) and DOM event wiring (`contact-form.js`)",
       "Interactive Opportunity & Scope Studio that maps role/project intent and technical stack priorities to verified codebase proof points",
       "Seamless URL state handoff (`?topic=...&subject=...&message=...`) from homepage brief composer directly into the full contact workspace"
     ],
@@ -122,7 +122,7 @@
     "documentation": [
       {
         "heading": "Why Client-Side MVC for Static & Hybrid Hosting",
-        "body": "Static and container-hosted portfolios often fail at the final conversion step: either they rely on third-party form endpoints that break or rate-limit, or they drop a raw `mailto:` link with zero context.\n\nBy structuring the contact flow as a client-side MVC system (`contact-model.js` + `opportunity-studio.js` + `contact-form.js`), visitors get guided topic presets, character-counted validation, formatted plain-text brief synthesis, and one-click clipboard or email dispatch."
+        "body": "Static and container-hosted portfolios often fail at the final conversion step: either they rely on third-party form endpoints that break or rate-limit, or they drop a raw `mailto:` link with zero context.\n\nBy structuring the contact flow as a client-side MVC system (`contact-model.js` + `contact-form.js`), visitors get guided topic presets, character-counted validation, formatted plain-text brief synthesis, and one-click clipboard or email dispatch."
       },
       {
         "heading": "Interactive Opportunity Studio Integration",

@@ -1,5 +1,5 @@
 /*
- * contact-model.js — Milestone M3
+ * contact-model.js — Pure Contact Domain Model
  *
  * Standalone pure domain model and business logic for the contact subsystem:
  * - Recipient address extraction and safe fallback resolution

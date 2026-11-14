@@ -87,12 +87,24 @@
     }
 
     function slugify(value, fallback) {
+        var u = utils();
+        if (u && typeof u.slugify === 'function') {
+            return u.slugify(value, fallback);
+        }
         var s = String(value || '')
             .toLowerCase()
             .trim()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
         return s || fallback || 'item';
+    }
+
+    function pad2(value) {
+        var u = utils();
+        if (u && typeof u.pad2 === 'function') {
+            return u.pad2(value);
+        }
+        return String(value == null ? 0 : value).padStart(2, '0');
     }
 
     function parseCommaList(str) {
@@ -231,7 +243,32 @@
             }
             return out;
         }
-        return unescape(encodeURIComponent(String(str)));
+        var input = String(str);
+        var encoded = '';
+        for (var j = 0; j < input.length; j++) {
+            var code = input.charCodeAt(j);
+            if (code < 0x80) {
+                encoded += String.fromCharCode(code);
+            } else if (code < 0x800) {
+                encoded += String.fromCharCode(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+            } else if (code >= 0xd800 && code <= 0xdbff && j + 1 < input.length) {
+                var low = input.charCodeAt(++j);
+                var cp = 0x10000 + (((code & 0x3ff) << 10) | (low & 0x3ff));
+                encoded += String.fromCharCode(
+                    0xf0 | (cp >> 18),
+                    0x80 | ((cp >> 12) & 0x3f),
+                    0x80 | ((cp >> 6) & 0x3f),
+                    0x80 | (cp & 0x3f)
+                );
+            } else {
+                encoded += String.fromCharCode(
+                    0xe0 | (code >> 12),
+                    0x80 | ((code >> 6) & 0x3f),
+                    0x80 | (code & 0x3f)
+                );
+            }
+        }
+        return encoded;
     }
 
     function derivePasswordHash(password, salt) {
@@ -1223,95 +1260,96 @@
         else if (tab === 'pages') body.innerHTML = renderPagesSocialsPanel();
     }
 
-    function renderProjectsPanel() {
-        var projects = state.data.projects || [];
-        var idx = Math.min(state.selectedProjectIndex, Math.max(0, projects.length - 1));
-        state.selectedProjectIndex = idx;
-        var selected = projects[idx] || null;
-
-        var listHtml = projects.length
-            ? projects.map(function (p, i) {
-                var activeClass = i === idx ? ' is-selected' : '';
-                var numLabel = String(i + 1).padStart(2, '0');
-                return '<div class="admin-list-item' + activeClass + '">' +
-                    '<button type="button" class="admin-list-item__select" data-admin-action="select-project" data-index="' + i + '">' +
-                        '<span class="admin-list-item__head">' +
-                            '<span class="admin-index-badge">' + numLabel + '</span>' +
-                            '<span class="admin-list-item__title">' + esc(p.title || p.id || ('Project ' + (i + 1))) + '</span>' +
-                        '</span>' +
-                        '<span class="admin-list-item__badges">' +
-                            '<span class="admin-mini-badge">' + esc(p.status || 'Draft') + '</span>' +
-                            (p.featured ? '<span class="admin-mini-badge admin-mini-badge--accent">Featured</span>' : '') +
-                        '</span>' +
-                    '</button>' +
-                    '<div class="admin-item-controls">' +
-                        '<button type="button" class="admin-icon-btn" data-admin-action="move-project" data-index="' + i + '" data-delta="-1" title="Move Up" aria-label="Move project up"' + (i === 0 ? ' disabled' : '') + '>\u2191</button>' +
-                        '<button type="button" class="admin-icon-btn" data-admin-action="move-project" data-index="' + i + '" data-delta="1" title="Move Down" aria-label="Move project down"' + (i === projects.length - 1 ? ' disabled' : '') + '>\u2193</button>' +
-                        '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-project" data-index="' + i + '" title="Delete project" aria-label="Delete project">\u00d7</button>' +
-                    '</div>' +
-                '</div>';
-            }).join('')
-            : '<p class="admin-empty">No projects yet. Click "+ Add Project" to create one.</p>';
-
-        var editorHtml = '<p class="admin-empty">Select a project from the list or add a new project.</p>';
-        if (selected) {
-            var links = selected.links || {};
-            var demo = selected.demo || {};
-            var previewHref = esc(siteRoot() + 'projects/project.html?id=' + encodeURIComponent(selected.id || '1'));
-            editorHtml =
-                '<div class="admin-detail__topbar">' +
-                    '<div class="admin-detail__identity">' +
-                        '<span class="admin-pill">Project ' + String(idx + 1).padStart(2, '0') + '</span>' +
-                        '<h3>' + esc(selected.title || selected.id) + '</h3>' +
-                        '<code class="admin-code-badge">id: ' + esc(selected.id || '') + '</code>' +
-                    '</div>' +
-                    '<div class="admin-item-controls">' +
-                        '<button type="button" class="admin-btn" data-admin-action="jump-project-docs" data-project-id="' + esc(selected.id || '') + '">Edit Documentation \u2192</button>' +
-                        '<a class="admin-btn" href="' + previewHref + '" target="_blank" rel="noopener noreferrer">Preview Page \u2197</a>' +
-                    '</div>' +
-                '</div>' +
-                '<form class="admin-form" data-admin-form="project" data-index="' + idx + '">' +
-                    '<fieldset class="admin-fieldset"><legend>Identity &amp; Publication Status</legend>' +
-                        '<div class="admin-form__grid">' +
-                            '<label class="admin-field"><span>ID / Slug</span><input name="id" required autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(selected.id || '') + '"></label>' +
-                            '<label class="admin-field"><span>Title</span><input name="title" required value="' + esc(selected.title || '') + '"></label>' +
-                            '<label class="admin-field"><span>Status</span><input name="status" value="' + esc(selected.status || '') + '" placeholder="Live / In Progress"></label>' +
-                            '<label class="admin-field admin-field--checkbox"><input type="checkbox" name="featured"' + (selected.featured ? ' checked' : '') + '><span>Featured on Home Gallery</span></label>' +
-                        '</div>' +
-                    '</fieldset>' +
-                    '<fieldset class="admin-fieldset"><legend>Case Study Copy &amp; Benchmarks</legend>' +
-                        '<label class="admin-field"><span>Summary (Card Excerpt)</span><textarea name="summary" rows="2">' + esc(selected.summary || '') + '</textarea></label>' +
-                        '<label class="admin-field"><span>Full Description</span><textarea name="description" rows="4">' + esc(selected.description || '') + '</textarea></label>' +
-                        '<div class="admin-form__grid">' +
-                            '<label class="admin-field"><span>Highlights (one per line)</span><textarea name="highlights" rows="3">' + esc((selected.highlights || []).join('\n')) + '</textarea></label>' +
-                            '<label class="admin-field"><span>Metrics ("Label | Value" per line)</span><textarea name="metrics" rows="3">' + esc(formatMetricsText(selected.metrics)) + '</textarea></label>' +
-                        '</div>' +
-                    '</fieldset>' +
-                    '<fieldset class="admin-fieldset"><legend>Media &amp; Stack Taxonomy</legend>' +
-                        '<div class="admin-form__grid">' +
-                            '<label class="admin-field"><span>Image Path / URL</span><input name="image" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(selected.image || '') + '" placeholder="assets/images/..."></label>' +
-                            '<label class="admin-field"><span>Image Alt Text</span><input name="imageAlt" value="' + esc(selected.imageAlt || '') + '"></label>' +
-                            '<label class="admin-field"><span>Technologies (comma-separated)</span><input name="tech" value="' + esc((selected.tech || []).join(', ')) + '"></label>' +
-                            '<label class="admin-field"><span>Tags (comma-separated)</span><input name="tags" value="' + esc((selected.tags || []).join(', ')) + '"></label>' +
-                        '</div>' +
-                    '</fieldset>' +
-                    '<fieldset class="admin-fieldset"><legend>Links &amp; Interactive Demo</legend>' +
-                        '<div class="admin-form__grid">' +
-                            '<label class="admin-field"><span>Repository / GitHub URL</span><input name="repo" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.repo || links.github || '') + '"></label>' +
-                            '<label class="admin-field"><span>Live URL</span><input name="live" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.live || '') + '"></label>' +
-                            '<label class="admin-field"><span>Docs Link</span><input name="docs" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.docs || '') + '"></label>' +
-                            '<label class="admin-field"><span>Interactive Demo URL</span><input name="demoUrl" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(demo.url || '') + '"></label>' +
-                        '</div>' +
-                        '<label class="admin-field"><span>Demo Instructions</span><input name="demoInstructions" value="' + esc(demo.instructions || '') + '"></label>' +
-                    '</fieldset>' +
-                    '<div class="admin-form__actions admin-form__actions--sticky">' +
-                        '<button type="submit" class="admin-btn admin-btn--primary">Save Project</button>' +
-                        '<button type="button" class="admin-btn" data-admin-action="duplicate-project" data-index="' + idx + '">Duplicate</button>' +
-                    '</div>' +
-                '</form>';
+    function renderProjectSidebarList(projects, selectedIdx) {
+        if (!projects.length) {
+            return '<p class="admin-empty">No projects yet. Click "+ Add Project" to create one.</p>';
         }
+        return projects.map(function (p, i) {
+            var activeClass = i === selectedIdx ? ' is-selected' : '';
+            var numLabel = pad2(i + 1);
+            return '<div class="admin-list-item' + activeClass + '">' +
+                '<button type="button" class="admin-list-item__select" data-admin-action="select-project" data-index="' + i + '">' +
+                    '<span class="admin-list-item__head">' +
+                        '<span class="admin-index-badge">' + numLabel + '</span>' +
+                        '<span class="admin-list-item__title">' + esc(p.title || p.id || ('Project ' + (i + 1))) + '</span>' +
+                    '</span>' +
+                    '<span class="admin-list-item__badges">' +
+                        '<span class="admin-mini-badge">' + esc(p.status || 'Draft') + '</span>' +
+                        (p.featured ? '<span class="admin-mini-badge admin-mini-badge--accent">Featured</span>' : '') +
+                    '</span>' +
+                '</button>' +
+                '<div class="admin-item-controls">' +
+                    '<button type="button" class="admin-icon-btn" data-admin-action="move-project" data-index="' + i + '" data-delta="-1" title="Move Up" aria-label="Move project up"' + (i === 0 ? ' disabled' : '') + '>\u2191</button>' +
+                    '<button type="button" class="admin-icon-btn" data-admin-action="move-project" data-index="' + i + '" data-delta="1" title="Move Down" aria-label="Move project down"' + (i === projects.length - 1 ? ' disabled' : '') + '>\u2193</button>' +
+                    '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-project" data-index="' + i + '" title="Delete project" aria-label="Delete project">\u00d7</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
 
-        var sortOptions = normalizeExperience(state.data.experience).projectSortOptions;
+    function renderProjectEditorForm(selected, idx) {
+        if (!selected) {
+            return '<p class="admin-empty">Select a project from the list or add a new project.</p>';
+        }
+        var links = selected.links || {};
+        var demo = selected.demo || {};
+        var previewHref = esc(siteRoot() + 'projects/project.html?id=' + encodeURIComponent(selected.id || '1'));
+        return '<div class="admin-detail__topbar">' +
+                '<div class="admin-detail__identity">' +
+                    '<span class="admin-pill">Project ' + pad2(idx + 1) + '</span>' +
+                    '<h3>' + esc(selected.title || selected.id) + '</h3>' +
+                    '<code class="admin-code-badge">id: ' + esc(selected.id || '') + '</code>' +
+                '</div>' +
+                '<div class="admin-item-controls">' +
+                    '<button type="button" class="admin-btn" data-admin-action="jump-project-docs" data-project-id="' + esc(selected.id || '') + '">Edit Documentation \u2192</button>' +
+                    '<a class="admin-btn" href="' + previewHref + '" target="_blank" rel="noopener noreferrer">Preview Page \u2197</a>' +
+                '</div>' +
+            '</div>' +
+            '<form class="admin-form" data-admin-form="project" data-index="' + idx + '">' +
+                '<fieldset class="admin-fieldset"><legend>Identity &amp; Publication Status</legend>' +
+                    '<div class="admin-form__grid">' +
+                        '<label class="admin-field"><span>ID / Slug</span><input name="id" required autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(selected.id || '') + '"></label>' +
+                        '<label class="admin-field"><span>Title</span><input name="title" required value="' + esc(selected.title || '') + '"></label>' +
+                        '<label class="admin-field"><span>Status</span><input name="status" value="' + esc(selected.status || '') + '" placeholder="Live / In Progress"></label>' +
+                        '<label class="admin-field admin-field--checkbox"><input type="checkbox" name="featured"' + (selected.featured ? ' checked' : '') + '><span>Featured on Home Gallery</span></label>' +
+                    '</div>' +
+                '</fieldset>' +
+                '<fieldset class="admin-fieldset"><legend>Case Study Copy &amp; Benchmarks</legend>' +
+                    '<label class="admin-field"><span>Summary (Card Excerpt)</span><textarea name="summary" rows="2">' + esc(selected.summary || '') + '</textarea></label>' +
+                    '<label class="admin-field"><span>Full Description</span><textarea name="description" rows="4">' + esc(selected.description || '') + '</textarea></label>' +
+                    '<div class="admin-form__grid">' +
+                        '<label class="admin-field"><span>Highlights (one per line)</span><textarea name="highlights" rows="3">' + esc((selected.highlights || []).join('\n')) + '</textarea></label>' +
+                        '<label class="admin-field"><span>Metrics ("Label | Value" per line)</span><textarea name="metrics" rows="3">' + esc(formatMetricsText(selected.metrics)) + '</textarea></label>' +
+                    '</div>' +
+                '</fieldset>' +
+                '<fieldset class="admin-fieldset"><legend>Media &amp; Stack Taxonomy</legend>' +
+                    '<div class="admin-form__grid">' +
+                        '<label class="admin-field"><span>Image Path / URL</span><input name="image" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(selected.image || '') + '" placeholder="assets/images/..."></label>' +
+                        '<label class="admin-field"><span>Image Alt Text</span><input name="imageAlt" value="' + esc(selected.imageAlt || '') + '"></label>' +
+                        '<label class="admin-field"><span>Technologies (comma-separated)</span><input name="tech" value="' + esc((selected.tech || []).join(', ')) + '"></label>' +
+                        '<label class="admin-field"><span>Tags (comma-separated)</span><input name="tags" value="' + esc((selected.tags || []).join(', ')) + '"></label>' +
+                    '</div>' +
+                '</fieldset>' +
+                '<fieldset class="admin-fieldset"><legend>Links &amp; Interactive Demo</legend>' +
+                    '<div class="admin-form__grid">' +
+                        '<label class="admin-field"><span>Repository / GitHub URL</span><input name="repo" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.repo || links.github || '') + '"></label>' +
+                        '<label class="admin-field"><span>Live URL</span><input name="live" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.live || '') + '"></label>' +
+                        '<label class="admin-field"><span>Docs Link</span><input name="docs" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(links.docs || '') + '"></label>' +
+                        '<label class="admin-field"><span>Interactive Demo URL</span><input name="demoUrl" autocorrect="off" autocapitalize="none" spellcheck="false" value="' + esc(demo.url || '') + '"></label>' +
+                    '</div>' +
+                    '<label class="admin-field"><span>Demo Instructions</span><input name="demoInstructions" value="' + esc(demo.instructions || '') + '"></label>' +
+                '</fieldset>' +
+                '<div class="admin-form__actions admin-form__actions--sticky">' +
+                    '<button type="submit" class="admin-btn admin-btn--primary">Save Project</button>' +
+                    '<button type="button" class="admin-btn" data-admin-action="duplicate-project" data-index="' + idx + '">Duplicate</button>' +
+                '</div>' +
+            '</form>';
+    }
+
+    function renderProjectSortOptions(sortOptions) {
+        if (!sortOptions.length) {
+            return '<p class="admin-empty">No custom sort options configured.</p>';
+        }
         var sortRules = [
             { value: 'language', label: 'Language / Tech Priority' },
             { value: 'title-asc', label: 'Title A-Z' },
@@ -1321,29 +1359,39 @@
             { value: 'tech-count', label: 'Most Technologies' },
             { value: 'reverse', label: 'Newest / Reverse Order' }
         ];
-        var sortRowsHtml = sortOptions.length
-            ? '<div class="admin-cards-grid">' + sortOptions.map(function (opt, i) {
-                var ruleOptions = sortRules.map(function (rule) {
-                    return '<option value="' + esc(rule.value) + '"' + (opt.by === rule.value ? ' selected' : '') + '>' + esc(rule.label) + '</option>';
-                }).join('');
-                return '<form class="admin-card admin-form" data-admin-form="sort-option" data-index="' + i + '">' +
-                    '<div class="admin-card__head">' +
-                        '<strong>' + esc(opt.label || opt.id || ('Sort ' + (i + 1))) + '</strong>' +
-                        '<div class="admin-item-controls">' +
-                            '<button type="button" class="admin-icon-btn" data-admin-action="move-sort-option" data-index="' + i + '" data-delta="-1" aria-label="Move sort option up"' + (i === 0 ? ' disabled' : '') + '>\u2191</button>' +
-                            '<button type="button" class="admin-icon-btn" data-admin-action="move-sort-option" data-index="' + i + '" data-delta="1" aria-label="Move sort option down"' + (i === sortOptions.length - 1 ? ' disabled' : '') + '>\u2193</button>' +
-                            '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-sort-option" data-index="' + i + '" aria-label="Delete sort option">\u00d7</button>' +
-                        '</div>' +
+        return '<div class="admin-cards-grid">' + sortOptions.map(function (opt, i) {
+            var ruleOptions = sortRules.map(function (rule) {
+                return '<option value="' + esc(rule.value) + '"' + (opt.by === rule.value ? ' selected' : '') + '>' + esc(rule.label) + '</option>';
+            }).join('');
+            return '<form class="admin-card admin-form" data-admin-form="sort-option" data-index="' + i + '">' +
+                '<div class="admin-card__head">' +
+                    '<strong>' + esc(opt.label || opt.id || ('Sort ' + (i + 1))) + '</strong>' +
+                    '<div class="admin-item-controls">' +
+                        '<button type="button" class="admin-icon-btn" data-admin-action="move-sort-option" data-index="' + i + '" data-delta="-1" aria-label="Move sort option up"' + (i === 0 ? ' disabled' : '') + '>\u2191</button>' +
+                        '<button type="button" class="admin-icon-btn" data-admin-action="move-sort-option" data-index="' + i + '" data-delta="1" aria-label="Move sort option down"' + (i === sortOptions.length - 1 ? ' disabled' : '') + '>\u2193</button>' +
+                        '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-sort-option" data-index="' + i + '" aria-label="Delete sort option">\u00d7</button>' +
                     '</div>' +
-                    '<div class="admin-form__grid">' +
-                        '<label class="admin-field"><span>Button Label</span><input name="label" required value="' + esc(opt.label || '') + '" placeholder="e.g. Title A-Z"></label>' +
-                        '<label class="admin-field"><span>Sort Rule</span><select name="by">' + ruleOptions + '</select></label>' +
-                        '<label class="admin-field"><span>Target Language / Status (optional)</span><input name="target" value="' + esc(opt.target || '') + '" placeholder="e.g. TypeScript, Live"></label>' +
-                    '</div>' +
-                    '<div class="admin-form__actions"><button type="submit" class="admin-btn admin-btn--primary">Save Sort Option</button></div>' +
-                '</form>';
-            }).join('') + '</div>'
-            : '<p class="admin-empty">No custom sort options configured.</p>';
+                '</div>' +
+                '<div class="admin-form__grid">' +
+                    '<label class="admin-field"><span>Button Label</span><input name="label" required value="' + esc(opt.label || '') + '" placeholder="e.g. Title A-Z"></label>' +
+                    '<label class="admin-field"><span>Sort Rule</span><select name="by">' + ruleOptions + '</select></label>' +
+                    '<label class="admin-field"><span>Target Language / Status (optional)</span><input name="target" value="' + esc(opt.target || '') + '" placeholder="e.g. TypeScript, Live"></label>' +
+                '</div>' +
+                '<div class="admin-form__actions"><button type="submit" class="admin-btn admin-btn--primary">Save Sort Option</button></div>' +
+            '</form>';
+        }).join('') + '</div>';
+    }
+
+    function renderProjectsPanel() {
+        var projects = state.data.projects || [];
+        var idx = Math.min(state.selectedProjectIndex, Math.max(0, projects.length - 1));
+        state.selectedProjectIndex = idx;
+        var selected = projects[idx] || null;
+
+        var listHtml = renderProjectSidebarList(projects, idx);
+        var editorHtml = renderProjectEditorForm(selected, idx);
+        var sortOptions = normalizeExperience(state.data.experience).projectSortOptions;
+        var sortRowsHtml = renderProjectSortOptions(sortOptions);
 
         return '<div class="admin-stack">' +
             '<div class="admin-split">' +
@@ -1389,7 +1437,7 @@
                 return '<form class="admin-card admin-form" data-admin-form="doc-section" data-project-id="' + esc(selectedProject.id) + '" data-index="' + idx + '">' +
                     '<div class="admin-card__head">' +
                         '<div class="admin-card__title-wrap">' +
-                            '<span class="admin-pill">Section ' + String(idx + 1).padStart(2, '0') + '</span>' +
+                            '<span class="admin-pill">Section ' + pad2(idx + 1) + '</span>' +
                             '<strong>' + esc(secTitle) + '</strong>' +
                         '</div>' +
                         '<div class="admin-item-controls">' +
@@ -1492,7 +1540,7 @@
         var timeline = (state.data.experience && state.data.experience.timeline) || [];
         var rows = timeline.length
             ? timeline.map(function (item, idx) {
-                var numLabel = String(idx + 1).padStart(2, '0');
+                var numLabel = pad2(idx + 1);
                 return '<form class="admin-card admin-form" data-admin-form="timeline" data-index="' + idx + '">' +
                     '<div class="admin-card__head">' +
                         '<div class="admin-card__title-wrap">' +
@@ -1531,6 +1579,33 @@
         '</div>';
     }
 
+    function socialEntryValue(entry) {
+        if (entry && typeof entry === 'object') {
+            return String(entry.value || entry.url || entry.href || '').trim();
+        }
+        return String(entry || '').trim();
+    }
+
+    function socialEntryIcon(entry, fallbackIcon) {
+        if (entry && typeof entry === 'object' && entry.icon) {
+            return String(entry.icon).trim();
+        }
+        return fallbackIcon || '';
+    }
+
+    function socialEntryAction(entry, fallbackAction) {
+        if (entry && typeof entry === 'object' && entry.action) {
+            var a = String(entry.action).trim().toLowerCase();
+            if (a === 'copy' || a === 'link') return a;
+        }
+        return fallbackAction || 'link';
+    }
+
+    function renderSocialActionOptions(selected) {
+        return '<option value="copy"' + (selected === 'copy' ? ' selected' : '') + '>copy</option>' +
+            '<option value="link"' + (selected === 'link' ? ' selected' : '') + '>link</option>';
+    }
+
     function renderPagesSocialsPanel() {
         var socials = state.data.socials || {};
         var pages = state.data.pages || {};
@@ -1539,16 +1614,6 @@
         var projectsFeatured = (pages.projects && pages.projects.featured) || {};
         var aboutProfile = (pages.about && pages.about.profile) || {};
         var contactHero = (pages.contact && pages.contact.hero) || pages.contact || {};
-
-        var homeActions = Array.isArray(homeHero.actions) ? homeHero.actions : [];
-        var homeActionsHtml = homeActions.map(function (act, idx) {
-            return '<div class="admin-row-group">' +
-                '<input name="homeActionLabel_' + idx + '" placeholder="Label" value="' + esc(act.label || '') + '">' +
-                '<input name="homeActionHref_' + idx + '" placeholder="Href" value="' + esc(act.href || '') + '">' +
-                '<input name="homeActionVariant_' + idx + '" placeholder="className" value="' + esc(act.variant || act.className || 'button button-primary') + '">' +
-                '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-home-action" data-index="' + idx + '" aria-label="Remove home CTA">\u00d7</button>' +
-            '</div>';
-        }).join('');
 
         var traitsArr = Array.isArray(aboutProfile.traits) ? aboutProfile.traits : [];
         var traitsText = traitsArr.map(function (t) {
@@ -1560,9 +1625,15 @@
         var bioArr = Array.isArray(aboutProfile.bio) ? aboutProfile.bio : [];
         var customSocialKeys = getCustomSocialKeys(socials);
         var customSocialRows = customSocialKeys.map(function (key, idx) {
+            var entry = socials[key];
+            var val = socialEntryValue(entry);
+            var iconPath = socialEntryIcon(entry, '');
+            var actionVal = socialEntryAction(entry, /^https?:\/\//i.test(val) ? 'link' : 'copy');
             return '<div class="admin-row-group admin-social-custom-row" data-social-custom-row="' + idx + '">' +
                 '<input name="customSocialKey_' + idx + '" value="' + esc(key) + '" placeholder="Platform (e.g. X / Twitter, YouTube)">' +
-                '<input name="customSocialValue_' + idx + '" value="' + esc(socials[key] || '') + '" placeholder="URL or handle">' +
+                '<input name="customSocialValue_' + idx + '" value="' + esc(val) + '" placeholder="URL or handle">' +
+                '<input name="customSocialIcon_' + idx + '" value="' + esc(iconPath) + '" placeholder="assets/icons/contacts/..."> ' +
+                '<select name="customSocialAction_' + idx + '" aria-label="Action for ' + esc(key) + '">' + renderSocialActionOptions(actionVal) + '</select>' +
                 '<button type="button" class="admin-icon-btn admin-icon-btn--danger" data-admin-action="remove-social-channel" data-social-key="' + esc(key) + '" aria-label="Remove social channel ' + esc(key) + '">\u00d7</button>' +
             '</div>';
         }).join('');
@@ -1574,10 +1645,18 @@
                     '<button type="button" class="admin-btn admin-btn--primary" data-admin-action="add-social-channel">+ Add Social</button>' +
                 '</div>' +
                 '<div class="admin-form__grid">' +
-                    '<label class="admin-field"><span>Email</span><input name="email" value="' + esc(socials.email || '') + '"></label>' +
-                    '<label class="admin-field"><span>GitHub URL</span><input name="github" value="' + esc(socials.github || '') + '"></label>' +
-                    '<label class="admin-field"><span>LinkedIn URL</span><input name="linkedin" value="' + esc(socials.linkedin || '') + '"></label>' +
-                    '<label class="admin-field"><span>Discord Handle</span><input name="discord" value="' + esc(socials.discord || '') + '"></label>' +
+                    '<label class="admin-field"><span>Email</span><input name="email" value="' + esc(socialEntryValue(socials.email)) + '"></label>' +
+                    '<label class="admin-field"><span>Email SVG Icon</span><input name="emailIcon" value="' + esc(socialEntryIcon(socials.email, 'assets/icons/contacts/email.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>Email Action</span><select name="emailAction">' + renderSocialActionOptions(socialEntryAction(socials.email, 'copy')) + '</select></label>' +
+                    '<label class="admin-field"><span>GitHub URL</span><input name="github" value="' + esc(socialEntryValue(socials.github)) + '"></label>' +
+                    '<label class="admin-field"><span>GitHub SVG Icon</span><input name="githubIcon" value="' + esc(socialEntryIcon(socials.github, 'assets/icons/contacts/github.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>GitHub Action</span><select name="githubAction">' + renderSocialActionOptions(socialEntryAction(socials.github, 'link')) + '</select></label>' +
+                    '<label class="admin-field"><span>LinkedIn URL</span><input name="linkedin" value="' + esc(socialEntryValue(socials.linkedin)) + '"></label>' +
+                    '<label class="admin-field"><span>LinkedIn SVG Icon</span><input name="linkedinIcon" value="' + esc(socialEntryIcon(socials.linkedin, 'assets/icons/contacts/linkedin.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>LinkedIn Action</span><select name="linkedinAction">' + renderSocialActionOptions(socialEntryAction(socials.linkedin, 'link')) + '</select></label>' +
+                    '<label class="admin-field"><span>Discord Handle</span><input name="discord" value="' + esc(socialEntryValue(socials.discord)) + '"></label>' +
+                    '<label class="admin-field"><span>Discord SVG Icon</span><input name="discordIcon" value="' + esc(socialEntryIcon(socials.discord, 'assets/icons/contacts/discord.svg')) + '"></label>' +
+                    '<label class="admin-field"><span>Discord Action</span><select name="discordAction">' + renderSocialActionOptions(socialEntryAction(socials.discord, 'copy')) + '</select></label>' +
                 '</div>' +
                 '<div class="admin-subtoolbar"><span>Additional Social Channels (' + customSocialKeys.length + ')</span></div>' +
                 '<div class="admin-rows" data-admin-custom-socials>' + (customSocialRows || '<p class="admin-empty">No additional social channels yet. Click + Add Social to add more.</p>') + '</div>' +
@@ -1587,13 +1666,10 @@
                 '<div class="admin-card__head"><h3>Page Copy &amp; Scalable Profile Lists (pages.json)</h3></div>' +
                 '<fieldset class="admin-fieldset"><legend>Home Hero</legend>' +
                     '<div class="admin-form__grid">' +
-                        '<label class="admin-field"><span>Eyebrow</span><input name="homeEyebrow" value="' + esc(homeHero.eyebrow || '') + '"></label>' +
-                        '<label class="admin-field"><span>Title</span><input name="homeTitle" value="' + esc(homeHero.title || '') + '"></label>' +
+                        '<label class="admin-field"><span>Marquee Name</span><input name="homeHeroName" value="' + esc(homeHero.name || '') + '"></label>' +
+                        '<label class="admin-field"><span>Orb Image Path</span><input name="homeHeroImage" value="' + esc(homeHero.image || '') + '"></label>' +
+                        '<label class="admin-field"><span>Scroll Prompt</span><input name="homeHeroScroll" value="' + esc(homeHero.scroll || '') + '"></label>' +
                     '</div>' +
-                    '<label class="admin-field"><span>Lead</span><textarea name="homeLead" rows="2">' + esc(homeHero.lead || '') + '</textarea></label>' +
-                    '<label class="admin-field"><span>CTA Note</span><input name="homeCtaNote" value="' + esc(homeHero.ctaNote || '') + '"></label>' +
-                    '<div class="admin-subtoolbar"><span>Home Hero Action Buttons (' + homeActions.length + ')</span><button type="button" class="admin-btn" data-admin-action="add-home-action">+ Add Button</button></div>' +
-                    '<div class="admin-rows">' + (homeActionsHtml || '<p class="admin-empty">No hero action buttons.</p>') + '</div>' +
                 '</fieldset>' +
                 '<fieldset class="admin-fieldset"><legend>About Profile &amp; Scalable Lists</legend>' +
                     '<div class="admin-form__grid">' +
@@ -1611,7 +1687,7 @@
                         '<label class="admin-field"><span>Projects Eyebrow</span><input name="projectsEyebrow" value="' + esc(projectsHero.eyebrow || '') + '"></label>' +
                         '<label class="admin-field"><span>Projects Title</span><input name="projectsTitle" value="' + esc(projectsHero.title || '') + '"></label>' +
                     '</div>' +
-                    '<label class="admin-field"><span>Projects Lead</span><textarea name="projectsLead" rows="2">' + esc(projectsHero.lead || '') + '</textarea></label>' +
+                    '<label class="admin-field"><span>Projects Lead</span><textarea name="projectsLead" rows="2">' + esc(projectsHero.body || projectsHero.lead || '') + '</textarea></label>' +
                     '<div class="admin-form__grid">' +
                         '<label class="admin-field"><span>Featured Callout Tag</span><input name="featuredTag" value="' + esc(projectsFeatured.tag || '') + '"></label>' +
                         '<label class="admin-field"><span>Featured Callout Title</span><input name="featuredTitle" value="' + esc(projectsFeatured.title || '') + '"></label>' +
@@ -1620,7 +1696,7 @@
                         '<label class="admin-field"><span>Contact Eyebrow</span><input name="contactEyebrow" value="' + esc(contactHero.eyebrow || '') + '"></label>' +
                         '<label class="admin-field"><span>Contact Title</span><input name="contactTitle" value="' + esc(contactHero.title || '') + '"></label>' +
                     '</div>' +
-                    '<label class="admin-field"><span>Contact Lead</span><textarea name="contactLead" rows="2">' + esc(contactHero.lead || '') + '</textarea></label>' +
+                    '<label class="admin-field"><span>Contact Lead</span><textarea name="contactLead" rows="2">' + esc(contactHero.body || contactHero.lead || '') + '</textarea></label>' +
                 '</fieldset>' +
                 '<div class="admin-form__actions"><button type="submit" class="admin-btn admin-btn--primary">Save Page Copy &amp; Lists</button></div>' +
             '</form>' +
@@ -1631,11 +1707,24 @@
     function collectSocialsFromForm(form) {
         if (!form) return clone(state.data.socials || {});
         var fd = new FormData(form);
+        function buildEntry(val, iconPath, actionVal, defaultAction) {
+            var cleanVal = String(val || '').trim();
+            var cleanIcon = String(iconPath || '').trim();
+            var cleanAction = String(actionVal || defaultAction || '').trim().toLowerCase();
+            if (cleanAction !== 'copy' && cleanAction !== 'link') {
+                cleanAction = defaultAction || 'link';
+            }
+            return {
+                value: cleanVal,
+                icon: cleanIcon,
+                action: cleanAction
+            };
+        }
         var nextSocials = {
-            email: String(fd.get('email') || '').trim(),
-            github: String(fd.get('github') || '').trim(),
-            linkedin: String(fd.get('linkedin') || '').trim(),
-            discord: String(fd.get('discord') || '').trim()
+            email: buildEntry(fd.get('email'), fd.get('emailIcon'), fd.get('emailAction'), 'copy'),
+            github: buildEntry(fd.get('github'), fd.get('githubIcon'), fd.get('githubAction'), 'link'),
+            linkedin: buildEntry(fd.get('linkedin'), fd.get('linkedinIcon'), fd.get('linkedinAction'), 'link'),
+            discord: buildEntry(fd.get('discord'), fd.get('discordIcon'), fd.get('discordAction'), 'copy')
         };
         var keyInputs = form.querySelectorAll('input[name^="customSocialKey_"]');
         for (var i = 0; i < keyInputs.length; i++) {
@@ -1644,155 +1733,140 @@
             var customKey = String(keyInputs[i].value || '').trim();
             var valInput = form.querySelector('input[name="customSocialValue_' + rowIdx + '"]');
             var customVal = String(valInput ? valInput.value : (fd.get('customSocialValue_' + rowIdx) || '')).trim();
+            var iconInput = form.querySelector('input[name="customSocialIcon_' + rowIdx + '"]');
+            var customIcon = String(iconInput ? iconInput.value : (fd.get('customSocialIcon_' + rowIdx) || '')).trim();
+            var actionSelect = form.querySelector('select[name="customSocialAction_' + rowIdx + '"]');
+            var customAction = String(actionSelect ? actionSelect.value : (fd.get('customSocialAction_' + rowIdx) || '')).trim();
             if (customKey && CORE_SOCIAL_KEYS.indexOf(customKey.toLowerCase()) === -1) {
-                nextSocials[customKey] = customVal;
+                nextSocials[customKey] = buildEntry(
+                    customVal,
+                    customIcon,
+                    customAction,
+                    /^https?:\/\//i.test(customVal) ? 'link' : 'copy'
+                );
             }
         }
         return nextSocials;
     }
 
+    function moveExperienceListItem(key, idx, delta, message) {
+        var exp = normalizeExperience(state.data.experience);
+        arrayMove(exp[key], idx, delta);
+        persistDataset('experience', exp, message);
+        renderDialogBody();
+    }
+
+    var CLICK_ACTIONS = {
+        close: function () { close(); },
+        'select-project': function (ctx) {
+            state.selectedProjectIndex = ctx.idx;
+            renderDialogBody();
+        },
+        'jump-project-docs': function (ctx) {
+            if (!ctx.projectId) return;
+            state.selectedDocProjectId = ctx.projectId;
+            activateTab('documentation', true);
+        },
+        'add-project': function () { addProject(); },
+        'remove-project': function (ctx) { removeProject(ctx.idx); },
+        'move-project': function (ctx) { moveProject(ctx.idx, ctx.delta); },
+        'duplicate-project': function (ctx) {
+            var source = state.data.projects[ctx.idx];
+            if (!source) return;
+            var dup = clone(source);
+            delete dup.id;
+            dup.title = (source.title || 'Project') + ' (Copy)';
+            addProject(dup);
+        },
+        'add-doc': function (ctx) {
+            var targetProj = state.data.projects.find(function (p) { return String(p.id) === String(ctx.projectId); });
+            if (!targetProj) return;
+            var secs = Array.isArray(targetProj.documentation) ? targetProj.documentation.slice() : [];
+            secs.push({ heading: 'New Section ' + (secs.length + 1), body: 'Documentation content goes here.' });
+            saveDocumentation(ctx.projectId, secs);
+        },
+        'remove-doc': function (ctx) {
+            var proj = state.data.projects.find(function (p) { return String(p.id) === String(ctx.projectId); });
+            if (!proj || !Array.isArray(proj.documentation)) return;
+            var secs = proj.documentation.slice();
+            secs.splice(ctx.idx, 1);
+            saveDocumentation(ctx.projectId, secs);
+        },
+        'move-doc': function (ctx) {
+            var proj = state.data.projects.find(function (p) { return String(p.id) === String(ctx.projectId); });
+            if (!proj || !Array.isArray(proj.documentation)) return;
+            var secs = proj.documentation.slice();
+            arrayMove(secs, ctx.idx, ctx.delta);
+            saveDocumentation(ctx.projectId, secs);
+        },
+        'add-lang': function () { addLanguage(); },
+        'remove-lang': function (ctx) { removeLanguage(ctx.idx); },
+        'move-lang': function (ctx) { moveExperienceListItem('languages', ctx.idx, ctx.delta, 'Reordered skills.'); },
+        'add-tool': function () { addTool(); },
+        'remove-tool': function (ctx) { removeTool(ctx.idx); },
+        'move-tool': function (ctx) { moveExperienceListItem('tools', ctx.idx, ctx.delta, 'Reordered tools.'); },
+        'add-sort-option': function () { addSortOption(); },
+        'remove-sort-option': function (ctx) { removeSortOption(ctx.idx); },
+        'move-sort-option': function (ctx) { moveSortOption(ctx.idx, ctx.delta); },
+        'add-timeline': function () { addTimelineItem(); },
+        'remove-timeline': function (ctx) { removeTimelineItem(ctx.idx); },
+        'move-timeline': function (ctx) { moveExperienceListItem('timeline', ctx.idx, ctx.delta, 'Reordered timeline entries.'); },
+        'add-social-channel': function (ctx) {
+            if (ctx.btn.form) {
+                state.data.socials = collectSocialsFromForm(ctx.btn.form);
+            }
+            addSocialChannel('', '');
+        },
+        'remove-social-channel': function (ctx) {
+            var rowEl = ctx.btn.closest && ctx.btn.closest('.admin-social-custom-row');
+            var keyInput = rowEl && rowEl.querySelector('input[name^="customSocialKey_"]');
+            var socialKey = (keyInput && String(keyInput.value || '').trim()) || ctx.btn.getAttribute('data-social-key');
+            if (ctx.btn.form) {
+                state.data.socials = collectSocialsFromForm(ctx.btn.form);
+            }
+            removeSocialChannel(socialKey);
+        },
+        'sync-all-disk': function () { syncAllToDisk(); },
+        'link-folder': function () { linkProjectDirectory(); },
+        'toggle-password-form': function () {
+            var dialog = getDialog();
+            var drawer = dialog && dialog.querySelector('[data-admin-password-drawer]');
+            if (!drawer) return;
+            state.passwordDrawerOpen = !state.passwordDrawerOpen;
+            drawer.hidden = !state.passwordDrawerOpen;
+            var errEl = drawer.querySelector('[data-admin-change-pw-error]');
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.hidden = true;
+            }
+            if (state.passwordDrawerOpen) {
+                var curInput = drawer.querySelector('input[name="currentPassword"]');
+                if (curInput && typeof curInput.focus === 'function') curInput.focus();
+            } else {
+                var pwForm = drawer.querySelector('form');
+                if (pwForm && typeof pwForm.reset === 'function') pwForm.reset();
+            }
+        },
+        'lock-admin': function () { lock(); },
+        'reset-dataset': function (ctx) {
+            if (ctx.dataset) resetDataset(ctx.dataset);
+        },
+        'reset-all': function () { resetAll(); }
+    };
+
     function handleDialogClick(e) {
         var btn = e.target.closest('[data-admin-action]');
         if (!btn) return;
         var action = btn.getAttribute('data-admin-action');
-        var idx = parseInt(btn.getAttribute('data-index'), 10);
-        var delta = parseInt(btn.getAttribute('data-delta'), 10);
-        var projectId = btn.getAttribute('data-project-id');
-        var dataset = btn.getAttribute('data-dataset');
-
-        if (action === 'close') {
-            close();
-        } else if (action === 'select-project') {
-            state.selectedProjectIndex = idx;
-            renderDialogBody();
-        } else if (action === 'jump-project-docs' && projectId) {
-            state.selectedDocProjectId = projectId;
-            activateTab('documentation', true);
-        } else if (action === 'add-project') {
-            addProject();
-        } else if (action === 'remove-project') {
-            removeProject(idx);
-        } else if (action === 'move-project') {
-            moveProject(idx, delta);
-        } else if (action === 'duplicate-project') {
-            var source = state.data.projects[idx];
-            if (source) {
-                var dup = clone(source);
-                delete dup.id;
-                dup.title = (source.title || 'Project') + ' (Copy)';
-                addProject(dup);
-            }
-        } else if (action === 'add-doc') {
-            var targetProj = state.data.projects.find(function (p) { return String(p.id) === String(projectId); });
-            if (targetProj) {
-                var secs = Array.isArray(targetProj.documentation) ? targetProj.documentation.slice() : [];
-                secs.push({ heading: 'New Section ' + (secs.length + 1), body: 'Documentation content goes here.' });
-                saveDocumentation(projectId, secs);
-            }
-        } else if (action === 'remove-doc') {
-            var pRem = state.data.projects.find(function (p) { return String(p.id) === String(projectId); });
-            if (pRem && Array.isArray(pRem.documentation)) {
-                var sRem = pRem.documentation.slice();
-                sRem.splice(idx, 1);
-                saveDocumentation(projectId, sRem);
-            }
-        } else if (action === 'move-doc') {
-            var pMov = state.data.projects.find(function (p) { return String(p.id) === String(projectId); });
-            if (pMov && Array.isArray(pMov.documentation)) {
-                var sMov = pMov.documentation.slice();
-                arrayMove(sMov, idx, delta);
-                saveDocumentation(projectId, sMov);
-            }
-        } else if (action === 'add-lang') {
-            addLanguage();
-        } else if (action === 'remove-lang') {
-            removeLanguage(idx);
-        } else if (action === 'move-lang') {
-            var expLang = normalizeExperience(state.data.experience);
-            arrayMove(expLang.languages, idx, delta);
-            persistDataset('experience', expLang, 'Reordered skills.');
-            renderDialogBody();
-        } else if (action === 'add-tool') {
-            addTool();
-        } else if (action === 'remove-tool') {
-            removeTool(idx);
-        } else if (action === 'move-tool') {
-            var expTool = normalizeExperience(state.data.experience);
-            arrayMove(expTool.tools, idx, delta);
-            persistDataset('experience', expTool, 'Reordered tools.');
-            renderDialogBody();
-        } else if (action === 'add-sort-option') {
-            addSortOption();
-        } else if (action === 'remove-sort-option') {
-            removeSortOption(idx);
-        } else if (action === 'move-sort-option') {
-            moveSortOption(idx, delta);
-        } else if (action === 'add-timeline') {
-            addTimelineItem();
-        } else if (action === 'remove-timeline') {
-            removeTimelineItem(idx);
-        } else if (action === 'move-timeline') {
-            var expTime = normalizeExperience(state.data.experience);
-            arrayMove(expTime.timeline, idx, delta);
-            persistDataset('experience', expTime, 'Reordered timeline entries.');
-            renderDialogBody();
-        } else if (action === 'add-social-channel') {
-            if (btn.form) {
-                state.data.socials = collectSocialsFromForm(btn.form);
-            }
-            addSocialChannel('', '');
-        } else if (action === 'remove-social-channel') {
-            var rowEl = btn.closest && btn.closest('.admin-social-custom-row');
-            var keyInput = rowEl && rowEl.querySelector('input[name^="customSocialKey_"]');
-            var socialKey = (keyInput && String(keyInput.value || '').trim()) || btn.getAttribute('data-social-key');
-            if (btn.form) {
-                state.data.socials = collectSocialsFromForm(btn.form);
-            }
-            removeSocialChannel(socialKey);
-        } else if (action === 'add-home-action') {
-            updatePages(function (pages) {
-                pages.home = pages.home || {};
-                pages.home.hero = pages.home.hero || {};
-                pages.home.hero.actions = Array.isArray(pages.home.hero.actions) ? pages.home.hero.actions : [];
-                pages.home.hero.actions.push({ label: 'New Action', href: 'projects.html', variant: 'button button-secondary' });
-                return pages;
-            });
-        } else if (action === 'remove-home-action') {
-            updatePages(function (pages) {
-                var actions = pages.home && pages.home.hero && pages.home.hero.actions;
-                if (Array.isArray(actions)) actions.splice(idx, 1);
-                return pages;
-            });
-        } else if (action === 'sync-all-disk') {
-            syncAllToDisk();
-        } else if (action === 'link-folder') {
-            linkProjectDirectory();
-        } else if (action === 'toggle-password-form') {
-            var dialog = getDialog();
-            var drawer = dialog && dialog.querySelector('[data-admin-password-drawer]');
-            if (drawer) {
-                state.passwordDrawerOpen = !state.passwordDrawerOpen;
-                drawer.hidden = !state.passwordDrawerOpen;
-                var errEl = drawer.querySelector('[data-admin-change-pw-error]');
-                if (errEl) {
-                    errEl.textContent = '';
-                    errEl.hidden = true;
-                }
-                if (state.passwordDrawerOpen) {
-                    var curInput = drawer.querySelector('input[name="currentPassword"]');
-                    if (curInput && typeof curInput.focus === 'function') curInput.focus();
-                } else {
-                    var pwForm = drawer.querySelector('form');
-                    if (pwForm && typeof pwForm.reset === 'function') pwForm.reset();
-                }
-            }
-        } else if (action === 'lock-admin') {
-            lock();
-        } else if (action === 'reset-dataset' && dataset) {
-            resetDataset(dataset);
-        } else if (action === 'reset-all') {
-            resetAll();
-        }
+        var handler = CLICK_ACTIONS[action];
+        if (!handler) return;
+        handler({
+            btn: btn,
+            idx: parseInt(btn.getAttribute('data-index'), 10),
+            delta: parseInt(btn.getAttribute('data-delta'), 10),
+            projectId: btn.getAttribute('data-project-id'),
+            dataset: btn.getAttribute('data-dataset')
+        });
     }
 
     function handleDialogChange(e) {
@@ -1802,15 +1876,8 @@
         }
     }
 
-    function handleDialogSubmit(e) {
-        var form = e.target.closest('[data-admin-form]');
-        if (!form) return;
-        e.preventDefault();
-        var type = form.getAttribute('data-admin-form');
-        var fd = new FormData(form);
-        var idx = parseInt(form.getAttribute('data-index'), 10);
-
-        if (type === 'project') {
+    var FORM_SUBMITTERS = {
+        project: function (form, fd, idx) {
             var current = state.data.projects[idx] || {};
             var existingLinks = current.links || {};
             var nextLinks = Object.assign({}, existingLinks, {
@@ -1843,18 +1910,19 @@
                     instructions: String(fd.get('demoInstructions') || '').trim()
                 }
             });
-        } else if (type === 'doc-section') {
+        },
+        'doc-section': function (form, fd, idx) {
             var pid = form.getAttribute('data-project-id');
             var proj = state.data.projects.find(function (p) { return String(p.id) === String(pid); });
-            if (proj) {
-                var sections = Array.isArray(proj.documentation) ? proj.documentation.slice() : [];
-                sections[idx] = {
-                    heading: String(fd.get('heading') || '').trim(),
-                    body: String(fd.get('body') || '')
-                };
-                saveDocumentation(pid, sections);
-            }
-        } else if (type === 'language') {
+            if (!proj) return;
+            var sections = Array.isArray(proj.documentation) ? proj.documentation.slice() : [];
+            sections[idx] = {
+                heading: String(fd.get('heading') || '').trim(),
+                body: String(fd.get('body') || '')
+            };
+            saveDocumentation(pid, sections);
+        },
+        language: function (form, fd, idx) {
             var expL = normalizeExperience(state.data.experience);
             expL.languages[idx] = Object.assign({}, expL.languages[idx], {
                 name: String(fd.get('name') || '').trim(),
@@ -1863,7 +1931,8 @@
             });
             persistDataset('experience', expL, 'Saved skill "' + expL.languages[idx].name + '".');
             renderDialogBody();
-        } else if (type === 'tool') {
+        },
+        tool: function (form, fd, idx) {
             var expT = normalizeExperience(state.data.experience);
             expT.tools[idx] = Object.assign({}, expT.tools[idx], {
                 name: String(fd.get('name') || '').trim(),
@@ -1874,13 +1943,15 @@
             });
             persistDataset('experience', expT, 'Saved tool "' + expT.tools[idx].name + '".');
             renderDialogBody();
-        } else if (type === 'sort-option') {
+        },
+        'sort-option': function (form, fd, idx) {
             updateSortOption(idx, {
                 label: String(fd.get('label') || '').trim(),
                 by: String(fd.get('by') || 'language').trim(),
                 target: String(fd.get('target') || '').trim()
             });
-        } else if (type === 'timeline') {
+        },
+        timeline: function (form, fd, idx) {
             var expTm = normalizeExperience(state.data.experience);
             expTm.timeline[idx] = Object.assign({}, expTm.timeline[idx], {
                 id: String(fd.get('id') || '').trim(),
@@ -1893,26 +1964,18 @@
             });
             persistDataset('experience', expTm, 'Saved milestone "' + expTm.timeline[idx].title + '".');
             renderDialogBody();
-        } else if (type === 'socials') {
+        },
+        socials: function (form) {
             updateSocials(collectSocialsFromForm(form));
-        } else if (type === 'pages') {
+        },
+        pages: function (form, fd) {
             updatePages(function (pages) {
                 pages.home = pages.home || {};
-                pages.home.hero = Object.assign({}, pages.home.hero, {
-                    eyebrow: String(fd.get('homeEyebrow') || ''),
-                    title: String(fd.get('homeTitle') || ''),
-                    lead: String(fd.get('homeLead') || ''),
-                    ctaNote: String(fd.get('homeCtaNote') || '')
-                });
-                if (Array.isArray(pages.home.hero.actions)) {
-                    pages.home.hero.actions = pages.home.hero.actions.map(function (act, i) {
-                        return Object.assign({}, act, {
-                            label: String(fd.get('homeActionLabel_' + i) || act.label || ''),
-                            href: String(fd.get('homeActionHref_' + i) || act.href || ''),
-                            variant: String(fd.get('homeActionVariant_' + i) || act.variant || '')
-                        });
-                    });
-                }
+                pages.home.hero = {
+                    name: String(fd.get('homeHeroName') || ''),
+                    image: String(fd.get('homeHeroImage') || ''),
+                    scroll: String(fd.get('homeHeroScroll') || '')
+                };
                 pages.about = pages.about || {};
                 pages.about.profile = Object.assign({}, pages.about.profile, {
                     name: String(fd.get('aboutName') || ''),
@@ -1927,7 +1990,7 @@
                 pages.projects.hero = Object.assign({}, pages.projects.hero, {
                     eyebrow: String(fd.get('projectsEyebrow') || ''),
                     title: String(fd.get('projectsTitle') || ''),
-                    lead: String(fd.get('projectsLead') || '')
+                    body: String(fd.get('projectsLead') || '')
                 });
                 pages.projects.featured = Object.assign({}, pages.projects.featured, {
                     tag: String(fd.get('featuredTag') || ''),
@@ -1937,10 +2000,11 @@
                 var targetContact = pages.contact.hero ? pages.contact.hero : pages.contact;
                 targetContact.eyebrow = String(fd.get('contactEyebrow') || '');
                 targetContact.title = String(fd.get('contactTitle') || '');
-                targetContact.lead = String(fd.get('contactLead') || '');
+                targetContact.body = String(fd.get('contactLead') || '');
                 return pages;
             });
-        } else if (type === 'change-password') {
+        },
+        'change-password': function (form, fd) {
             var curPw = String(fd.get('currentPassword') || '');
             var newPw = String(fd.get('newPassword') || '');
             var confirmPw = String(fd.get('confirmPassword') || '');
@@ -1972,6 +2036,18 @@
             var drawerEl = form.closest('[data-admin-password-drawer]');
             if (drawerEl) drawerEl.hidden = true;
         }
+    };
+
+    function handleDialogSubmit(e) {
+        var form = e.target.closest('[data-admin-form]');
+        if (!form) return;
+        e.preventDefault();
+        var type = form.getAttribute('data-admin-form');
+        var submitter = FORM_SUBMITTERS[type];
+        if (!submitter) return;
+        var fd = new FormData(form);
+        var idx = parseInt(form.getAttribute('data-index'), 10);
+        submitter(form, fd, idx);
     }
 
     /* ------------------------------------------------------------- Open / Close / Lock / Toggle */

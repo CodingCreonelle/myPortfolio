@@ -138,7 +138,7 @@
                 observer.unobserve(entry.target);
                 typeElement(entry.target, false);
             });
-        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.1 });
+        }, { rootMargin: '0px 0px -20% 0px', threshold: 0.1 });
 
         return observer;
     }

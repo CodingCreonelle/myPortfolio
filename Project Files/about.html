@@ -4,89 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-bind="title">About | Charles Portfolio</title>
-    <script>
-      (function () {
-        try {
-          var stored = window.localStorage.getItem('portfolio-theme');
-          var theme = (stored === 'light' || stored === 'dark')
-            ? stored
-            : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark');
-          document.documentElement.dataset.theme = theme;
-        } catch (e) {}
-
-        var nativeFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
-        window.__nativeFetch = nativeFetch;
-
-        if (window.self !== window.top) {
-          try {
-            window.sessionStorage.removeItem('warmup_start_time');
-            window.sessionStorage.removeItem('warmup_last_reload_time');
-            window.sessionStorage.removeItem('warmup_failed_sent');
-            window.parent.postMessage({ type: '__aistudio_warmup_succeeded' }, '*');
-          } catch (e) {}
-
-          var earlyBootstrap = null;
-          var onEarlyMessage = function (event) {
-            if (event && event.data && event.data.type === 'bootstrap') {
-              earlyBootstrap = event;
-              try {
-                window.parent.postMessage({ type: '__aistudio_warmup_succeeded' }, '*');
-              } catch (e) {}
-            }
-          };
-          window.addEventListener('message', onEarlyMessage);
-
-          window.addEventListener('DOMContentLoaded', function () {
-            window.removeEventListener('message', onEarlyMessage);
-            try {
-              window.parent.postMessage({ type: '__aistudio_warmup_succeeded' }, '*');
-            } catch (e) {}
-            if (earlyBootstrap) {
-              var ev = earlyBootstrap;
-              earlyBootstrap = null;
-              try {
-                window.dispatchEvent(new MessageEvent('message', {
-                  data: ev.data,
-                  origin: ev.origin,
-                  ports: ev.ports
-                }));
-              } catch (e) {}
-            }
-          });
-
-          if (nativeFetch && typeof Object.defineProperty === 'function') {
-            var origDefineProperty = Object.defineProperty;
-            Object.defineProperty = function (obj, prop, descriptor) {
-              if (obj === window && prop === 'fetch' && descriptor && typeof descriptor.get === 'function') {
-                var origGetter = descriptor.get;
-                return origDefineProperty.call(Object, obj, prop, {
-                  configurable: true,
-                  enumerable: true,
-                  get: function () {
-                    var iframeFetch = origGetter.call(this);
-                    return function (resource, options) {
-                      try {
-                        var urlStr = typeof resource === 'string'
-                          ? resource
-                          : (resource && typeof resource.url === 'string' ? resource.url : String(resource));
-                        var resolved = new URL(urlStr, window.location.href);
-                        if (resolved.origin === window.location.origin) {
-                          return nativeFetch(resource, options);
-                        }
-                      } catch (e) {
-                        return nativeFetch(resource, options);
-                      }
-                      return iframeFetch.call(this, resource, options);
-                    };
-                  }
-                });
-              }
-              return origDefineProperty.apply(Object, arguments);
-            };
-          }
-        }
-      })();
-    </script>
+    <script src="assets/js/head-bootstrap.js"></script>
     <link rel="icon" type="image/png" href="assets/icons/rm373batch2-27-removebg-preview.png">
     <link rel="stylesheet" href="assets/css/variables.css">
     <link rel="stylesheet" href="assets/css/global.css">
@@ -108,39 +26,11 @@
     <div id="site-navbar"></div>
 
     <main class="about-page">
-        <!-- ============================ HERO ============================ -->
-        <section class="ab-hero" id="hero" data-animate="animate-entrance" data-animate-replay="true">
-            <h1 class="ab-sr-only">About Charles David</h1>
-
-            <div class="ab-hero__marquee" aria-hidden="true">
-                <div class="ab-hero__track">
-                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
-                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
-                    <span class="ab-hero__word" data-bind="hero.name">Charles David</span>
-                </div>
-            </div>
-
-            <div class="ab-hero__visual">
-                <div class="ab-hero__orb">
-                    <img class="ab-hero__orb-img"
-                         src="assets/images/profile/profile.jpg"
-                         alt=""
-                         width="4096" height="3112"
-                         data-bind-src="hero.image">
-                </div>
-            </div>
-
-            <p class="ab-hero__scroll" aria-hidden="true">
-                <span class="ab-hero__scroll-line"></span>
-                <span class="ab-hero__scroll-text" data-bind="hero.scroll">Scroll Down</span>
-            </p>
-        </section>
-
         <!-- ========================== PROFILE ========================== -->
-        <section class="ab-section ab-profile" id="about" data-animate="animate-entrance" data-animate-replay="true">
+        <section class="ab-section ab-profile" id="about" tabindex="-1" data-pinned-section data-section-label="Who I Am" data-animate="animate-entrance" data-animate-replay="true">
             <div class="ab-head" data-animate="animate-entrance" data-animate-delay="0">
                 <p class="ab-eyebrow" data-bind="profile.eyebrow">Who I Am</p>
-                <h2 class="ab-title" data-typewriter data-bind="profile.title">Problem Solver. Digital Generalist.</h2>
+                <h1 class="ab-title" data-typewriter data-bind="profile.title">Problem Solver. Digital Generalist.</h1>
             </div>
 
             <div class="ab-profile__grid">
@@ -169,21 +59,43 @@
                     </ul>
                 </div>
 
-                <div class="ab-trait" aria-hidden="true">
-                    <div class="ab-trait__deck" id="ab-trait-deck">
-                        <span class="ab-trait__ghost ab-trait__ghost--2"></span>
-                        <span class="ab-trait__ghost ab-trait__ghost--1"></span>
+                <div class="ab-trait">
+                    <article class="ab-trait__deck" id="ab-trait-deck" aria-label="Personal traits deck">
+                        <span class="ab-trait__ghost ab-trait__ghost--2" aria-hidden="true"></span>
+                        <span class="ab-trait__ghost ab-trait__ghost--1" aria-hidden="true"></span>
                         <div class="ab-trait__card">
-                            <span class="ab-trait__label" data-bind="profile.traitLabel">Trait</span>
-                            <span class="ab-trait__value" id="ab-trait-value" data-bind="profile.traits.0">Problem Solver</span>
+                            <button type="button" class="ab-trait__trigger" id="ab-trait-trigger" aria-label="Next personal trait: Problem Solver, 1 of 5"></button>
+                            <div class="ab-trait__top" aria-hidden="true">
+                                <span class="ab-trait__badge">
+                                    <span class="ab-trait__badge-dot"></span>
+                                    <span class="ab-trait__label" data-bind="profile.traitLabel">Trait</span>
+                                </span>
+                                <span class="ab-trait__count" id="ab-trait-count">01 / 05</span>
+                            </div>
+                            <div class="ab-trait__main">
+                                <span class="ab-trait__kicker" id="ab-trait-kicker">Approach</span>
+                                <span class="ab-trait__value" id="ab-trait-value" data-bind="profile.traits.0">Problem Solver</span>
+                                <p class="ab-trait__summary" id="ab-trait-summary">Breaks complex bottlenecks into clean, maintainable systems.</p>
+                            </div>
+                            <div class="ab-trait__foot">
+                                <div class="ab-trait__bars" id="ab-trait-bars" aria-hidden="true"></div>
+                                <div class="ab-trait__nav">
+                                    <button type="button" class="ab-trait__btn" data-trait-dir="prev" aria-label="Previous trait">
+                                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8 10 12.5"/></svg>
+                                    </button>
+                                    <button type="button" class="ab-trait__btn" data-trait-dir="next" aria-label="Next trait">
+                                        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"/></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </article>
                 </div>
             </div>
         </section>
 
         <!-- ======================== TRAININGS ========================== -->
-        <section class="ab-section ab-trainings" id="trainings" data-animate="animate-entrance" data-animate-replay="true">
+        <section class="ab-section ab-trainings" id="trainings" tabindex="-1" data-pinned-section data-section-label="Trainings" data-animate="animate-entrance" data-animate-replay="true">
             <div class="ab-head" data-animate="animate-entrance" data-animate-delay="0">
                 <p class="ab-eyebrow" data-bind="trainings.eyebrow">Learning Path</p>
                 <h2 class="ab-title" data-typewriter data-bind="trainings.title">Trainings</h2>
@@ -194,7 +106,7 @@
         </section>
 
         <!-- ==================== LET'S WORK TOGETHER =================== -->
-        <section class="ab-section ab-cta" id="contact" data-animate="animate-entrance" data-animate-replay="true">
+        <section class="ab-section ab-cta" id="contact" tabindex="-1" data-pinned-section data-section-label="Contact" data-animate="animate-entrance" data-animate-replay="true">
             <div class="ab-cta__grid">
                 <div class="ab-cta__lead" data-animate="animate-entrance" data-animate-delay="0">
                     <p class="ab-eyebrow" data-bind="cta.eyebrow">Get In Touch</p>

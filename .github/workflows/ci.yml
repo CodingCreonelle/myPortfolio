@@ -38,9 +38,31 @@ jobs:
           dockerfile: Dockerfile
           failure-threshold: error
 
+  test-and-lint:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run JS syntax lint
+        run: npm run lint
+
+      - name: Run unit & hardening tests
+        run: npm test
+
   build-and-test:
     name: Docker Build & Smoke Test
-    needs: [validate-assets, lint-dockerfile]
+    needs: [validate-assets, lint-dockerfile, test-and-lint]
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
