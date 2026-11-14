@@ -7,14 +7,64 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0';
 const staticDir = path.join(__dirname, 'Project Files');
 const ALLOWED_DATASETS = new Set(['pages', 'projects', 'experience', 'socials']);
+const LOOPBACK_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 app.disable('x-powered-by');
+app.locals.dataDir = path.join(staticDir, 'data');
+app.locals.adminJsPath = path.join(staticDir, 'assets', 'js', 'admin-menu.js');
+
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-app.use('/api/admin', express.json({ limit: '2mb' }));
+function isLoopbackAddress(addr) {
+  const normalized = String(addr || '').trim();
+  return LOOPBACK_IPS.has(normalized);
+}
+
+function isLocalOrigin(originHeader) {
+  if (!originHeader) return true;
+  try {
+    const parsed = new URL(originHeader);
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]';
+  } catch (_err) {
+    return false;
+  }
+}
+
+function requireAdminAccess(req, res, next) {
+  const originHeader = req.get('origin');
+  if (originHeader && !isLocalOrigin(originHeader)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden: cross-origin admin request' });
+  }
+
+  const configuredToken = String(process.env.ADMIN_API_TOKEN || '').trim();
+  if (configuredToken) {
+    const headerToken = String(req.get('x-admin-token') || '').trim();
+    const authHeader = String(req.get('authorization') || '').trim();
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    if (headerToken !== configuredToken && bearerToken !== configuredToken) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+    return next();
+  }
+
+  const remoteAddr = (req.socket && req.socket.remoteAddress) || req.ip || '';
+  if (!isLoopbackAddress(remoteAddr)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden: loopback only' });
+  }
+
+  return next();
+}
+
+app.use('/api/admin', requireAdminAccess, express.json({ limit: '2mb' }));
 
 app.get('/api/admin/status', (_req, res) => {
   res.status(200).json({
@@ -48,7 +98,8 @@ function handleAdminDatasetWrite(req, res) {
     return res.status(400).json({ ok: false, error: `Invalid payload shape for ${dataset}` });
   }
 
-  const filePath = path.join(staticDir, 'data', `${dataset}.json`);
+  const targetDataDir = req.app.locals.dataDir || path.join(staticDir, 'data');
+  const filePath = path.join(targetDataDir, `${dataset}.json`);
   try {
     const formatted = JSON.stringify(payload, null, 2) + '\n';
     fs.writeFileSync(filePath, formatted, 'utf8');
@@ -74,7 +125,7 @@ function handleAdminAuthUpdate(req, res) {
     return res.status(400).json({ ok: false, error: 'Invalid auth verifier format' });
   }
 
-  const adminJsPath = path.join(staticDir, 'assets', 'js', 'admin-menu.js');
+  const adminJsPath = req.app.locals.adminJsPath || path.join(staticDir, 'assets', 'js', 'admin-menu.js');
   try {
     const src = fs.readFileSync(adminJsPath, 'utf8');
     const saltRe = /(var\s+DEFAULT_AUTH_SALT\s*=\s*')[0-9a-f]+(')/;

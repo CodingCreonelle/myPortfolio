@@ -7,11 +7,19 @@
  *  - `window.initTimeline(entries)` on `index.html`
  *  - `renderContactCards(socials)` on `contact.html`
  */
-function esc(value) {
-  if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
+(function () {
+  'use strict';
+
+  function esc(value) {
+  if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
     return window.PortfolioUtils.escapeHtml(value);
   }
-  return String(value == null ? '' : value);
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const SITE_ROOT = (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.getSiteRoot === 'function')
@@ -43,7 +51,17 @@ async function fetchJSON(path) {
   }
 }
 
+function pad2(value) {
+  if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function') {
+    return window.PortfolioUtils.pad2(value);
+  }
+  return String(value == null ? 0 : value).padStart(2, '0');
+}
+
 function createCard(html) {
+  if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.createFromTemplate === 'function') {
+    return window.PortfolioUtils.createFromTemplate(html);
+  }
   const template = document.createElement('template');
   template.innerHTML = html.trim();
   return template.content.firstElementChild;
@@ -63,19 +81,6 @@ function renderFeaturedProjects(projects) {
     return;
   }
 }
-
-const SKILL_ICONS = {
-  html: 'html',
-  html5: 'html',
-  css: 'css',
-  css3: 'css',
-  javascript: 'javascript',
-  js: 'javascript',
-  git: 'git',
-  github: 'github',
-  vscode: 'vscode',
-  'vs code': 'vscode',
-};
 
 const EXTERNAL_ICON = `
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
@@ -281,9 +286,16 @@ function attachToolbarFocusFallback(toolbar) {
 function projectStackIcons(project) {
   const technologies = getProjectTechList(project);
   const used = new Set();
+  const resolveIcon = (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.resolveSkillIcon === 'function')
+    ? window.PortfolioUtils.resolveSkillIcon
+    : null;
+  const iconMap = (typeof window !== 'undefined' && window.PortfolioUtils && window.PortfolioUtils.SKILL_ICONS) || {};
 
   return technologies
-    .map((technology) => SKILL_ICONS[String(technology).trim().toLowerCase()])
+    .map((technology) => {
+      const hit = resolveIcon ? resolveIcon(technology) : iconMap[String(technology).trim().toLowerCase()];
+      return hit ? hit.id : '';
+    })
     .filter((icon) => {
       if (!icon || used.has(icon)) return false;
       used.add(icon);
@@ -317,6 +329,190 @@ function buildSortOptionsList(languages, customOptions) {
   });
 
   return options;
+}
+
+function buildArchiveCardMarkup(project, index) {
+  const icons = projectStackIcons(project);
+  const thumbSrc = projectImageSrc(project);
+  return `
+      <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
+        <p class="archive-entry__index" aria-hidden="true">${pad2(index + 1)}</p>
+        ${thumbSrc ? `<div class="archive-entry__thumb"><img src="${esc(thumbSrc)}" alt="${esc(project.imageAlt || project.title)}" loading="lazy" decoding="async"></div>` : ''}
+        <div class="archive-entry__body">
+          <div class="archive-entry__title-row">
+            <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
+            ${project.status ? `<span class="archive-entry__status">${esc(project.status)}</span>` : ''}
+          </div>
+          <p class="archive-entry__summary">${esc(project.summary)}</p>
+          ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
+        </div>
+        <span class="archive-entry__open" aria-hidden="true">${EXTERNAL_ICON}</span>
+      </article>
+    `;
+}
+
+function buildProjectFilterToolbar(container, projects, languages, sortOptions, activeExp) {
+  const allProjects = projects.slice();
+  const toolbar = document.createElement('div');
+  toolbar.id = 'project-filters';
+  toolbar.className = 'project-filters project-toolbar';
+  toolbar.setAttribute('role', 'toolbar');
+  toolbar.setAttribute('focusgroup', 'toolbar wrap');
+  toolbar.setAttribute('aria-label', 'Sort and filter projects');
+  toolbar.setAttribute('aria-controls', 'project-list');
+
+  const statusNode = document.createElement('p');
+  statusNode.id = 'project-toolbar-status';
+  statusNode.className = 'sr-only';
+  statusNode.setAttribute('role', 'status');
+  statusNode.setAttribute('aria-live', 'polite');
+
+  const headerBar = document.createElement('div');
+  headerBar.className = 'project-toolbar__header';
+
+  const countEl = document.createElement('span');
+  countEl.id = 'project-count';
+  countEl.className = 'project-toolbar__count';
+  countEl.textContent = `${allProjects.length} ${allProjects.length === 1 ? 'project' : 'projects'}`;
+
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.id = 'project-toolbar-reset';
+  resetBtn.className = 'project-toolbar__reset';
+  resetBtn.textContent = 'Reset';
+  resetBtn.setAttribute('aria-disabled', 'true');
+
+  headerBar.appendChild(countEl);
+  headerBar.appendChild(resetBtn);
+  toolbar.appendChild(headerBar);
+
+  function syncToolbarMeta(visibleCount) {
+    const total = allProjects.length;
+    countEl.textContent =
+      visibleCount === total
+        ? `${total} ${total === 1 ? 'project' : 'projects'}`
+        : `${visibleCount} of ${total} projects`;
+    const isDefault = projectToolbarState.sortId === 'default' && projectToolbarState.filterTech === 'All';
+    resetBtn.setAttribute('aria-disabled', isDefault ? 'true' : 'false');
+  }
+
+  function applyToolbarView(announceText) {
+    const selectedSort =
+      sortOptions.find((opt) => opt.id === projectToolbarState.sortId) || sortOptions[0];
+    const filterLower = projectToolbarState.filterTech.toLowerCase();
+    const filtered =
+      projectToolbarState.filterTech === 'All'
+        ? allProjects
+        : allProjects.filter((item) =>
+            getProjectTechList(item).some((t) => String(t).trim().toLowerCase() === filterLower)
+          );
+    const sorted = sortProjects(filtered, selectedSort, languages);
+    syncToolbarMeta(sorted.length);
+    renderProjectList(sorted, false, activeExp);
+    if (announceText) {
+      statusNode.textContent = announceText;
+    }
+  }
+
+  const sortGroup = document.createElement('div');
+  sortGroup.id = 'project-sort-group';
+  sortGroup.className = 'project-toolbar__group';
+  sortGroup.setAttribute('role', 'group');
+  sortGroup.setAttribute('aria-label', 'Sort projects');
+
+  const sortLabel = document.createElement('span');
+  sortLabel.className = 'project-toolbar__label';
+  sortLabel.innerHTML =
+    '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M5 8h6M7 12h2"/></svg>Sort';
+  sortGroup.appendChild(sortLabel);
+
+  const sortPills = document.createElement('div');
+  sortPills.className = 'project-toolbar__pills';
+
+  sortOptions.forEach((opt) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'project-sort-pill';
+    btn.dataset.sortId = opt.id;
+    btn.dataset.sortBy = opt.by;
+    btn.dataset.sortTarget = opt.target;
+    btn.setAttribute('aria-pressed', opt.id === projectToolbarState.sortId ? 'true' : 'false');
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => {
+      projectToolbarState.sortId = opt.id;
+      sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
+        pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
+      });
+      applyToolbarView(`Sorted projects by ${opt.label}`);
+    });
+    sortPills.appendChild(btn);
+  });
+
+  sortGroup.appendChild(sortPills);
+  toolbar.appendChild(sortGroup);
+
+  const sep = document.createElement('span');
+  sep.className = 'project-toolbar__sep';
+  sep.setAttribute('role', 'separator');
+  sep.setAttribute('aria-orientation', 'horizontal');
+  toolbar.appendChild(sep);
+
+  const filterGroup = document.createElement('div');
+  filterGroup.id = 'project-filter-group';
+  filterGroup.className = 'project-toolbar__group';
+  filterGroup.setAttribute('role', 'group');
+  filterGroup.setAttribute('aria-label', 'Filter projects by language');
+
+  const filterLabel = document.createElement('span');
+  filterLabel.className = 'project-toolbar__label';
+  filterLabel.innerHTML =
+    '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h12l-4.5 5.2v4.3l-3 1.5V8.2z"/></svg>Language';
+  filterGroup.appendChild(filterLabel);
+
+  const filterPills = document.createElement('div');
+  filterPills.className = 'project-toolbar__pills';
+
+  ['All'].concat(languages).forEach((label) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'project-filter-pill';
+    btn.dataset.tech = label;
+    const isActive = label.toLowerCase() === projectToolbarState.filterTech.toLowerCase();
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      projectToolbarState.filterTech = label;
+      filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
+        pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
+      });
+      applyToolbarView(label === 'All' ? 'Showing all projects' : `Filtered projects by ${label}`);
+    });
+    filterPills.appendChild(btn);
+  });
+
+  filterGroup.appendChild(filterPills);
+  toolbar.appendChild(filterGroup);
+
+  resetBtn.addEventListener('click', () => {
+    if (resetBtn.getAttribute('aria-disabled') === 'true') return;
+    projectToolbarState.sortId = 'default';
+    projectToolbarState.filterTech = 'All';
+    sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
+      pill.setAttribute('aria-pressed', pill.dataset.sortId === 'default' ? 'true' : 'false');
+    });
+    filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
+      pill.setAttribute('aria-pressed', pill.dataset.tech === 'All' ? 'true' : 'false');
+    });
+    applyToolbarView('Reset sort and language filters');
+  });
+
+  container.parentNode.insertBefore(toolbar, container);
+  container.parentNode.insertBefore(statusNode, container);
+  attachToolbarFocusFallback(toolbar);
+  syncToolbarMeta(allProjects.length);
+  container.dataset.filtersBuilt = 'true';
+
+  return applyToolbarView;
 }
 
 function renderProjectList(projects, resetFilters, experience) {
@@ -354,166 +550,7 @@ function renderProjectList(projects, resetFilters, experience) {
   }
 
   if (!container.dataset.filtersBuilt && container.parentNode) {
-    const allProjects = projects.slice();
-    const toolbar = document.createElement('div');
-    toolbar.id = 'project-filters';
-    toolbar.className = 'project-filters project-toolbar';
-    toolbar.setAttribute('role', 'toolbar');
-    toolbar.setAttribute('focusgroup', 'toolbar wrap');
-    toolbar.setAttribute('aria-label', 'Sort and filter projects');
-    toolbar.setAttribute('aria-controls', 'project-list');
-
-    const statusNode = document.createElement('p');
-    statusNode.id = 'project-toolbar-status';
-    statusNode.className = 'sr-only';
-    statusNode.setAttribute('role', 'status');
-    statusNode.setAttribute('aria-live', 'polite');
-
-    const headerBar = document.createElement('div');
-    headerBar.className = 'project-toolbar__header';
-
-    const countEl = document.createElement('span');
-    countEl.id = 'project-count';
-    countEl.className = 'project-toolbar__count';
-    countEl.textContent = `${allProjects.length} ${allProjects.length === 1 ? 'project' : 'projects'}`;
-
-    const resetBtn = document.createElement('button');
-    resetBtn.type = 'button';
-    resetBtn.id = 'project-toolbar-reset';
-    resetBtn.className = 'project-toolbar__reset';
-    resetBtn.textContent = 'Reset';
-    resetBtn.setAttribute('aria-disabled', 'true');
-
-    headerBar.appendChild(countEl);
-    headerBar.appendChild(resetBtn);
-    toolbar.appendChild(headerBar);
-
-    function syncToolbarMeta(visibleCount) {
-      const total = allProjects.length;
-      countEl.textContent =
-        visibleCount === total
-          ? `${total} ${total === 1 ? 'project' : 'projects'}`
-          : `${visibleCount} of ${total} projects`;
-      const isDefault = projectToolbarState.sortId === 'default' && projectToolbarState.filterTech === 'All';
-      resetBtn.setAttribute('aria-disabled', isDefault ? 'true' : 'false');
-    }
-
-    function applyToolbarView(announceText) {
-      const selectedSort =
-        sortOptions.find((opt) => opt.id === projectToolbarState.sortId) || sortOptions[0];
-      const filterLower = projectToolbarState.filterTech.toLowerCase();
-      const filtered =
-        projectToolbarState.filterTech === 'All'
-          ? allProjects
-          : allProjects.filter((item) =>
-              getProjectTechList(item).some((t) => String(t).trim().toLowerCase() === filterLower)
-            );
-      const sorted = sortProjects(filtered, selectedSort, languages);
-      syncToolbarMeta(sorted.length);
-      renderProjectList(sorted, false, activeExp);
-      if (announceText) {
-        statusNode.textContent = announceText;
-      }
-    }
-
-    const sortGroup = document.createElement('div');
-    sortGroup.id = 'project-sort-group';
-    sortGroup.className = 'project-toolbar__group';
-    sortGroup.setAttribute('role', 'group');
-    sortGroup.setAttribute('aria-label', 'Sort projects');
-
-    const sortLabel = document.createElement('span');
-    sortLabel.className = 'project-toolbar__label';
-    sortLabel.innerHTML =
-      '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M5 8h6M7 12h2"/></svg>Sort';
-    sortGroup.appendChild(sortLabel);
-
-    const sortPills = document.createElement('div');
-    sortPills.className = 'project-toolbar__pills';
-
-    sortOptions.forEach((opt) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'project-sort-pill';
-      btn.dataset.sortId = opt.id;
-      btn.dataset.sortBy = opt.by;
-      btn.dataset.sortTarget = opt.target;
-      btn.setAttribute('aria-pressed', opt.id === projectToolbarState.sortId ? 'true' : 'false');
-      btn.textContent = opt.label;
-      btn.addEventListener('click', () => {
-        projectToolbarState.sortId = opt.id;
-        sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
-          pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
-        });
-        applyToolbarView(`Sorted projects by ${opt.label}`);
-      });
-      sortPills.appendChild(btn);
-    });
-
-    sortGroup.appendChild(sortPills);
-    toolbar.appendChild(sortGroup);
-
-    const sep = document.createElement('span');
-    sep.className = 'project-toolbar__sep';
-    sep.setAttribute('role', 'separator');
-    sep.setAttribute('aria-orientation', 'horizontal');
-    toolbar.appendChild(sep);
-
-    const filterGroup = document.createElement('div');
-    filterGroup.id = 'project-filter-group';
-    filterGroup.className = 'project-toolbar__group';
-    filterGroup.setAttribute('role', 'group');
-    filterGroup.setAttribute('aria-label', 'Filter projects by language');
-
-    const filterLabel = document.createElement('span');
-    filterLabel.className = 'project-toolbar__label';
-    filterLabel.innerHTML =
-      '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h12l-4.5 5.2v4.3l-3 1.5V8.2z"/></svg>Language';
-    filterGroup.appendChild(filterLabel);
-
-    const filterPills = document.createElement('div');
-    filterPills.className = 'project-toolbar__pills';
-
-    ['All'].concat(languages).forEach((label) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'project-filter-pill';
-      btn.dataset.tech = label;
-      const isActive = label.toLowerCase() === projectToolbarState.filterTech.toLowerCase();
-      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-      btn.textContent = label;
-      btn.addEventListener('click', () => {
-        projectToolbarState.filterTech = label;
-        filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
-          pill.setAttribute('aria-pressed', pill === btn ? 'true' : 'false');
-        });
-        applyToolbarView(label === 'All' ? 'Showing all projects' : `Filtered projects by ${label}`);
-      });
-      filterPills.appendChild(btn);
-    });
-
-    filterGroup.appendChild(filterPills);
-    toolbar.appendChild(filterGroup);
-
-    resetBtn.addEventListener('click', () => {
-      if (resetBtn.getAttribute('aria-disabled') === 'true') return;
-      projectToolbarState.sortId = 'default';
-      projectToolbarState.filterTech = 'All';
-      sortPills.querySelectorAll('.project-sort-pill').forEach((pill) => {
-        pill.setAttribute('aria-pressed', pill.dataset.sortId === 'default' ? 'true' : 'false');
-      });
-      filterPills.querySelectorAll('.project-filter-pill').forEach((pill) => {
-        pill.setAttribute('aria-pressed', pill.dataset.tech === 'All' ? 'true' : 'false');
-      });
-      applyToolbarView('Reset sort and language filters');
-    });
-
-    container.parentNode.insertBefore(toolbar, container);
-    container.parentNode.insertBefore(statusNode, container);
-    attachToolbarFocusFallback(toolbar);
-    syncToolbarMeta(allProjects.length);
-    container.dataset.filtersBuilt = 'true';
-
+    const applyToolbarView = buildProjectFilterToolbar(container, projects, languages, sortOptions, activeExp);
     if (projectToolbarState.sortId !== 'default' || projectToolbarState.filterTech !== 'All') {
       applyToolbarView('');
       return;
@@ -523,25 +560,7 @@ function renderProjectList(projects, resetFilters, experience) {
   container.innerHTML = '';
 
   projects.forEach((project, index) => {
-    const icons = projectStackIcons(project);
-    const thumbSrc = projectImageSrc(project);
-
-    const card = createCard(`
-      <article class="archive-entry card-entrance" style="animation-delay: ${index * 100}ms;">
-        <p class="archive-entry__index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</p>
-        ${thumbSrc ? `<div class="archive-entry__thumb"><img src="${esc(thumbSrc)}" alt="${esc(project.imageAlt || project.title)}" loading="lazy" decoding="async"></div>` : ''}
-        <div class="archive-entry__body">
-          <div class="archive-entry__title-row">
-            <h2 class="archive-entry__title"><a href="${esc(projectHref(project))}">${esc(project.title)}</a></h2>
-            ${project.status ? `<span class="archive-entry__status">${esc(project.status)}</span>` : ''}
-          </div>
-          <p class="archive-entry__summary">${esc(project.summary)}</p>
-          ${icons ? `<ul class="archive-entry__icons">${icons}</ul>` : ''}
-        </div>
-        <span class="archive-entry__open" aria-hidden="true">${EXTERNAL_ICON}</span>
-      </article>
-    `);
-    container.appendChild(card);
+    container.appendChild(createCard(buildArchiveCardMarkup(project, index)));
   });
 
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
@@ -558,60 +577,16 @@ const CONTACT_ICONS = {
   check: '<svg class="contact-copy-icon contact-copy-icon--check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6L9 17l-5-5"></path></svg>',
 };
 
-const contactCopyTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
-let lastContactCopyMessage = '';
 let contactCopyCommandsBound = false;
 
 function reportContactCopyFeedback(button, ok) {
   if (!button) return;
-  const tip = button.nextElementSibling;
-  const labelNode = button.querySelector('[data-copy-text]');
-  const defaultLabel = button.getAttribute('data-copy-default') || 'Copy';
-
-  if (contactCopyTimers && contactCopyTimers.has(button)) {
-    clearTimeout(contactCopyTimers.get(button));
+  if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.reportCopyFeedback === 'function') {
+    window.PortfolioUtils.reportCopyFeedback(button, ok, { copiedClass: 'is-copied', fallbackLabel: 'Copy' });
+    return;
   }
-
-  button.removeAttribute('data-copied');
-  button.removeAttribute('data-failed');
-  button.classList.remove('is-copied');
-
-  let message = ok ? 'Copied' : 'Copy failed';
-  if (message === lastContactCopyMessage) message += '\u00A0';
-  lastContactCopyMessage = message;
-
-  if (tip) tip.textContent = '';
-  void button.offsetWidth;
-
-  if (ok) {
-    button.setAttribute('data-copied', '');
-    button.classList.add('is-copied');
-    if (labelNode) labelNode.textContent = 'Copied';
-  } else {
-    button.setAttribute('data-failed', '');
-  }
-
-  if (tip) {
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(() => {
-        tip.textContent = message;
-      });
-    } else {
-      tip.textContent = message;
-    }
-  }
-
-  const timerId = setTimeout(() => {
-    button.removeAttribute('data-copied');
-    button.removeAttribute('data-failed');
-    button.classList.remove('is-copied');
-    if (labelNode) labelNode.textContent = defaultLabel;
-    if (tip) tip.textContent = '';
-  }, 2000);
-
-  if (contactCopyTimers) {
-    contactCopyTimers.set(button, timerId);
-  }
+  button.removeAttribute(ok ? 'data-failed' : 'data-copied');
+  button.setAttribute(ok ? 'data-copied' : 'data-failed', '');
 }
 
 function performContactCardCopy(button, targetEl) {
@@ -659,11 +634,7 @@ function copyTextToClipboard(text) {
   return Promise.resolve(false);
 }
 
-function renderContactCards(socials) {
-  const container = document.querySelector('#contact-cards');
-  if (!container || !socials) return;
-  container.innerHTML = '';
-
+function buildContactCardItems(socials) {
   const items = [
     {
       label: 'Email',
@@ -728,18 +699,19 @@ function renderContactCards(socials) {
     });
   });
 
-  let validIndex = 0;
-  items.forEach((item) => {
-    if (!item.value) return;
-    const indexStr = String(validIndex + 1).padStart(2, '0');
-    const valueId = `contact-channel-val-${validIndex}`;
-    const linkMarkup = item.href
-      ? `<p class="contact-card__value" id="${valueId}"><a href="${esc(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer"' : ''}>${esc(item.displayValue)}</a></p>`
-      : `<p class="contact-card__value" id="${valueId}">${esc(item.displayValue)}</p>`;
+  return items.filter((item) => Boolean(item.value));
+}
 
-    let actionsMarkup = '';
-    if (item.copyValue) {
-      actionsMarkup = `
+function buildContactCardMarkup(item, validIndex) {
+  const indexStr = pad2(validIndex + 1);
+  const valueId = `contact-channel-val-${validIndex}`;
+  const linkMarkup = item.href
+    ? `<p class="contact-card__value" id="${valueId}"><a href="${esc(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer"' : ''}>${esc(item.displayValue)}</a></p>`
+    : `<p class="contact-card__value" id="${valueId}">${esc(item.displayValue)}</p>`;
+
+  let actionsMarkup = '';
+  if (item.copyValue) {
+    actionsMarkup = `
         <div class="contact-card__actions">
           <span class="contact-copy-wrap">
             <button type="button" class="contact-card__action-btn" command="--copy" commandfor="${valueId}" data-copy-value="${esc(item.copyValue)}" data-copy-default="${esc(item.copyLabel)}" aria-label="${esc(item.copyLabel)} ${esc(item.displayValue)}">
@@ -750,17 +722,17 @@ function renderContactCards(socials) {
             <span class="contact-copy-tip" role="status"></span>
           </span>
         </div>`;
-    } else if (item.href && item.external) {
-      actionsMarkup = `
+  } else if (item.href && item.external) {
+    actionsMarkup = `
         <div class="contact-card__actions">
           <a class="contact-card__open-link" href="${esc(item.href)}" target="_blank" rel="noreferrer" aria-label="Open ${esc(item.label)} profile">
             <span>Open</span>
             ${EXTERNAL_ICON}
           </a>
         </div>`;
-    }
+  }
 
-    const card = createCard(`
+  return `
       <article class="contact-card card-entrance" style="animation-delay: ${validIndex * 100}ms;">
         <span class="contact-card__icon" aria-hidden="true">${CONTACT_ICONS[item.icon] || EXTERNAL_ICON}</span>
         <div class="contact-card__body">
@@ -773,10 +745,17 @@ function renderContactCards(socials) {
         </div>
         ${actionsMarkup}
       </article>
-    `);
+    `;
+}
 
-    container.appendChild(card);
-    validIndex++;
+function renderContactCards(socials) {
+  const container = document.querySelector('#contact-cards');
+  if (!container || !socials) return;
+  container.innerHTML = '';
+
+  const items = buildContactCardItems(socials);
+  items.forEach((item, validIndex) => {
+    container.appendChild(createCard(buildContactCardMarkup(item, validIndex)));
   });
 
   ensureContactCopyHandler();
@@ -831,7 +810,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = projectSortApi;
 }
 
-if (typeof document !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', loadDynamicData);
-  document.addEventListener('portfolio:data-updated', loadDynamicData);
-}
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', loadDynamicData);
+    document.addEventListener('portfolio:data-updated', loadDynamicData);
+  }
+})();

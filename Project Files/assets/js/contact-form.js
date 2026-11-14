@@ -1,5 +1,5 @@
 /*
- * contact-form.js — C6 / M14 / Milestone M3 (MVC Refactoring)
+ * contact-form.js — Contact Form DOM Controller
  *
  * This is a static site: there is no server to POST to, and `action="#"` made
  * the browser navigate to the same page with a POST, which a plain file host
@@ -105,13 +105,26 @@
                 if (!message) return { valid: false, error: 'Please enter a message before sending.' };
                 return { valid: true, error: '' };
             },
-            buildMailtoPayload: function (fields, recipient) {
-                var to = recipient || FALLBACK_CONSTANTS.FALLBACK_EMAIL;
-                var name = String((fields && fields.name) || '').trim();
-                var email = String((fields && fields.email) || '').trim();
-                var topic = String((fields && fields.topic) || '').trim();
-                var customSubject = String((fields && fields.subject) || '').trim();
-                var message = String((fields && fields.message) || '').trim();
+            buildMailtoPayload: function (fieldsOrPayload, optionalRecipient) {
+                var fields = fieldsOrPayload || {};
+                var explicitRecipient = (optionalRecipient && typeof optionalRecipient === 'string')
+                    ? optionalRecipient
+                    : (fields.recipient || fields.to || '');
+
+                var rawTarget = '';
+                if (explicitRecipient) {
+                    var trimmedTarget = String(explicitRecipient).trim();
+                    rawTarget = trimmedTarget.slice(0, 'mailto:'.length).toLowerCase() === 'mailto:'
+                        ? trimmedTarget
+                        : 'mailto:' + trimmedTarget;
+                }
+
+                var to = this.extractRecipientAddress(rawTarget, FALLBACK_CONSTANTS.FALLBACK_EMAIL);
+                var name = String(fields.name || '').trim();
+                var email = String(fields.email || '').trim();
+                var topic = String(fields.topic || '').trim();
+                var customSubject = String(fields.subject || '').trim();
+                var message = String(fields.message || '').trim();
 
                 var baseSubject = customSubject || (topic ? '[' + topic + '] Portfolio contact' : 'Portfolio contact');
                 var subject = name && customSubject.indexOf(name) === -1 ? baseSubject + ' from ' + name : baseSubject;
@@ -248,9 +261,6 @@
     }
 
     /* ------------------------------------------------------------- Accessibility & Validation Sync */
-
-    var copyTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
-    var lastCopyAnnouncement = '';
 
     function linkError(el, shown) {
         if (!el || !el.dataset) return;
@@ -432,50 +442,13 @@
 
     function reportCopyButton(button, ok) {
         if (!button) return;
-        var tip = button.nextElementSibling;
-        var timerPrev = copyTimers ? copyTimers.get(button) : null;
-        if (timerPrev) clearTimeout(timerPrev);
-
-        button.removeAttribute('data-copied');
-        button.removeAttribute('data-failed');
-
-        var message = ok ? 'Copied' : 'Copy failed';
-        if (message === lastCopyAnnouncement) message += '\u00A0';
-        lastCopyAnnouncement = message;
-
-        if (tip) tip.textContent = '';
-        void button.offsetWidth;
+        var utils = (typeof window !== 'undefined' && window.PortfolioUtils) || (global && global.PortfolioUtils) || null;
+        if (utils && typeof utils.reportCopyFeedback === 'function') {
+            utils.reportCopyFeedback(button, ok, { captureLabel: true });
+            return;
+        }
+        button.removeAttribute(ok ? 'data-failed' : 'data-copied');
         button.setAttribute(ok ? 'data-copied' : 'data-failed', '');
-
-        if (tip) {
-            if (typeof requestAnimationFrame === 'function') {
-                requestAnimationFrame(function () {
-                    tip.textContent = message;
-                });
-            } else {
-                tip.textContent = message;
-            }
-        }
-
-        var labelSpan = button.querySelector('[data-copy-text]');
-        var prevLabel = button.dataset.copyDefault || (labelSpan ? labelSpan.textContent : '');
-        if (!button.dataset.copyDefault && prevLabel) {
-            button.dataset.copyDefault = prevLabel;
-        }
-        if (labelSpan && ok) {
-            labelSpan.textContent = 'Copied';
-        }
-
-        var tid = setTimeout(function () {
-            button.removeAttribute('data-copied');
-            button.removeAttribute('data-failed');
-            if (tip) tip.textContent = '';
-            if (labelSpan && button.dataset.copyDefault) {
-                labelSpan.textContent = button.dataset.copyDefault;
-            }
-        }, 2000);
-
-        if (copyTimers) copyTimers.set(button, tid);
     }
 
     function syncRecipientPreview(form) {

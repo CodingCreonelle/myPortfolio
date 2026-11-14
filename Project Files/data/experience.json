@@ -59,7 +59,9 @@
   "languages": [
     { "name": "HTML", "icon": "html", "level": "Confident" },
     { "name": "CSS", "icon": "css", "level": "Intermediate" },
-    { "name": "JavaScript", "icon": "javascript", "level": "Intermediate" }
+    { "name": "JavaScript", "icon": "javascript", "level": "Intermediate" }, 
+    { "name": "C#", "icon": "csharp", "level": "Beginner" }
+
   ],
 
   "tools": [
@@ -83,6 +85,20 @@
       "level": "Confident",
       "summary": "Everyday editor",
       "description": "Where all of this gets written: workspace settings, debugging, and the integrated terminal and source control."
+    },
+    {
+      "name": "Antigravity",
+      "icon": "agy",
+      "level": "Confident",
+      "summary": "AI Assistant",
+      "description": "My main agentic helper for my everyday tasks. It helps me do more in just a single day, and improve my workflow across all applications."
+    },
+    {
+      "name": "Docker",
+      "icon": "docker",
+      "level": "Beginner",
+      "summary": "Containerization",
+      "description": "Where I containerize applications for consistent deployment and development environments."
     }
   ]
 }

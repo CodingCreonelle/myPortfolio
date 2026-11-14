@@ -1,7 +1,6 @@
 /* =========================================================================
    PortfolioTimelineMath — Standalone Pure Mathematical & Geometric Kernel
    
-   Milestone M4: Timeline Decomposition.
    Pure functional design with ZERO DOM or browser globals (window, document,
    navigator must NOT be required).
    Published via dual UMD / CommonJS export pattern.

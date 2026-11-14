@@ -8,22 +8,8 @@
  */
 (function () {
   var SLOTS = ['active', 'next', 'prev', 'hidden'];
-  var TYPE_SPEED = 55;
   var SWIPE_THRESHOLD = 44;
-
   var SKILL_ICON_BASE = 'assets/icons/skills/';
-  var SKILL_ICONS = {
-    html:       { file: 'html.svg',       label: 'HTML5' },
-    html5:      { file: 'html.svg',       label: 'HTML5' },
-    css:        { file: 'css.svg',        label: 'CSS3' },
-    css3:       { file: 'css.svg',        label: 'CSS3' },
-    javascript: { file: 'javascript.svg', label: 'JavaScript' },
-    js:         { file: 'javascript.svg', label: 'JavaScript' },
-    git:        { file: 'git.svg',        label: 'Git' },
-    github:     { file: 'github.svg',     label: 'GitHub' },
-    vscode:     { file: 'vscode.svg',     label: 'VS Code' },
-    'vs code':  { file: 'vscode.svg',     label: 'VS Code' }
-  };
 
   var prefersReducedMotion = function () {
     if (window.PortfolioUtils && typeof window.PortfolioUtils.reduceMotion === 'function') {
@@ -36,16 +22,23 @@
   };
 
   var pad2 = function (n) {
-    return String(n).padStart(2, '0');
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function') {
+      return window.PortfolioUtils.pad2(n);
+    }
+    return String(n == null ? 0 : n).padStart(2, '0');
   };
 
   function resolveSkillIcons(tech) {
     if (!Array.isArray(tech)) return [];
     var seen = {};
     var out = [];
+    var resolveIcon = (window.PortfolioUtils && typeof window.PortfolioUtils.resolveSkillIcon === 'function')
+      ? window.PortfolioUtils.resolveSkillIcon
+      : null;
+    var iconMap = (window.PortfolioUtils && window.PortfolioUtils.SKILL_ICONS) || {};
     tech.forEach(function (name) {
       var key = String(name || '').trim().toLowerCase();
-      var hit = SKILL_ICONS[key];
+      var hit = resolveIcon ? resolveIcon(key) : iconMap[key];
       if (hit && !seen[hit.file]) {
         seen[hit.file] = true;
         out.push(hit);

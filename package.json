@@ -6,11 +6,10 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node --check server.js",
-    "lint": "node --check server.js",
+    "lint": "node -e \"const fs = require('node:fs'), path = require('node:path'), { execFileSync } = require('node:child_process'); const list = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.js')).sort().map((f) => path.join(dir, f)) : []); const files = ['server.js', ...list(path.join('Project Files', 'assets', 'js')), ...list('tests')]; for (const file of files) { execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' }); }\"",
     "test": "node --test"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "three": "^0.160.0"
+    "express": "^4.21.2"
   }
 }

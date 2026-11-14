@@ -376,7 +376,6 @@ h3 {
 .footer-links {
     display: flex;
     flex-wrap: wrap;
-    flex-wrap: balance;
     align-items: center;
     gap: 6px;
 }
@@ -1062,8 +1061,7 @@ dialog.admin-dialog label {
     gap: 0.85rem;
 }
 
-.admin-card,
-.admin-snapshot-card {
+.admin-card {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
@@ -1328,25 +1326,6 @@ dialog.admin-dialog label {
     opacity: 0.4;
     cursor: not-allowed;
     transform: none;
-}
-
-.admin-snapshots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 0.85rem;
-}
-
-.admin-snapshot-card__meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-.admin-snapshot-card__count {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.74rem;
-    color: var(--admin-muted);
 }
 
 .admin-badge-state {
@@ -1972,18 +1951,13 @@ body[data-loader-state="loading"] .site-header,
 body[data-loader-state="loading"] .navbar-animate .brand,
 body[data-loader-state="loading"] .navbar-animate .site-nav a,
 body[data-loader-state="loading"] .site-header .theme-toggle,
-body[data-loader-state="loading"] .hero-copy,
-body[data-loader-state="loading"] .hero-avatar {
+body[data-loader-state="loading"] .ab-hero__marquee,
+body[data-loader-state="loading"] .ab-hero__visual,
+body[data-loader-state="loading"] .ab-hero__scroll {
   opacity: 0;
 }
 
 body[data-loader-state="loading"] .site-header,
-body[data-loader-state="loading"] .hero-animate-title,
-body[data-loader-state="loading"] .hero-animate-subtitle,
-body[data-loader-state="loading"] .hero-animate-description,
-body[data-loader-state="loading"] .hero-animate-actions,
-body[data-loader-state="loading"] .hero-animate-visual,
-body[data-loader-state="loading"] .hero-animate-avatar,
 body[data-loader-state="loading"] .navbar-animate .brand,
 body[data-loader-state="loading"] .navbar-animate .site-nav a,
 body[data-loader-state="loading"] .site-header .theme-toggle {
@@ -1991,12 +1965,6 @@ body[data-loader-state="loading"] .site-header .theme-toggle {
 }
 
 body:is([data-loader-state="entering"], [data-loader-state="ready"]) .site-header,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-title,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-subtitle,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-description,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-actions,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-visual,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-animate-avatar,
 body:is([data-loader-state="entering"], [data-loader-state="ready"]) .navbar-animate .brand,
 body:is([data-loader-state="entering"], [data-loader-state="ready"]) .navbar-animate .site-nav a,
 body:is([data-loader-state="entering"], [data-loader-state="ready"]) .site-header .theme-toggle {
@@ -2010,8 +1978,9 @@ body:is([data-loader-state="entering"], [data-loader-state="ready"]) #site-navba
   transition: none;
 }
 
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-copy,
-body:is([data-loader-state="entering"], [data-loader-state="ready"]) .hero-avatar {
+body:is([data-loader-state="entering"], [data-loader-state="ready"]) .ab-hero__marquee,
+body:is([data-loader-state="entering"], [data-loader-state="ready"]) .ab-hero__visual,
+body:is([data-loader-state="entering"], [data-loader-state="ready"]) .ab-hero__scroll {
   opacity: 1;
   translate: none;
   scale: none;
@@ -2106,4 +2075,17 @@ body[data-loader-state="ready"] main {
     --progress-bar-bg: Canvas;
     --progress-value-bg: Highlight;
   }
+}
+
+.visually-hidden:where(:not(:focus-within, :active)),
+.sr-only {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
 }

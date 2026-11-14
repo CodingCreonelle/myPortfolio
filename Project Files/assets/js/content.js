@@ -56,7 +56,8 @@
         if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
             return window.PortfolioUtils.escapeHtml(value);
         }
-        return String(value == null ? '' : value);
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return map[c]; });
     }
 
     /* Resolution base for the current binding context. */

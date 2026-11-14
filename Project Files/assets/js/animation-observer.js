@@ -51,12 +51,6 @@
     '.animate-stagger-reverse > *',
     '.list-animate > li',
     '.section-header-animate > *',
-    '.hero-animate-title',
-    '.hero-animate-subtitle',
-    '.hero-animate-description',
-    '.hero-animate-actions',
-    '.hero-animate-visual',
-    '.hero-animate-avatar',
   ].join(', ');
 
   // Per-section replay state (status: 'idle' | 'shown' | 'exiting').
@@ -673,10 +667,16 @@
       item.setAttribute('aria-hidden', isPinnedSceneMode() && !isActive ? 'true' : 'false');
     });
 
+    const formatIndex = (n) => (
+      typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function'
+        ? window.PortfolioUtils.pad2(n)
+        : String(n).padStart(2, '0')
+    );
+
     if (state.controlsEl) {
       const counter = state.controlsEl.querySelector('.ab-trainings__counter');
       if (counter) {
-        counter.textContent = `${String(clamped + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+        counter.textContent = `${formatIndex(clamped + 1)} / ${formatIndex(total)}`;
       }
       const prevBtn = state.controlsEl.querySelector('[data-train-dir="-1"]');
       const nextBtn = state.controlsEl.querySelector('[data-train-dir="1"]');
@@ -723,10 +723,15 @@
         `<button type="button" class="ab-trainings__dot" data-train-dot="${i}" role="tab" aria-label="Milestone ${i + 1}" aria-selected="false"></button>`
       )).join('');
 
+      const formatIndex = (n) => (
+        typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function'
+          ? window.PortfolioUtils.pad2(n)
+          : String(n).padStart(2, '0')
+      );
       controls.innerHTML = `
         <button type="button" class="ab-trainings__ctrl-btn" data-train-dir="-1" aria-label="Previous milestone">&#8592;</button>
         <div class="ab-trainings__dots" role="tablist" aria-label="Select milestone">${dotsHtml}</div>
-        <span class="ab-trainings__counter">01 / ${String(items.length).padStart(2, '0')}</span>
+        <span class="ab-trainings__counter">01 / ${formatIndex(items.length)}</span>
         <button type="button" class="ab-trainings__ctrl-btn" data-train-dir="1" aria-label="Next milestone">&#8594;</button>`;
 
       controls.addEventListener('click', (event) => {

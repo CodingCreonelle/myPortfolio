@@ -76,7 +76,21 @@
       return progress * Math.max(0, scrollWidth - clientWidth);
     },
     clampIndex: function (idx, count) {
+      if (count <= 0) return 0;
       return Math.max(0, Math.min(count - 1, idx));
+    },
+    findNearestEntryIndex: function (trackCenter, entryCenters) {
+      if (!Array.isArray(entryCenters) || !entryCenters.length) return -1;
+      let nearestIndex = -1;
+      let nearestDistance = Infinity;
+      for (let i = 0; i < entryCenters.length; i += 1) {
+        const dist = Math.abs(entryCenters[i] - trackCenter);
+        if (dist < nearestDistance) {
+          nearestDistance = dist;
+          nearestIndex = i;
+        }
+      }
+      return nearestIndex;
     },
     calculateTrackScrollTarget: function (left, width, clientWidth) {
       return left + width / 2 - clientWidth / 2;
@@ -108,7 +122,12 @@
     if (window.PortfolioUtils && typeof window.PortfolioUtils.escapeHtml === 'function') {
       return window.PortfolioUtils.escapeHtml(value);
     }
-    return String(value == null ? '' : value);
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   let activeFrame = 0;
@@ -122,6 +141,9 @@
   let windowBound = false;
 
   function createNode(html) {
+    if (typeof window !== 'undefined' && window.PortfolioUtils && typeof window.PortfolioUtils.createFromTemplate === 'function') {
+      return window.PortfolioUtils.createFromTemplate(html);
+    }
     const template = document.createElement('template');
     template.innerHTML = html.trim();
     return template.content.firstElementChild;
@@ -269,9 +291,7 @@
     const ratio = parseFloat(
       getComputedStyle(runway).getPropertyValue('--timeline-pin-travel')
     );
-    if (!Number.isFinite(ratio) || ratio <= 0) return 0;
-
-    return (track.scrollWidth - track.clientWidth) * ratio;
+    return getMath().calculatePinDistance(track.scrollWidth - track.clientWidth, ratio);
   }
 
   /**
@@ -311,15 +331,21 @@
     const track = document.querySelector(TRACK_SELECTOR);
     if (!runway || !pin || !track) return;
 
-    const travel = runway.offsetHeight - pin.offsetHeight;
-    if (travel <= 0) return;
+    const runwayHeight = runway.offsetHeight;
+    const pinHeight = pin.offsetHeight;
+    if (runwayHeight - pinHeight <= 0) return;
 
     // The pinned element starts at its sticky offset, not at 0, so that offset has
     // to come out of the distance already travelled.
-    const scrolled = pinOffset - runway.getBoundingClientRect().top;
-    const progress = Math.min(1, Math.max(0, scrolled / travel));
+    const math = getMath();
+    const progress = math.calculatePinProgress(
+      pinOffset,
+      runway.getBoundingClientRect().top,
+      runwayHeight,
+      pinHeight
+    );
 
-    track.scrollLeft = progress * (track.scrollWidth - track.clientWidth);
+    track.scrollLeft = math.calculateScrollOffset(progress, track.scrollWidth, track.clientWidth);
   }
 
   function schedulePinnedUpdate() {
@@ -376,7 +402,8 @@
     if (!track) return;
 
     const entries = Array.prototype.slice.call(track.children);
-    const clamped = Math.max(0, Math.min(entries.length - 1, index));
+    const math = getMath();
+    const clamped = math.clampIndex(index, entries.length);
     const entry = entries[clamped];
     if (!entry) return;
 
@@ -386,15 +413,16 @@
     // undone by the very next scroll, so the page is moved instead.
     if (pinnedMode() && runway && pin) {
       const travel = runway.offsetHeight - pin.offsetHeight;
-      const lastIndex = entries.length - 1;
-      const ratio = lastIndex > 0 ? clamped / lastIndex : 0;
       const runwayTop = runway.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: runwayTop - pinOffset + travel * ratio, behavior });
+      window.scrollTo({
+        top: math.calculateWindowScrollTarget(runwayTop, pinOffset, travel, clamped, entries.length),
+        behavior,
+      });
       return;
     }
 
     track.scrollTo({
-      left: entry.offsetLeft + entry.offsetWidth / 2 - track.clientWidth / 2,
+      left: math.calculateTrackScrollTarget(entry.offsetLeft, entry.offsetWidth, track.clientWidth),
       behavior,
     });
   }
@@ -486,24 +514,14 @@
 
     const trackRect = track.getBoundingClientRect();
     const trackCenter = trackRect.left + trackRect.width / 2;
-
-    let nearest = null;
-    let nearestDistance = Infinity;
-
-    entries.forEach((entry) => {
+    const entryCenters = entries.map((entry) => {
       const rect = entry.getBoundingClientRect();
-      const distance = Math.abs(rect.left + rect.width / 2 - trackCenter);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = entry;
-      }
+      return rect.left + rect.width / 2;
     });
 
-    let activeIndex = -1;
+    const activeIndex = getMath().findNearestEntryIndex(trackCenter, entryCenters);
     entries.forEach((entry, index) => {
-      const isActive = entry === nearest;
-      entry.classList.toggle(ACTIVE_CLASS, isActive);
-      if (isActive) activeIndex = index;
+      entry.classList.toggle(ACTIVE_CLASS, index === activeIndex);
     });
 
     syncControls(track, activeIndex);

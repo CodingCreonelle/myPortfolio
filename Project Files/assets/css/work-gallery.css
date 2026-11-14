@@ -83,33 +83,9 @@
     letter-spacing: -0.03em;
 }
 
-/* Typewriter caret — inline .tw-caret tracks typing; ::after settles once finished. */
+/* Typewriter caret — inline .tw-caret tracks typing. */
 [data-work-typewriter] {
     display: inline;
-}
-
-[data-work-typewriter].is-typing::after {
-    display: none;
-    content: none;
-}
-
-[data-work-typewriter].is-done::after {
-    content: '';
-    display: inline-block;
-    width: 2px;
-    height: 0.88em;
-    margin-left: 5px;
-    vertical-align: -0.06em;
-    background: var(--primary);
-    animation: work-caret 1.05s steps(2, start) infinite;
-    animation-iteration-count: 4;
-    opacity: 0;
-}
-
-@keyframes work-caret {
-    to {
-        visibility: hidden;
-    }
 }
 
 .work-gallery__lede {

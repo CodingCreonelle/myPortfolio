@@ -2,14 +2,9 @@
   "home": {
     "title": "Charles Portfolio",
     "hero": {
-      "eyebrow": "Hello, I'm",
-      "title": "Charles David Lopez",
-      "description": "I built this portfolio not to impress, but to, in a way, satisfy my need for expression and my drive for passion. I refuse to participate in the performativistic acts that most software developers are trapped in.\n\nThis is my very first passion project, built at the earliest stage of my career, made to simplify my life when tracking my work and to showcase my skills in a way that is authentic to me.",
-      "avatar": { "src": "assets/images/profile/profile.jpg", "alt": "Charles David Lopez" },
-      "actions": [
-        { "label": "View projects", "href": "projects.html", "className": "button button-primary" },
-        { "label": "Learn more about me", "href": "about.html", "className": "button button-secondary" }
-      ]
+      "name": "Charles David",
+      "image": "assets/images/profile/profile.jpg",
+      "scroll": "Scroll Down"
     },
     "work": {
       "eyebrow": "Featured work",
@@ -33,7 +28,7 @@
       "display": "Let's\nWork\nTogether",
       "sub": "Looking for the next problem worth solving.",
       "body": "I'm open to opportunities where I can contribute to front-end development, accessibility, and thoughtful digital workflows.",
-      "primaryLabel": "Download Resume",
+      "primaryLabel": "Get in Touch",
       "primaryHref": "contact.html",
       "secondaryLabel": "Send Me a Message",
       "secondaryHref": "contact.html"
@@ -42,11 +37,6 @@
 
   "about": {
     "title": "About | Charles Portfolio",
-    "hero": {
-      "name": "Charles David",
-      "image": "assets/images/profile/profile.jpg",
-      "scroll": "Scroll Down"
-    },
     "profile": {
       "eyebrow": "Who I Am",
       "title": "Problem Solver. Digital Generalist.",
@@ -75,7 +65,7 @@
       "display": "Let's\nWork\nTogether",
       "sub": "Looking for the next problem worth solving.",
       "body": "I'm open to opportunities where I can contribute to front-end development, accessibility, and thoughtful digital workflows.",
-      "primaryLabel": "Download Resume",
+      "primaryLabel": "Get in Touch",
       "primaryHref": "contact.html",
       "secondaryLabel": "Send Me a Message",
       "secondaryHref": "contact.html"

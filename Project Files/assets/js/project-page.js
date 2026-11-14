@@ -12,7 +12,12 @@
     if (utils && typeof utils.escapeHtml === 'function') {
       return utils.escapeHtml(val);
     }
-    return String(val == null ? '' : val);
+    return String(val == null ? '' : val)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function resolveUrl(href) {
@@ -35,10 +40,6 @@
 
   function renderError(container, title, message) {
     if (!container) return;
-    if (window.PortfolioUtils && typeof window.PortfolioUtils.renderError === 'function') {
-      window.PortfolioUtils.renderError(container, title, message);
-      return;
-    }
     container.innerHTML =
       '<div class="project-view__error"><h2>' + esc(title) + '</h2><p>' + esc(message) + '</p></div>';
   }
@@ -54,11 +55,21 @@
     return null;
   }
 
+  function pad2(n) {
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.pad2 === 'function') {
+      return window.PortfolioUtils.pad2(n);
+    }
+    return String(n == null ? 0 : n).padStart(2, '0');
+  }
+
   function slugify(text, fallbackIndex) {
+    if (window.PortfolioUtils && typeof window.PortfolioUtils.slugify === 'function') {
+      return window.PortfolioUtils.slugify(text, 'section-' + fallbackIndex);
+    }
     var slug = String(text || '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/^-+|-+$/g, '');
     return slug || ('section-' + fallbackIndex);
   }
 
@@ -308,7 +319,7 @@
           sections.map(function (sec, idx) {
             var headingText = (sec && sec.heading) ? sec.heading : ('Section ' + (idx + 1));
             var id = slugify(headingText, idx + 1);
-            var numLabel = String(idx + 1).padStart(2, '0');
+            var numLabel = pad2(idx + 1);
             return (
               '<li><a href="#' + esc(id) + '">' +
               '<span class="doc-nav__num" aria-hidden="true">' + numLabel + '</span>' +
@@ -340,7 +351,7 @@
           return (
             '<a class="doc-switcher__pill' + (isActive ? ' is-active' : '') + '" href="' + esc(href) + '"' +
             (isActive ? ' aria-current="page"' : '') + '>' +
-            '<span class="doc-switcher__num" aria-hidden="true">' + String(idx + 1).padStart(2, '0') + '</span>' +
+            '<span class="doc-switcher__num" aria-hidden="true">' + pad2(idx + 1) + '</span>' +
             '<span>' + esc(p.title) + '</span>' +
             '</a>'
           );
@@ -355,7 +366,7 @@
         '</ul>'
       : '';
 
-    var specIndex = String(project.id || '1').padStart(2, '0');
+    var specIndex = pad2(project.id || '1');
     var headerHtml = [
       '<header class="project-view__section doc-hero" data-animate="animate-entrance" data-animate-replay="true">',
       '<div class="project-view__meta">',
@@ -373,7 +384,7 @@
     var sectionsHtml = sections.map(function (sec, idx) {
       var headingText = (sec && sec.heading) ? sec.heading : ('Section ' + (idx + 1));
       var id = slugify(headingText, idx + 1);
-      var numLabel = String(idx + 1).padStart(2, '0');
+      var numLabel = pad2(idx + 1);
       var bodyMarkup = renderBodyBlocks(sec && sec.body);
 
       return (
