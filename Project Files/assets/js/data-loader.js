@@ -554,8 +554,103 @@ const CONTACT_ICONS = {
   github: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 19c-4 1.2-4-2.2-6-2.8m12 5.3v-3.6a3 3 0 0 0-.9-2.4c3-.3 5-1.9 5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.3s-1.4-.4-4.6 1.7a11 11 0 0 0-6 0C3.9 2.6 2.5 3 2.5 3a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 1 9.5c0 4.1 2 5.7 5 6a3 3 0 0 0-.9 2.3V21"></path></svg>',
   linkedin: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 9v10M5 5.5v.01M10 19v-5.5a3 3 0 0 1 6 0V19"></path><path d="M10 9v10"></path></svg>',
   discord: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.5 17.5S7 19 5.5 19.5c0 0-2.5-3.5-2.5-8a13 13 0 0 1 4-3l1 1.5a11 11 0 0 1 4 0L13 8.5a13 13 0 0 1 4 3c0 4.5-2.5 8-2.5 8-1.5-.5-3-2-3-2"></path><path d="M9.5 13v.01M14.5 13v.01"></path></svg>',
-  copy: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+  copy: '<svg class="contact-copy-icon contact-copy-icon--copy" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+  check: '<svg class="contact-copy-icon contact-copy-icon--check" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6L9 17l-5-5"></path></svg>',
 };
+
+const contactCopyTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
+let lastContactCopyMessage = '';
+let contactCopyCommandsBound = false;
+
+function reportContactCopyFeedback(button, ok) {
+  if (!button) return;
+  const tip = button.nextElementSibling;
+  const labelNode = button.querySelector('[data-copy-text]');
+  const defaultLabel = button.getAttribute('data-copy-default') || 'Copy';
+
+  if (contactCopyTimers && contactCopyTimers.has(button)) {
+    clearTimeout(contactCopyTimers.get(button));
+  }
+
+  button.removeAttribute('data-copied');
+  button.removeAttribute('data-failed');
+  button.classList.remove('is-copied');
+
+  let message = ok ? 'Copied' : 'Copy failed';
+  if (message === lastContactCopyMessage) message += '\u00A0';
+  lastContactCopyMessage = message;
+
+  if (tip) tip.textContent = '';
+  void button.offsetWidth;
+
+  if (ok) {
+    button.setAttribute('data-copied', '');
+    button.classList.add('is-copied');
+    if (labelNode) labelNode.textContent = 'Copied';
+  } else {
+    button.setAttribute('data-failed', '');
+  }
+
+  if (tip) {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        tip.textContent = message;
+      });
+    } else {
+      tip.textContent = message;
+    }
+  }
+
+  const timerId = setTimeout(() => {
+    button.removeAttribute('data-copied');
+    button.removeAttribute('data-failed');
+    button.classList.remove('is-copied');
+    if (labelNode) labelNode.textContent = defaultLabel;
+    if (tip) tip.textContent = '';
+  }, 2000);
+
+  if (contactCopyTimers) {
+    contactCopyTimers.set(button, timerId);
+  }
+}
+
+function performContactCardCopy(button, targetEl) {
+  if (!button) return;
+  const explicit = button.getAttribute('data-copy-value') || '';
+  const targetText = targetEl
+    ? ((targetEl.matches && targetEl.matches('input, textarea')) ? targetEl.value : (targetEl.innerText || targetEl.textContent || '').trim())
+    : '';
+  const text = explicit || targetText;
+  if (!text) return;
+
+  copyTextToClipboard(text).then((ok) => {
+    reportContactCopyFeedback(button, Boolean(ok));
+  }).catch(() => {
+    reportContactCopyFeedback(button, false);
+  });
+}
+
+function ensureContactCopyHandler() {
+  if (contactCopyCommandsBound || typeof document === 'undefined') return;
+  contactCopyCommandsBound = true;
+
+  if (typeof window !== 'undefined' && 'CommandEvent' in window) {
+    document.addEventListener('command', (event) => {
+      if (!event || typeof event.command !== 'string' || !event.command.startsWith('--copy')) return;
+      const btn = event.source;
+      if (!btn || !btn.closest || !btn.closest('#contact-cards')) return;
+      performContactCardCopy(btn, event.target);
+    }, true);
+  } else {
+    document.addEventListener('click', (event) => {
+      const btn = event.target && event.target.closest ? event.target.closest('#contact-cards button[command^="--copy"]') : null;
+      if (!btn) return;
+      const targetId = btn.getAttribute('commandfor');
+      const targetEl = targetId ? document.getElementById(targetId) : null;
+      performContactCardCopy(btn, targetEl);
+    });
+  }
+}
 
 function copyTextToClipboard(text) {
   if (window.PortfolioUtils && typeof window.PortfolioUtils.copyToClipboard === 'function') {
@@ -637,18 +732,23 @@ function renderContactCards(socials) {
   items.forEach((item) => {
     if (!item.value) return;
     const indexStr = String(validIndex + 1).padStart(2, '0');
+    const valueId = `contact-channel-val-${validIndex}`;
     const linkMarkup = item.href
-      ? `<p class="contact-card__value"><a href="${esc(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer"' : ''}>${esc(item.displayValue)}</a></p>`
-      : `<p class="contact-card__value">${esc(item.displayValue)}</p>`;
+      ? `<p class="contact-card__value" id="${valueId}"><a href="${esc(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer"' : ''}>${esc(item.displayValue)}</a></p>`
+      : `<p class="contact-card__value" id="${valueId}">${esc(item.displayValue)}</p>`;
 
     let actionsMarkup = '';
     if (item.copyValue) {
       actionsMarkup = `
         <div class="contact-card__actions">
-          <button type="button" class="contact-card__action-btn" data-copy-value="${esc(item.copyValue)}" data-copy-default="${esc(item.copyLabel)}" aria-label="${esc(item.copyLabel)} ${esc(item.displayValue)}">
-            ${CONTACT_ICONS.copy}
-            <span data-copy-text>${esc(item.copyLabel)}</span>
-          </button>
+          <span class="contact-copy-wrap">
+            <button type="button" class="contact-card__action-btn" command="--copy" commandfor="${valueId}" data-copy-value="${esc(item.copyValue)}" data-copy-default="${esc(item.copyLabel)}" aria-label="${esc(item.copyLabel)} ${esc(item.displayValue)}">
+              ${CONTACT_ICONS.copy}
+              ${CONTACT_ICONS.check}
+              <span data-copy-text>${esc(item.copyLabel)}</span>
+            </button>
+            <span class="contact-copy-tip" role="status"></span>
+          </span>
         </div>`;
     } else if (item.href && item.external) {
       actionsMarkup = `
@@ -679,21 +779,7 @@ function renderContactCards(socials) {
     validIndex++;
   });
 
-  container.querySelectorAll('[data-copy-value]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const value = btn.getAttribute('data-copy-value') || '';
-      const defaultLabel = btn.getAttribute('data-copy-default') || 'Copy';
-      const labelNode = btn.querySelector('[data-copy-text]');
-      copyTextToClipboard(value).then(() => {
-        btn.classList.add('is-copied');
-        if (labelNode) labelNode.textContent = 'Copied';
-        setTimeout(() => {
-          btn.classList.remove('is-copied');
-          if (labelNode) labelNode.textContent = defaultLabel;
-        }, 2000);
-      });
-    });
-  });
+  ensureContactCopyHandler();
 
   if (window.AnimationObserver && window.AnimationObserver.triggerStagger) {
     window.AnimationObserver.triggerStagger(container, 'card-entrance', 100);

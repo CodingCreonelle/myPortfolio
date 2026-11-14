@@ -247,25 +247,268 @@
         return Promise.resolve(false);
     }
 
+    /* ------------------------------------------------------------- Accessibility & Validation Sync */
+
+    var copyTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
+    var lastCopyAnnouncement = '';
+
+    function linkError(el, shown) {
+        if (!el || !el.dataset) return;
+        var errorId = el.dataset.error;
+        if (!errorId) return;
+        var current = el.getAttribute('aria-describedby') || '';
+        var ids = current.split(/\s+/).filter(function (id) {
+            return id && id !== errorId;
+        });
+        if (shown) ids.push(errorId);
+        if (ids.length) {
+            el.setAttribute('aria-describedby', ids.join(' '));
+        } else {
+            el.removeAttribute('aria-describedby');
+        }
+    }
+
+    function spokenText(node) {
+        if (!node || typeof node.cloneNode !== 'function') return '';
+        var copy = node.cloneNode(true);
+        copy.querySelectorAll('[aria-hidden="true"]').forEach(function (n) {
+            n.remove();
+        });
+        copy.querySelectorAll('[role="img"][aria-label]').forEach(function (n) {
+            n.replaceWith(n.getAttribute('aria-label') + ': ');
+        });
+        return String(copy.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function bindFieldValidation(form) {
+        if (!form || typeof document === 'undefined' || !document.body) return null;
+
+        var announcer = document.querySelector('[data-contact-error-announcer]');
+        if (!announcer) {
+            announcer = document.createElement('div');
+            announcer.setAttribute('aria-live', 'polite');
+            announcer.setAttribute('data-contact-error-announcer', 'true');
+            announcer.className = 'visually-hidden';
+            document.body.appendChild(announcer);
+        }
+
+        var announceTimer = null;
+        var announcedField = null;
+        var flagged = typeof WeakSet === 'function' ? new WeakSet() : null;
+        var announced = typeof WeakSet === 'function' ? new WeakSet() : null;
+        var dirtyState = typeof WeakMap === 'function' ? new WeakMap() : null;
+        var supportsUserInvalid = false;
+
+        try {
+            supportsUserInvalid = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('selector(:user-invalid)');
+        } catch (e) {
+            supportsUserInvalid = false;
+        }
+
+        function announceError(el) {
+            if (!el || !el.dataset || !el.dataset.error) return;
+            var errorEl = document.getElementById(el.dataset.error);
+            if (!errorEl) return;
+            var labelNode = (el.labels && el.labels[0]) ? el.labels[0] : (el.id ? form.querySelector('label[for="' + el.id + '"]') : null);
+            var labelPrefix = labelNode ? spokenText(labelNode) + ': ' : '';
+            clearTimeout(announceTimer);
+            announcer.textContent = '';
+            announcedField = el;
+            announceTimer = setTimeout(function () {
+                announcer.textContent = labelPrefix + spokenText(errorEl);
+            }, 500);
+        }
+
+        function syncAria(el, announce) {
+            if (!el || !el.matches || !el.matches('input, select, textarea')) return;
+            if (el.type === 'hidden') return;
+
+            var isInvalid = false;
+            if (supportsUserInvalid) {
+                isInvalid = el.matches(':user-invalid');
+            } else {
+                var state = dirtyState ? dirtyState.get(el) : null;
+                isInvalid = Boolean(state && state.hasBlurred && el.validity && !el.validity.valid);
+            }
+
+            if (isInvalid) {
+                if (announce && announced && !announced.has(el)) {
+                    announceError(el);
+                    announced.add(el);
+                }
+                el.setAttribute('aria-invalid', 'true');
+                linkError(el, true);
+                if (flagged) flagged.add(el);
+            } else if ((flagged && flagged.has(el)) || el.getAttribute('aria-invalid') !== 'true') {
+                el.setAttribute('aria-invalid', 'false');
+                linkError(el, false);
+                if (flagged) flagged.delete(el);
+                if (announced) announced.delete(el);
+                if (announcedField === el) {
+                    clearTimeout(announceTimer);
+                    announcer.textContent = '';
+                }
+            }
+        }
+
+        form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (el) {
+            syncAria(el, false);
+        });
+
+        form.addEventListener('blur', function (event) {
+            var target = event.target;
+            if (!supportsUserInvalid && dirtyState && target && target.matches && target.matches('input, select, textarea')) {
+                var st = dirtyState.get(target) || { hasInteracted: false, hasBlurred: false };
+                st.hasBlurred = true;
+                dirtyState.set(target, st);
+                if (st.hasInteracted && target.validity) {
+                    var ok = target.validity.valid;
+                    target.classList.toggle('user-invalid-fallback', !ok);
+                    target.classList.toggle('user-valid-fallback', ok);
+                }
+            }
+            syncAria(target, true);
+        }, true);
+
+        form.addEventListener('input', function (event) {
+            var target = event.target;
+            if (!supportsUserInvalid && dirtyState && target && target.matches && target.matches('input, select, textarea')) {
+                var st = dirtyState.get(target) || { hasInteracted: false, hasBlurred: false };
+                st.hasInteracted = true;
+                dirtyState.set(target, st);
+                if (st.hasBlurred && target.validity) {
+                    var ok = target.validity.valid;
+                    target.classList.toggle('user-invalid-fallback', !ok);
+                    target.classList.toggle('user-valid-fallback', ok);
+                }
+            }
+            if (target && target.hasAttribute && target.hasAttribute('aria-invalid')) {
+                syncAria(target, false);
+            }
+        });
+
+        form.addEventListener('change', function (event) {
+            syncAria(event.target, true);
+        }, true);
+
+        form.addEventListener('invalid', function (event) {
+            var target = event.target;
+            if (!supportsUserInvalid && dirtyState && target && target.validity) {
+                dirtyState.set(target, { hasInteracted: true, hasBlurred: true });
+                target.classList.toggle('user-invalid-fallback', !target.validity.valid);
+                target.classList.toggle('user-valid-fallback', target.validity.valid);
+            }
+            if (announced) announced.add(target);
+            syncAria(target, false);
+        }, true);
+
+        form.addEventListener('reset', function () {
+            setTimeout(function () {
+                form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (el) {
+                    if (dirtyState) dirtyState.delete(el);
+                    el.classList.remove('user-invalid-fallback', 'user-valid-fallback');
+                    syncAria(el, false);
+                });
+            }, 0);
+        }, true);
+
+        return {
+            syncAll: function () {
+                form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (el) {
+                    syncAria(el, false);
+                });
+            },
+            focusFirstInvalid: function () {
+                var first = form.querySelector(':is(:user-invalid, .user-invalid-fallback, [aria-invalid="true"])');
+                if (!first) {
+                    first = form.querySelector('input:invalid, textarea:invalid, select:invalid');
+                }
+                if (first && typeof first.focus === 'function') {
+                    first.focus();
+                }
+            }
+        };
+    }
+
+    function reportCopyButton(button, ok) {
+        if (!button) return;
+        var tip = button.nextElementSibling;
+        var timerPrev = copyTimers ? copyTimers.get(button) : null;
+        if (timerPrev) clearTimeout(timerPrev);
+
+        button.removeAttribute('data-copied');
+        button.removeAttribute('data-failed');
+
+        var message = ok ? 'Copied' : 'Copy failed';
+        if (message === lastCopyAnnouncement) message += '\u00A0';
+        lastCopyAnnouncement = message;
+
+        if (tip) tip.textContent = '';
+        void button.offsetWidth;
+        button.setAttribute(ok ? 'data-copied' : 'data-failed', '');
+
+        if (tip) {
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(function () {
+                    tip.textContent = message;
+                });
+            } else {
+                tip.textContent = message;
+            }
+        }
+
+        var labelSpan = button.querySelector('[data-copy-text]');
+        var prevLabel = button.dataset.copyDefault || (labelSpan ? labelSpan.textContent : '');
+        if (!button.dataset.copyDefault && prevLabel) {
+            button.dataset.copyDefault = prevLabel;
+        }
+        if (labelSpan && ok) {
+            labelSpan.textContent = 'Copied';
+        }
+
+        var tid = setTimeout(function () {
+            button.removeAttribute('data-copied');
+            button.removeAttribute('data-failed');
+            if (tip) tip.textContent = '';
+            if (labelSpan && button.dataset.copyDefault) {
+                labelSpan.textContent = button.dataset.copyDefault;
+            }
+        }, 2000);
+
+        if (copyTimers) copyTimers.set(button, tid);
+    }
+
+    function syncRecipientPreview(form) {
+        var preview = (form ? form.querySelector('[data-contact-recipient-preview]') : null) ||
+            document.querySelector('[data-contact-recipient-preview]');
+        if (preview) {
+            preview.textContent = recipientEmail();
+        }
+    }
+
     /* ------------------------------------------------------------- Event Controllers */
 
     function bindTopics(form) {
-        var group = document.querySelector('[data-contact-topics]');
+        var group = form.querySelector('[data-contact-topics]') || document.querySelector('[data-contact-topics]');
         var topicInput = form.querySelector('[data-contact-topic-input]');
         var subjectInput = form.querySelector('[data-contact-subject]');
         var messageInput = form.querySelector('[data-contact-message]');
+        var topicPreview = form.querySelector('[data-contact-active-topic]') || document.querySelector('[data-contact-active-topic]');
         if (!group) return;
 
         var currentDefaults = getModel().TOPIC_DEFAULTS || TOPIC_DEFAULTS;
-        var buttons = Array.prototype.slice.call(group.querySelectorAll('[data-topic]'));
+        var buttons = Array.prototype.slice.call(group.querySelectorAll('[data-topic], [data-contact-topic]'));
         buttons.forEach(function (btn) {
             btn.addEventListener('click', function () {
-                var topic = btn.getAttribute('data-topic') || '';
+                var topic = btn.getAttribute('data-topic') || btn.getAttribute('data-contact-topic') || '';
                 buttons.forEach(function (other) {
                     other.setAttribute('aria-pressed', other === btn ? 'true' : 'false');
                 });
                 if (topicInput) {
                     topicInput.value = topic;
+                }
+                if (topicPreview && topic) {
+                    topicPreview.textContent = topic;
                 }
                 var defaults = currentDefaults[topic];
                 if (defaults) {
@@ -303,36 +546,56 @@
         updateCounter();
     }
 
-    function bindCopyMessageButton(form, status) {
+    function bindCopyMessageButton(form, status, validationSync) {
         var copyBtn = form.querySelector('[data-contact-copy-message]');
         if (!copyBtn) return;
 
         copyBtn.addEventListener('click', function () {
+            if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                if (typeof form.reportValidity === 'function') form.reportValidity();
+                if (validationSync) {
+                    validationSync.syncAll();
+                    validationSync.focusFirstInvalid();
+                }
+            }
+
             var values = readFormValues(form);
             var validation = validateContactFields(values);
             if (!validation.valid) {
-                if (typeof form.reportValidity === 'function') form.reportValidity();
                 setStatus(status, validation.error, true);
                 return;
             }
 
             var to = recipientEmail();
             var formatted = formatClipboardMessage(values, to);
-            copyToClipboard(formatted).then(function () {
-                setStatus(
-                    status,
-                    'Copied formatted message to your clipboard. You can paste it directly into an email to ' + to + '.',
-                    false
-                );
+            copyToClipboard(formatted).then(function (ok) {
+                var succeeded = ok !== false;
+                reportCopyButton(copyBtn, succeeded);
+                if (succeeded) {
+                    setStatus(
+                        status,
+                        'Copied formatted message to your clipboard. You can paste it directly into an email to ' + to + '.',
+                        false
+                    );
+                } else {
+                    setStatus(status, 'Unable to copy to clipboard automatically. Please try again or email ' + to + ' directly.', true);
+                }
+            }).catch(function () {
+                reportCopyButton(copyBtn, false);
+                setStatus(status, 'Unable to copy to clipboard automatically. Please try again or email ' + to + ' directly.', true);
             });
         });
     }
 
-    function onSubmit(form, status, event) {
+    function onSubmit(form, status, validationSync, event) {
         event.preventDefault();
 
         if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
             if (typeof form.reportValidity === 'function') form.reportValidity();
+            if (validationSync) {
+                validationSync.syncAll();
+                validationSync.focusFirstInvalid();
+            }
             return;
         }
 
@@ -340,6 +603,7 @@
         var validation = validateContactFields(values);
         if (!validation.valid) {
             setStatus(status, validation.error, true);
+            if (validationSync) validationSync.focusFirstInvalid();
             return;
         }
 
@@ -363,10 +627,10 @@
         var topicParam = params.get('topic');
         if (topicParam) {
             var needle = topicParam.trim().toLowerCase();
-            var buttons = form.querySelectorAll('[data-contact-topic]');
+            var buttons = document.querySelectorAll('[data-contact-topic], [data-topic]');
             for (var i = 0; i < buttons.length; i++) {
                 var btn = buttons[i];
-                var label = (btn.dataset.contactTopic || btn.textContent || '').trim().toLowerCase();
+                var label = (btn.dataset.contactTopic || btn.dataset.topic || btn.textContent || '').trim().toLowerCase();
                 if (label === needle || label.indexOf(needle) !== -1) {
                     btn.click();
                     break;
@@ -395,14 +659,20 @@
         initialized = true;
 
         var status = findStatus();
+        var validationSync = bindFieldValidation(form);
 
         bindTopics(form);
         bindCharacterCounter(form);
-        bindCopyMessageButton(form, status);
+        bindCopyMessageButton(form, status, validationSync);
+        syncRecipientPreview(form);
         hydrateFromQuery(form);
 
+        document.addEventListener('portfolio:data-updated', function () {
+            syncRecipientPreview(form);
+        });
+
         form.addEventListener('submit', function (event) {
-            onSubmit(form, status, event);
+            onSubmit(form, status, validationSync, event);
         });
     }
 

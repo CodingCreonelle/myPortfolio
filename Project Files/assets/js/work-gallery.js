@@ -290,6 +290,12 @@
 
     goTo(0, false);
 
+    window.WorkGallery = {
+      goTo: goTo,
+      getCount: function () { return total; },
+      getActive: function () { return active; }
+    };
+
     if (prevBtn) {
       prevBtn.addEventListener('click', function () {
         goTo(active - 1, true);
